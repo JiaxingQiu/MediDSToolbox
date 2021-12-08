@@ -1,23 +1,37 @@
-# Medical Data Science R shiny Toolbox
-This repo collects 2 R shiny apps, written by Jiaxing Joy Qiu in Center of Advanced Medical Analytics, School of Medicine, UVA. 
+# Medical Data Science Toolbox
+*For tools in the box, we think outside the box.* <br/>
 
-## MLViz
-The main utilitiy codes in Machine Learning Visualization (MLViz) folder, follows Frank Harrell's Regression Modeling Strategy (RMS) methodologies, sourced rms package in R as the core infrastructure. For binary classification, this tool uses logistic regression (ridge) and for continuous reponse regression, linear regression will be used.
+**Inventor** Jiaxing (Joy) Qiu, M.S., Data Science, School of Data Science, University of Virginia <br/>
 
-#### Goal of MLViz
-The goal of this tool is to provide a "baseline" model for projects who's aiming at using advanced modeling strategies or tool to compare with, such as Randam Forrest or Deep Learning, by changing a few UI front end codes and replacing the project dataset. Data Engineering, feature selection, model performance and predictor importance rank are automatically ran by simple clicks on a R shiny app, and results and processes are visualized as much as possible. 
+Thanks to Center of Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia, the helpful comments and professional expriences inspire these creative tools in the box!<br/>
 
-#### User cases of MLViz
-So far, this tool with identical utilities has been succesfully applied to 3 projects:
-- Respiritory unfavorable outcomes in pre-term infants in NICU
-- Sepsis in NICU (de-identified data)  https://joy-cama-uva.shinyapps.io/MLViz_PreMo/
-- Blood Stream Infection in Adult ICU (de-identified data) https://joy-cama-uva.shinyapps.io/BSI_Modeling/
+## Objectives
+The objectives of this toolbox include but not limited to --
+- facilitate medical data science research hypothesis generation
+- bridge communitations between clinitians and technicians interactively
+- visualize biomedical research data and especially longitudinal datasets
+- provide baseline predictive models by supervised learning, such as logistic and linear regression
+- provide reliable model evaluation and rubost inference results that adjust for repeated measures commonly seen in biomedical research
+- provide clustering results by unsupervised learning, potentially reduce cost of medical data science research
 
-## EDAViz
-The main utilitiy codes in Exploratory Data Analysis (EDAViz) folder, offers interative visualization on any dictionary-oriented dataset structure (created by Jiaxing Qiu). Visualization utilities includes 1D statistic curves, 2D heapmap and "death star" plots for the trajectories of certain patient cohort. (Yep, Come to the Dark Side ...)
+### Exploratory Data Analysis
+"Exploring your data does as much harm as not to explore it at all. -- Frank E Harrell" <br/>
+Interactively visualize:
+- the major statistical charactoristics of 1 variable
+- the relationship between 2 or more variables
+- the trajectory of each subject in a medical research cohort (maximum population 1000)
 
-#### Goal of EDAvIZ
-EDAViz tool is built to help non-tech researchers visualize main charactoristics of a certion variable, explore the relationship between 2 or more variables, and generate research hypothesis such as finding the potential explanors for a certain responce variable(main charactoristics).
+### Supervised Machine Learning
+Following Regression Modeling Strstegy by Frank E Harrell, compute restricted cubic spline regression that satisfys most user cased in medical machine learning.
+- train restricted cubic spline logistic regression if binary response is selected;
+- train restricted cubic spline linear regression if continuous numeric response is selected;
+- train non-linear univariate regression, and plot effect probablity against the percentile of each variable in heatmap.
+- explore clues of predictor variables in terms of predicting the response variable, including correlation information, redundancy analysis, missingness and spearman squared correlation information each predictor carry;
+- model development and evaluation use subject-wise 5-10 fold cross-validation;
+- train multiple models every defined step size using given window size, report model performance and featuer importance overtime;
 
-#### User cases of EDAViz
-EDAViz tool has been used in PreVent NIH research to efficiently bridge the communication between clinician principal investigators, researchers and data scientists in the study.
+### Unsupervised Machine Learning
+Unsupervise machine learning is designed to --
+- cluster row-wise record, i.e. infant daily records, by optimizing the objective functions of a given mothed such as k-means, based on customized high-dimensional input variables
+- detect outliers, by splitting minor cluster(s) from major cluster(s)
+- explore and describe distinct charactoristics / reason of in clustered groups
