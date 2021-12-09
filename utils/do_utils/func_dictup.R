@@ -114,6 +114,15 @@ assign.dict <- function(data, dict_new, multi_assign=FALSE, overwrite=FALSE){
   # keep old dictionary
   dict_old <- get.dict(data)
   
+  # clean missing value in new or old dictionary
+  for (col in colnames(dict_new)){
+    dict_new[,col] <- as.character(dict_new[,col])
+    dict_new[which( is.na(dict_new[,col])|dict_new[,col]=="NA" ),col] <- ""
+  }
+  for (col in colnames(dict_old)){
+    dict_old[,col] <- as.character(dict_old[,col])
+    dict_old[which( is.na(dict_old[,col])|dict_old[,col]=="NA" ),col] <- ""
+  }
   
   dict_df <- data.frame( matrix(data="", ncol = length(union(colnames(dict_old),colnames(dict_new))), nrow = length(union(rownames(dict_old),rownames(dict_new))) ) , stringsAsFactors = FALSE)
   colnames(dict_df) <- union(colnames(dict_old),colnames(dict_new))
