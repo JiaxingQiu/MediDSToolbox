@@ -40,13 +40,13 @@ front_viz_1d_stats <- function(
   
   # find columns names from input labels
   x_col <- rownames(dict_data[which(dict_data$label_front%in%x_label), ])
-  stopifnot(length(x_col)==1)
+  stopifnot(length(x_col)<=1)
   y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
-  stopifnot(length(y_col)==1)
+  stopifnot(length(y_col)<=1)
   cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
-  stopifnot(length(cluster_col)==1)
+  stopifnot(length(cluster_col)<=1)
   group_by_col <- rownames(dict_data[which(dict_data$label_front==group_by_label),])
-  stopifnot(length(group_by_col)==1)
+  stopifnot(length(group_by_col)<=1)
   trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
   pctcut_num_cols <- rownames(dict_data[which(dict_data$label_front%in%pctcut_num_labels), ])
   filter_tag_cols <- rownames(dict_data[which(dict_data$label_front%in%filter_tag_labels & dict_data$unit=="tag01"), ])
