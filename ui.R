@@ -53,7 +53,7 @@ sidebar <- dashboardSidebar(
                                                        multiple = TRUE,
                                                        choices = dict_viz$label_front[which(dict_viz$type=="num")],
                                                        selected = NULL) ),
-                           column(width=4, checkboxInput("eda_coerce","merge",value = TRUE))
+                           column(width=4, checkboxInput("eda_coerce","merge",value = FALSE))
                          ),
                          sliderInput("eda_pctcut_num_vec",
                                      label="percentile [ from (th), to (th) ]",

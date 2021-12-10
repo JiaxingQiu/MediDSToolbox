@@ -16,6 +16,8 @@ shinyServer(function(input, output, session) {
                       min = min_value,
                       max = max_value,
                       value = c(min_value, max_value) )
+    updateNumericInput(inputId = "eda_trim_time_unit",
+                       value = 1)
   })  
   observeEvent(input$eda_trim_time_unit, {
     trim_by_col <- rownames(dict_viz[which(dict_viz$label_front==input$eda_trim_by_label),])
@@ -128,6 +130,17 @@ shinyServer(function(input, output, session) {
   })
   
   # ---- 2. supervised ml ----
+  observeEvent(input$ml_trim_by_label, {
+    trim_by_col <- rownames(dict_viz[which(dict_viz$label_front==input$eda_trim_by_label),])
+    min_value = min(data_viz[,trim_by_col],na.rm=TRUE)
+    max_value = max(data_viz[,trim_by_col],na.rm=TRUE)
+    updateSliderInput(inputId = "ml_trim_vec", 
+                      min = min_value,
+                      max = max_value,
+                      value = c(min_value, max_value) )
+    updateNumericInput(inputId = "ml_trim_time_unit",
+                       value = 1)
+  }) 
   observeEvent(input$ml_trim_time_unit, {
     trim_by_col <- rownames(dict_viz[which(dict_viz$label_front==input$ml_trim_by_label),])
     min_value = floor(min(data_viz[,trim_by_col],na.rm=TRUE)/input$ml_trim_time_unit)
