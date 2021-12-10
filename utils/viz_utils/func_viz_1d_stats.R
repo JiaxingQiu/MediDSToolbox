@@ -1,10 +1,10 @@
 viz_1d_stats <- function(
   data=data_viz,
   dict_data=dict_viz,
-  y_col="heart_rate___vital",
-  x_col="hours_to_infect",
-  cluster_col="X__uid",
-  group_by_col=c()
+  y_col="c02bloodgas",
+  x_col="ca_days",
+  cluster_col="subjectnbr",
+  group_by_col="GA_bins"
 ){
   
   # visualize distribution information given any value of x 

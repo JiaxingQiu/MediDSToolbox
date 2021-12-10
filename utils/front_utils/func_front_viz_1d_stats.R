@@ -12,10 +12,10 @@ front_viz_1d_stats <- function(
   filter_tag_labels = c("Site (EN)___Alabama",
                         "On respiratory support without endotracheal tube  (EN)___Yes"), # tag columns
   # distributions
-  y_label = "IH ( Desat<80 [10s, 300s] ) duration(sec) per day", # num or fct(tag) y / response variable
+  y_label = "IH (SPO2<90%) >=10s event counts per day", # num or fct(tag) y / response variable
   x_label ="Post-menstrual Age", # num or fct
   cluster_label = "Subject ID",
-  group_by_label = "Site (EN)" # fct
+  group_by_label = "GA weeks" # fct
   
 ){
   # ---- Usage ----
@@ -40,9 +40,13 @@ front_viz_1d_stats <- function(
   
   # find columns names from input labels
   x_col <- rownames(dict_data[which(dict_data$label_front%in%x_label), ])
+  stopifnot(length(x_col)==1)
   y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
+  stopifnot(length(y_col)==1)
   cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
+  stopifnot(length(cluster_col)==1)
   group_by_col <- rownames(dict_data[which(dict_data$label_front==group_by_label),])
+  stopifnot(length(group_by_col)==1)
   trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
   pctcut_num_cols <- rownames(dict_data[which(dict_data$label_front%in%pctcut_num_labels), ])
   filter_tag_cols <- rownames(dict_data[which(dict_data$label_front%in%filter_tag_labels & dict_data$unit=="tag01"), ])
