@@ -372,6 +372,7 @@ shinyServer(function(input, output, session) {
     eda_1d_obj$p_denom+
       coord_cartesian(xlim = ranges_eda_1d_p_denom$x, ylim = ranges_eda_1d_p_denom$y, expand = FALSE)
   })
+  ranges_eda_1d_p_denom <- reactiveValues(x = NULL, y = NULL)# Single zoomable plot (on left)
   observeEvent(input$eda_1d_p_denom_dblclick, {
     brush <- input$eda_1d_p_denom_brush
     if (!is.null(brush)) {
