@@ -598,14 +598,22 @@ shinyServer(function(input, output, session) {
     clst_obj <- MLuns_cluster()
     wss <- clst_obj$wss
     par(mfrow=c(2,2))
-    plot(1:clst_obj$nc_max, wss, type="b", xlab="Number of Clusters",
-         ylab="Within groups sum of squares")
-    plot(1:clst_obj$nc_max, log(wss), type="b", xlab="Number of Clusters",
-         ylab="log of Within groups sum of squares")
-    plot(2:clst_obj$nc_max, diff(wss), type="b", xlab="Number of Clusters",
-         ylab="diff( Within groups sum of squares )")
-    plot(2:clst_obj$nc_max, diff(log(wss)), type="b", xlab="Number of Clusters",
-         ylab="diff( log of Within groups sum of squares )")
+    try({
+      plot(1:clst_obj$nc_max, wss, type="b", xlab="Number of Clusters",
+           ylab="Within groups sum of squares")
+    },TRUE)
+    try({
+      plot(1:clst_obj$nc_max, log(wss), type="b", xlab="Number of Clusters",
+           ylab="log of Within groups sum of squares")
+    },TRUE)
+    try({
+      plot(2:clst_obj$nc_max, diff(wss), type="b", xlab="Number of Clusters",
+           ylab="diff( Within groups sum of squares )")
+    },TRUE)
+    try({
+      plot(2:clst_obj$nc_max, diff(log(wss)), type="b", xlab="Number of Clusters",
+           ylab="diff( log of Within groups sum of squares )")
+    },TRUE)
   })
   
   output$unml_cluster_pca_plot <- renderPlot({

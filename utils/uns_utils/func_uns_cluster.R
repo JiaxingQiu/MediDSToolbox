@@ -3,8 +3,8 @@ uns_cluster_kmeans <- function(
   data=data_unml, # dataframe with one row per one observation subject (i.e. baby day / baby)
   dict_data=dict_unml, # dictionary for data
   input_cols=colnames(data_ml%>%select(starts_with("cpd_"))), # input variables to be used to train clustering model
-  nc_max=5, # maximum number of clusters, default 15, must be [1,20]
-  nc_min=3, # minimum number of cluster you expect kmeans to split your observations [1,20]
+  nc_max=4, # maximum number of clusters, default 15, must be [1,20]
+  nc_min=4, # minimum number of cluster you expect kmeans to split your observations [1,20]
   plot_wss=FALSE, # whethr or not to plot trace of within group sum of squares in console
   min_nobs_per_clst=2, # mininal number of observations allowed in a cluster, if a cluster has less than this number of observation, it will be removed
   max_iter=3
@@ -88,7 +88,11 @@ uns_cluster_kmeans <- function(
       }
       print("Success! wss is created. ")
       # find the biggest drop in wss
-      n_centers <- c(max(1,nc_min):max(1,nc_max))[which(diff(wss)==min(diff(wss),na.rm=TRUE))]
+      if (nc_min == nc_max) {
+        n_centers <- nc_min
+      }else{
+        n_centers <- c(max(1,nc_min):max(1,nc_max))[which(diff(wss)==min(diff(wss),na.rm=TRUE))]
+      }
       # if there is only one cluster
       if (n_centers==1){warning("K-means suggests all the observations came from only one cluster")}
     },error = function(e){
