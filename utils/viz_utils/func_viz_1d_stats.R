@@ -62,7 +62,7 @@ viz_1d_stats <- function(
       stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3)+
       xlab(paste0(dict_data[x_col,"label_front"], "    ", dict_data[x_col,"unit"]))+
       ylab(paste0(dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
-      ylim(min(data$y,na.rm=TRUE)*0.9, max(as.numeric(quantile(data$y, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
+      #ylim(min(data$y,na.rm=TRUE)*0.9, max(as.numeric(quantile(data$y, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Mean") +
       facet_wrap(~ group, ncol = 3) 
     if(grepl("_days",x_col)){
@@ -159,40 +159,45 @@ viz_1d_stats <- function(
   }
   
   # ---- organize into 1 plot object ----
-  plot_obj <- NULL
-  nrows <- 0
-  if(!is.null(p_denom)) {
-    nrows <- nrows + 1
-    plot_obj <- p_denom
-  }
-  if(!is.null(p_violin)){
-    plot_obj <- ggpubr::ggarrange(p_violin,
-                                  plot_obj,
-                                  ncol=1,nrow=2,
-                                  heights = c(1,nrows),
-                                  common.legend = TRUE,
-                                  legend="right")
-    nrows <- nrows + 1
-  }
-  
-  if(!is.null(p_pct)){
-    plot_obj <- ggpubr::ggarrange(p_pct,
-                                  plot_obj,
-                                  ncol=1,nrow=2,
-                                  heights = c(1,nrows),
-                                  common.legend = TRUE,
-                                  legend="right")
-    nrows <- nrows + 1
-  }
-  if(!is.null(p_mean)){
-    plot_obj <- ggpubr::ggarrange(p_mean,
-                                  plot_obj,
-                                  ncol=1,nrow=2,
-                                  heights = c(1,nrows),
-                                  common.legend = TRUE,
-                                  legend="right")
-    nrows <- nrows + 1
-  }
-  
-  return(plot_obj)
+  # plot_obj <- NULL
+  # nrows <- 0
+  # if(!is.null(p_denom)) {
+  #   nrows <- nrows + 1
+  #   plot_obj <- p_denom
+  # }
+  # if(!is.null(p_violin)){
+  #   plot_obj <- ggpubr::ggarrange(p_violin,
+  #                                 plot_obj,
+  #                                 ncol=1,nrow=2,
+  #                                 heights = c(1,nrows),
+  #                                 common.legend = TRUE,
+  #                                 legend="right")
+  #   nrows <- nrows + 1
+  # }
+  # 
+  # if(!is.null(p_pct)){
+  #   plot_obj <- ggpubr::ggarrange(p_pct,
+  #                                 plot_obj,
+  #                                 ncol=1,nrow=2,
+  #                                 heights = c(1,nrows),
+  #                                 common.legend = TRUE,
+  #                                 legend="right")
+  #   nrows <- nrows + 1
+  # }
+  # if(!is.null(p_mean)){
+  #   plot_obj <- ggpubr::ggarrange(p_mean,
+  #                                 plot_obj,
+  #                                 ncol=1,nrow=2,
+  #                                 heights = c(1,nrows),
+  #                                 common.legend = TRUE,
+  #                                 legend="right")
+  #   nrows <- nrows + 1
+  # }
+  # 
+  return(list(
+    "p_denom" = p_denom,
+    "p_violin" = p_violin,
+    "p_pct" = p_pct,
+    "p_mean" = p_mean
+  ))
 }

@@ -74,9 +74,9 @@ front_viz_1d_stats <- function(
   }
   
   # --- conditional distribution plots ----
-  plot_1d_stats <- NULL
+  plot_1d_stats_obj <- NULL
   try({
-    plot_1d_stats <- viz_1d_stats(data=data,
+    plot_1d_stats_obj <- viz_1d_stats(data=data,
                                   dict_data = dict_data,
                                   x_col = x_col,
                                   y_col = y_col,
@@ -84,7 +84,5 @@ front_viz_1d_stats <- function(
                                   group_by_col = group_by_col)
     
   },TRUE)
-  print(plot_1d_stats)
-  
-  return(plot_1d_stats)
+  return(plot_1d_stats_obj)
 }

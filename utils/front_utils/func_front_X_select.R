@@ -129,7 +129,7 @@ front_X_select <- function(
   }
   data <- assign.dict(data, dict_data)
   
-  x_select_mdls <- do_x_select(data=data,
+  x_select_mdls <- lss_x_select(data=data,
                                dict_data = dict_data,
                                y_col = y_col,
                                x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,

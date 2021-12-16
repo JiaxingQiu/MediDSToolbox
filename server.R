@@ -52,6 +52,7 @@ shinyServer(function(input, output, session) {
     ) 
   })
   
+  
   stats2dViz <- eventReactive(input$eda_stats2d_go, {
     front_viz_2d_stats(data = data_viz,
                        dict_data = dict_viz,
@@ -93,19 +94,6 @@ shinyServer(function(input, output, session) {
                          na_vec = sv.na_vec, 
                          default_tag_labels = sv.default_tag_labels
     ) 
-  })
-  # Single zoomable plot (on left)
-  ranges <- reactiveValues(x = NULL, y = NULL)
-  observeEvent(input$plot_death_star_dblclick, {
-    brush <- input$plot_death_star_brush
-    if (!is.null(brush)) {
-      ranges$x <- c(brush$xmin, brush$xmax)
-      ranges$y <- c(brush$ymin, brush$ymax)
-      
-    } else {
-      ranges$x <- NULL
-      ranges$y <- NULL
-    }
   })
   
   alluvialViz <- eventReactive(input$eda_allu_go, {
@@ -278,23 +266,144 @@ shinyServer(function(input, output, session) {
                                   step_size = input$ml_step_size) 
   })
   # ---- 3. unsupervised ml ----
-  
+  observeEvent(input$unml_trim_by_label, {
+    trim_by_col <- rownames(dict_unml[which(dict_unml$label_front==input$unml_trim_by_label),])
+    min_value = min(data_unml[,trim_by_col],na.rm=TRUE)
+    max_value = max(data_unml[,trim_by_col],na.rm=TRUE)
+    updateSliderInput(inputId = "unml_trim_vec",
+                      min = min_value,
+                      max = max_value,
+                      value = c(min_value, max_value) )
+    updateNumericInput(inputId = "unml_trim_time_unit",
+                       value = 1)
+  })
+  observeEvent(input$unml_trim_time_unit, {
+    trim_by_col <- rownames(dict_unml[which(dict_unml$label_front==input$unml_trim_by_label),])
+    min_value = floor(min(data_unml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
+    max_value = floor(max(data_unml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
+    updateSliderInput(inputId = "unml_trim_vec",
+                      min = min_value,
+                      max = max_value,
+                      value = c(min_value, max_value) )
+  })
+  MLuns_cluster <- eventReactive(input$umml_cluster_go, {
+    front_front_uns_cluster(
+      # global parameters (unsupervised setup page)
+      data = data_unml,
+      dict_data = dict_unml,
+      cluster_label = input$unml_cluster_label,
+      trim_by_label = input$unml_trim_by_label,
+      trim_vec = input$unml_trim_vec,
+      time_unit = input$unml_trim_time_unit,
+      pctcut_num_labels = input$unml_pctcut_num_labels, # cutoff by percentile of one or more numeric variable
+      pctcut_num_vec = input$unml_pctcut_num_vec,
+      coerce = input$unml_coerce,
+      filter_tag_labels = input$unml_filter_tag_labels, # tag columns
+      imputation = input$unml_imputation,
+      impute_per_cluster=input$unml_impute_per_cluster,
+      winsorizing=input$unml_winsorizing,
+      aggregation=input$unml_aggregation, # always set to be true
+      # local parameters
+      input_labels=input$unml_input_labels,
+      nc_vec = input$unml_nc_vec,
+      min_nobs_per_clst = input$unml_min_nobs_per_clst,
+      max_iter = input$unml_max_iter
+    )
+  })
   
   
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 1. eda ----
   output$dictionary_table_eda <- renderDataTable(dict_viz[which(dict_viz$type!=""),c("varname", "label", "unit", "type")])
   
-  output$plot_1d_stats <- renderPlot({
-    stats1dViz()
+  output$eda_1d_p_violin <- renderPlot({
+    eda_1d_obj <- stats1dViz()
+    eda_1d_obj$p_violin+
+      coord_cartesian(xlim = ranges_eda_1d_p_violin$x, ylim = ranges_eda_1d_p_violin$y, expand = FALSE)
+  })
+  ranges_eda_1d_p_violin <- reactiveValues(x = NULL, y = NULL)# Single zoomable plot (on left)
+  observeEvent(input$eda_1d_p_violin_dblclick, {
+    brush <- input$eda_1d_p_violin_brush
+    if (!is.null(brush)) {
+      ranges_eda_1d_p_violin$x <- c(brush$xmin, brush$xmax)
+      ranges_eda_1d_p_violin$y <- c(brush$ymin, brush$ymax)
+      
+    } else {
+      ranges_eda_1d_p_violin$x <- NULL
+      ranges_eda_1d_p_violin$y <- NULL
+    }
+  })
+  output$eda_1d_p_mean <- renderPlot({
+    eda_1d_obj <- stats1dViz()
+    eda_1d_obj$p_mean+
+      coord_cartesian(xlim = ranges_eda_1d_p_mean$x, ylim = ranges_eda_1d_p_mean$y, expand = FALSE)
+  })
+  ranges_eda_1d_p_mean <- reactiveValues(x = NULL, y = NULL)# Single zoomable plot (on left)
+  observeEvent(input$eda_1d_p_mean_dblclick, {
+    brush <- input$eda_1d_p_mean_brush
+    if (!is.null(brush)) {
+      ranges_eda_1d_p_mean$x <- c(brush$xmin, brush$xmax)
+      ranges_eda_1d_p_mean$y <- c(brush$ymin, brush$ymax)
+      
+    } else {
+      ranges_eda_1d_p_mean$x <- NULL
+      ranges_eda_1d_p_mean$y <- NULL
+    }
+  })
+  output$eda_1d_p_pct <- renderPlot({
+    eda_1d_obj <- stats1dViz()
+    eda_1d_obj$p_pct+
+      coord_cartesian(xlim = ranges_eda_1d_p_pct$x, ylim = ranges_eda_1d_p_pct$y, expand = FALSE)
+  })
+  ranges_eda_1d_p_pct <- reactiveValues(x = NULL, y = NULL)# Single zoomable plot (on left)
+  observeEvent(input$eda_1d_p_pct_dblclick, {
+    brush <- input$eda_1d_p_pct_brush
+    if (!is.null(brush)) {
+      ranges_eda_1d_p_pct$x <- c(brush$xmin, brush$xmax)
+      ranges_eda_1d_p_pct$y <- c(brush$ymin, brush$ymax)
+      
+    } else {
+      ranges_eda_1d_p_pct$x <- NULL
+      ranges_eda_1d_p_pct$y <- NULL
+    }
+  })
+  output$eda_1d_p_denom <- renderPlot({
+    eda_1d_obj <- stats1dViz()
+    eda_1d_obj$p_denom+
+      coord_cartesian(xlim = ranges_eda_1d_p_denom$x, ylim = ranges_eda_1d_p_denom$y, expand = FALSE)
+  })
+  observeEvent(input$eda_1d_p_denom_dblclick, {
+    brush <- input$eda_1d_p_denom_brush
+    if (!is.null(brush)) {
+      ranges_eda_1d_p_denom$x <- c(brush$xmin, brush$xmax)
+      ranges_eda_1d_p_denom$y <- c(brush$ymin, brush$ymax)
+      
+    } else {
+      ranges_eda_1d_p_denom$x <- NULL
+      ranges_eda_1d_p_denom$y <- NULL
+    }
   })
   output$plot_2d_stats <- renderPlot({
     stats2dViz()
   })
+  
   output$plot_death_star <- renderPlot({
     starViz()+
-      coord_cartesian(xlim = ranges$x, ylim = ranges$y, expand = FALSE)
+      coord_cartesian(xlim = ranges_star$x, ylim = ranges_star$y, expand = FALSE)
   })
+  ranges_star <- reactiveValues(x = NULL, y = NULL)# Single zoomable plot (on left)
+  observeEvent(input$plot_death_star_dblclick, {
+    brush <- input$plot_death_star_brush
+    if (!is.null(brush)) {
+      ranges_star$x <- c(brush$xmin, brush$xmax)
+      ranges_star$y <- c(brush$ymin, brush$ymax)
+      
+    } else {
+      ranges_star$x <- NULL
+      ranges_star$y <- NULL
+    }
+  })
+  
   output$plot_alluvial <- renderPlot({
     alluvialViz()
   })
@@ -481,5 +590,40 @@ shinyServer(function(input, output, session) {
   
   
   # ---- 3. unsupervised ml ----
-
+  # setup ----
+  output$dictionary_table_unml <- renderDataTable(dict_unml[which(dict_unml$source_file!=""),c("source_file","varname","label_front","type","unit","mlrole")])
+  
+  # kmeans clustering ---
+  output$unml_wss_plot <- renderPlot({
+    clst_obj <- MLuns_cluster()
+    wss <- clst_obj$wss
+    par(mfrow=c(2,2))
+    plot(1:clst_obj$nc_max, wss, type="b", xlab="Number of Clusters",
+         ylab="Within groups sum of squares")
+    plot(1:clst_obj$nc_max, log(wss), type="b", xlab="Number of Clusters",
+         ylab="log of Within groups sum of squares")
+    plot(2:clst_obj$nc_max, diff(wss), type="b", xlab="Number of Clusters",
+         ylab="diff( Within groups sum of squares )")
+    plot(2:clst_obj$nc_max, diff(log(wss)), type="b", xlab="Number of Clusters",
+         ylab="diff( log of Within groups sum of squares )")
+  })
+  
+  output$unml_cluster_pca_plot <- renderPlot({
+    clst_obj <- MLuns_cluster()
+    clst_obj$cluster_pca_plot 
+  })
+  output$unml_df_cluster_info <- renderDataTable({
+    clst_obj <- MLuns_cluster()
+    clst_obj$df_cluster_info 
+  })
+  output$unml_df_minor_org_trace <- renderDataTable({
+    clst_obj <- MLuns_cluster()
+    clst_obj$df_minor_org_trace 
+  })
+  output$unml_dict_df_org_clustered <- renderDataTable({
+    clst_obj <- MLuns_cluster()
+    clst_obj$dict_df_org_clustered
+  })
+  
+  
 })

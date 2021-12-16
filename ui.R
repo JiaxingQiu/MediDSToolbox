@@ -53,7 +53,7 @@ sidebar <- dashboardSidebar(
                                                        multiple = TRUE,
                                                        choices = dict_viz$label_front[which(dict_viz$type=="num")],
                                                        selected = NULL) ),
-                           column(width=4, checkboxInput("eda_coerce","merge",value = FALSE))
+                           column(width=4, checkboxInput("eda_coerce","coerce",value = FALSE))
                          ),
                          sliderInput("eda_pctcut_num_vec",
                                      label="percentile [ from (th), to (th) ]",
@@ -137,7 +137,7 @@ sidebar <- dashboardSidebar(
              menuSubItem('Set up', tabName = 'ml_setup'),
              menuSubItem('Summary', tabName = 'ml_summ'),
              menuSubItem('Univariate Heatmap', tabName = 'ml_uni'), # univariable regression
-             menuSubItem('Feature Selection', tabName = 'ml_select'),
+             menuSubItem('Lasso Feature Selection', tabName = 'ml_select'),
              menuSubItem('Predictor Clus', tabName = 'ml_clus'),
              menuSubItem('Ridge Regression', tabName = 'ml_multi'), # multivariable regression
              menuSubItem('Regress Over Time', tabName = 'ml_timely')),
@@ -286,13 +286,76 @@ sidebar <- dashboardSidebar(
                          
         )),
     
-    # ---- 3. unsupervised ml ----
+    # ---- 3. unsupervised ml (unml) ----
     menuItem("ML (unsupervised)", tabName = "unml", startExpanded = FALSE,
              menuSubItem('Set up', tabName = 'unml_setup'),
-             menuSubItem('Clustering', tabName = 'unml_clust'),
-             menuSubItem('Outlier Detection', tabName = 'unml_outlier'),
-             menuSubItem('Group Difference', tabName = 'unml_group_diff')
-    )
+             menuSubItem('Kmeans Clustering', tabName = 'unml_cluster')
+    ),
+    ## Show panel only when sidebar is selected
+    useShinyjs(),
+    div(id = 'sidebar_unml_setup',
+        conditionalPanel("input.sidebar == 'unml_setup'",
+                         selectInput("unml_cluster_label",
+                                     "Cluster",
+                                     choices = in.unml_cluster_label),
+                         fluidRow(
+                           column(width=8,selectInput("unml_trim_by_label",
+                                                      label="Time over",
+                                                      choices = in.unml_trim_by_label,
+                                                      selected = in.unml_trim_by_label[1]) ),
+                           column(width=4, numericInput("unml_trim_time_unit", "/", in.unml_trim_time_unit) )
+                         ),
+                         sliderInput("unml_trim_vec",
+                                     label="[ from, to )",
+                                     min = 0,  max = 100, step = 1, value = c(0, 99)),
+                         fluidRow(
+                           column(width=8, selectInput("unml_pctcut_num_labels",
+                                                       label="Numeric cutoffs",
+                                                       multiple = TRUE,
+                                                       choices = dict_ml$label_front[which(dict_ml$type=="num")],
+                                                       selected = NULL) ),
+                           column(width=4, checkboxInput("unml_coerce","coerce",value = FALSE))
+                         ),
+                         sliderInput("unml_pctcut_num_vec",
+                                     label="percentile [ from (th), to (th) ]",
+                                     min = 0,  max = 100, step = 0.1, value = c(0.1, 99.9)),
+                         
+                         selectInput("unml_filter_tag_labels",
+                                     label="Binary filter(s)",
+                                     multiple = TRUE,
+                                     choices = dict_ml$label_front[which(dict_ml$unit=="tag01")],
+                                     selected = NULL),
+                         fluidRow(
+                           column(width=5,selectInput("unml_imputation",
+                                                      "Imputation",
+                                                      choices = c("Zero", "None", "Mean", "Median"),
+                                                      selected = "None") ),
+                           column(width=6,checkboxInput("unml_impute_per_cluster", "within cluster", value = FALSE))
+                         ),
+                         fluidRow(
+                           column(width=5,checkboxInput("unml_aggregation", 
+                                                        "Aggregation", 
+                                                        value = TRUE) ),
+                           column(width=5,checkboxInput("unml_winsorizing",
+                                                        "Winsorizing",
+                                                        value = FALSE))
+                         )
+        )),
+    div(id = 'sidebar_unml_cluster',
+        conditionalPanel("input.sidebar == 'unml_cluster'",
+                         sliderInput("unml_nc_vec",
+                                     label="Number of Clusters [ min, max ]",
+                                     min = 1,  max = 20, step = 1, value = c(1,10)),
+                         fluidRow(
+                           column(width=6,numericInput("unml_min_nobs_per_clst", label="Min #obs in each cluster", 1)),
+                           column(width=6,numericInput("unml_max_iter", "Max #iter to remove outliers", 5))
+                         ),
+                         selectInput("unml_input_labels",
+                                     "Predictors",
+                                     multiple = TRUE,
+                                     choices = in.unml_input_labels.choices,
+                                     selected = in.unml_input_labels.selected)
+        ))
   )
 )
 
@@ -369,7 +432,41 @@ body <- dashboardBody(
     tabItem(tabName = "eda_1dstats",
             h3("Exploratory Data Analysis -- 1D Statistics"),
             fluidRow(column(1,actionButton("eda_stats1d_go", "Go",icon=icon("play-circle")))),
-            fluidRow(plotOutput("plot_1d_stats", height = "1200px"))),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Mean", 
+                                 plotOutput("eda_1d_p_mean",
+                                            height = "400px",
+                                            dblclick = "eda_1d_p_mean_dblclick",
+                                            brush = brushOpts(
+                                              id = "eda_1d_p_mean_brush",
+                                              resetOnNew = TRUE))
+                        ),
+                        tabPanel("Percentiles", 
+                                 plotOutput("eda_1d_p_pct",
+                                            height = "400px",
+                                            dblclick = "eda_1d_p_pct_dblclick",
+                                            brush = brushOpts(
+                                              id = "eda_1d_p_pct_brush",
+                                              resetOnNew = TRUE))
+                        ),
+                        tabPanel("Denomenator", 
+                                 plotOutput("eda_1d_p_denom",
+                                            height = "400px",
+                                            dblclick = "eda_1d_p_denom_dblclick",
+                                            brush = brushOpts(
+                                              id = "eda_1d_p_denom_brush",
+                                              resetOnNew = TRUE))
+                        ),
+                        tabPanel("Violin+Box", 
+                                 plotOutput("eda_1d_p_violin",
+                                            height = "400px",
+                                            dblclick = "eda_1d_p_violin_dblclick",
+                                            brush = brushOpts(
+                                              id = "eda_1d_p_violin_brush",
+                                              resetOnNew = TRUE))
+                        )
+            )
+    ),
     tabItem(tabName = "eda_2dstats",
             h3("Exploratory Data Analysis -- 2D Statistics"),
             fluidRow(column(1,actionButton("eda_stats2d_go", "Go",icon=icon("play-circle")))),
@@ -455,19 +552,28 @@ body <- dashboardBody(
                                  tableOutput("timely_infer_table") )
             )
     ),
-    # ---- 3. ml (unsupervised) ----
+    # ---- 3. unml (unsupervised) ----
     tabItem(tabName = "unml_setup",
             h3("Machine Learning (unsupervised)"),
-            p("Under construction, visit 'About' page for objectives.")),
-    tabItem(tabName = "unml_clust",
+            fluidRow(dataTableOutput("dictionary_table_unml")) 
+    ),
+    tabItem(tabName = "unml_cluster",
             h3("Machine Learning (unsupervised) -- Clustering"),
-            p("Under construction, visit 'About' page for objectives.")),
-    tabItem(tabName = "unml_outlier",
-            h3("Machine Learning (unsupervised) -- Outlier Detection"),
-            p("Under construction, visit 'About' page for objectives.")),
-    tabItem(tabName = "unml_group_diff",
-            h3("Machine Learning (unsupervised) -- Group Differences"),
-            p("Under construction, visit 'About' page for objectives."))
+            fluidRow(column(1,actionButton("umml_cluster_go", "Go",icon=icon("play-circle")))),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Trace",
+                                 plotOutput("unml_wss_plot") ),
+                        tabPanel("Centriods", 
+                                 plotOutput("unml_cluster_pca_plot"),
+                                 dataTableOutput("unml_df_cluster_info") ),
+                        tabPanel("Abnormal",
+                                 dataTableOutput("unml_df_minor_org_trace") )
+                        # ,
+                        # tabPanel('Labeled dict',
+                        #          dataTableOutput("unml_dict_df_org_clustered") )
+            )
+            
+    )
     
    # ----- 4. other businesses ---- 
   )

@@ -1,4 +1,6 @@
-do_x_select <- function(
+library(glmnet)
+library(vip)
+lss_x_select <- function(
   data=data, 
   dict_data=dict_data, 
   y_col = y_col,
@@ -94,8 +96,8 @@ do_x_select <- function(
   abline(v = log(ridge_cv$lambda.1se), col = "blue", lty = "dashed")
   
   #  ----- train optimal lambda models ----
-  lasso_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize, lambda = lasso_cv$lambda.min)
-  ridge_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize, lambda = ridge_cv$lambda.min)
+  lasso_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize, lambda = lasso_cv$lambda.1se)
+  ridge_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize, lambda = ridge_cv$lambda.1se)
   # plot variable importance (coefficients) on final model obj
   vip::vip(lasso_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
   vip::vip(ridge_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
