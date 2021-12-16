@@ -277,8 +277,8 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_timely',
         conditionalPanel("input.sidebar == 'ml_timely'",
-                         numericInput("window_size", "Window size", 1),
-                         numericInput("step_size", "Step size", 1)
+                         numericInput("ml_window_size", "Window size", 1),
+                         numericInput("ml_step_size", "Step size", 1)
                          #helpText("Window size defines the length of data inputted to each model."),
                          #helpText("Step size defines the gap between two neighbour windows."),
                          #helpText("Time models are trained and validated at given 'Trim by' time points between '[from,to)' you defined in the 'Setup' page."),
