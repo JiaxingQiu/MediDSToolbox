@@ -137,7 +137,7 @@ sidebar <- dashboardSidebar(
              menuSubItem('Set up', tabName = 'ml_setup'),
              menuSubItem('Summary', tabName = 'ml_summ'),
              menuSubItem('Univariate Heatmap', tabName = 'ml_uni'), # univariable regression
-             menuSubItem('Lasso Feature Selection', tabName = 'ml_select'),
+             menuSubItem('Feature Selection', tabName = 'ml_select'),
              menuSubItem('Predictor Clus', tabName = 'ml_clus'),
              menuSubItem('Ridge Regression', tabName = 'ml_multi'), # multivariable regression
              menuSubItem('Regress Over Time', tabName = 'ml_timely')),

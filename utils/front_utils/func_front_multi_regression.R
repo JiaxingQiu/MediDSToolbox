@@ -111,7 +111,7 @@ front_multi_regression <- function(data = data_ml,
     if(length(fct_cols)>0){
       df_fct <- data %>% group_by(data[,cluster_col]) %>% 
         summarise_at(vars(fct_cols), ~max(.,na.rm = TRUE)) %>%
-        mutate_all(function(x) ifelse(is.infinite(x), 0, x)) %>%
+        mutate_at(vars(fct_cols), function(x) ifelse(is.infinite(x), 0, x)) %>%
         as.data.frame()
       colnames(df_fct) <- c(cluster_col, fct_cols)
     }
