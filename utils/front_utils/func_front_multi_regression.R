@@ -1,28 +1,37 @@
-front_multi_regression <- function(data = data_ml,
-                                   dict_data=dict_ml,
-                                   trim_by_label="Post-menstrual Age",
-                                   trim_vec = c(22, 40),
-                                   time_unit=7,
-                                   x_labels=c(c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day", "Birth weight"),"baby_insurance", "Mode of respiratory support (Positive Airway Pressure) without endotracheal tube (EN)___Nasal Cannula with flow"), 
-                                   y_label="Primary outcome (EN)___Unfavorable", 
-                                   cluster_label="PreVent study ID",
-                                   r2=0.9,
-                                   rcs5_low="70%",
-                                   rcs4_low="50%",
-                                   cv_nfold=5, 
-                                   na_frac_max=0.3, 
-                                   test_data=NULL, 
-                                   num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
-                                   num_col2_label="None",
-                                   imputation="None",
-                                   impute_per_cluster=FALSE,
-                                   winsorizing=FALSE,
-                                   aggregation=FALSE,
-                                   stratified_cv=TRUE,
-                                   r_abs=0.8, 
-                                   type=c("pearson","spearman")[1],
-                                   rank=TRUE,
-                                   seed_value=333){
+front_multi_regression <- function(
+  data = data_ml,
+  dict_data=dict_ml,
+  trim_by_label="Post-menstrual Age",
+  trim_vec = c(22, 40),
+  time_unit=7,
+  x_labels_linear=c("Gestational Age", "pH associated with highest CO2 on blood gas"),
+  x_labels_nonlin_rcs5=c("Maternal age"),
+  x_labels_nonlin_rcs4=c("Gestational Age"),
+  x_labels_nonlin_rcs3=c("Birth weight"),
+  x_labels_fct = c("Site (EN)"),
+  x_labels_tag = c("Baby Gender (EN)___Female"),
+  x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
+  y_label="Primary outcome (EN)___Unfavorable", 
+  cluster_label="PreVent study ID",
+  r2=0.9,
+  rcs5_low="70%",
+  rcs4_low="50%",
+  cv_nfold=5, 
+  na_frac_max=0.3, 
+  test_data=NULL, 
+  num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
+  num_col2_label="None",
+  imputation="None",
+  impute_per_cluster=FALSE,
+  winsorizing=FALSE,
+  aggregation=FALSE,
+  stratified_cv=TRUE,
+  r_abs=0.8, 
+  type=c("pearson","spearman")[1],
+  rank=TRUE,
+  seed_value=333,
+  fix_knots = FALSE
+){
   
   
   set.seed(seed = seed_value)
@@ -30,6 +39,12 @@ front_multi_regression <- function(data = data_ml,
   
   # ---- pre-process ----
   x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
+  x_cols_linear <- rownames(dict_data[which(dict_data$label_front%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num"), ]) # linear numeric columns
+  x_cols_nonlin_rcs5 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs5&dict_data$mlrole=="input"&dict_data$type=="num"), ])
+  x_cols_nonlin_rcs4 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs4&dict_data$mlrole=="input"&dict_data$type=="num"), ])
+  x_cols_nonlin_rcs3 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs3&dict_data$mlrole=="input"&dict_data$type=="num"), ])
+  x_cols_fct <- rownames(dict_data[which(dict_data$label_front%in%x_labels_fct & dict_data$type=="fct" & dict_data$unit!="tag01" & dict_data$mlrole=="input"), ])
+  x_cols_tag <- rownames(dict_data[which(dict_data$label_front%in%x_labels_tag & dict_data$type=="fct" & dict_data$unit=="tag01" & dict_data$mlrole=="input"), ])
   num_cols <- intersect(x_cols, rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]))
   fct_cols <- setdiff(x_cols, num_cols)
   y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
@@ -140,6 +155,12 @@ front_multi_regression <- function(data = data_ml,
     results <- do_lrm_pip(data=data, 
                           data_org=data_org,
                           dict_data=dict_data,
+                          x_cols_linear=x_cols_linear,
+                          x_cols_nonlin_rcs5=x_cols_nonlin_rcs5,
+                          x_cols_nonlin_rcs4=x_cols_nonlin_rcs4,
+                          x_cols_nonlin_rcs3=x_cols_nonlin_rcs3,
+                          x_cols_fct=x_cols_fct,
+                          x_cols_tag=x_cols_tag,
                           x_cols=x_cols, 
                           y_col=y_col, 
                           cluster_col=cluster_col,
@@ -154,7 +175,8 @@ front_multi_regression <- function(data = data_ml,
                           stratified_cv=stratified_cv,
                           r_abs=r_abs, 
                           type=type,
-                          rank=rank)
+                          rank=rank,
+                          fix_knots=fix_knots)
     
   }else if(dict_data[y_col, "type"]=="num"){
     results <- do_ols_pip(data=data, 

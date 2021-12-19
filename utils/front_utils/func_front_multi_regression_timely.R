@@ -1,31 +1,39 @@
-front_multi_regression_timely <- function(data = subset_df(data_ml, "40w"),
-                                           dict_data=dict_ml,
-                                           trim_by_label="Post-menstrual Age",
-                                           trim_vec = c(24, 38), # trim vec controls the beginning and the end of models
-                                           time_unit=7,
-                                           x_labels=c(c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day", "Birth weight"),"baby_insurance", "Mode of respiratory support (Positive Airway Pressure) without endotracheal tube (EN)___Nasal Cannula with flow"), 
-                                           y_label="Primary outcome (EN)___Unfavorable", 
-                                           cluster_label="PreVent study ID",
-                                           r2=0.9,
-                                           rcs5_low="0%",
-                                           rcs4_low="0%",
-                                           cv_nfold=5, 
-                                           na_frac_max=1, 
-                                           test_data=NULL, 
-                                           num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
-                                           num_col2_label="None",
-                                           imputation="Zero",
-                                           impute_per_cluster=FALSE,
-                                           winsorizing=FALSE,
-                                           aggregation=FALSE,
-                                           stratified_cv=FALSE,
-                                           r_abs=0.8, 
-                                           type=c("pearson","spearman")[1],
-                                           rank=TRUE,
-                                           seed_value=333,
-                                           window_size=2, # the length of each window
-                                           step_size=2 # each beginning of the window increase by step_size
-                                           ){
+front_multi_regression_timely <- function(
+  data = subset_df(data_ml, "40w"),
+  dict_data=dict_ml,
+  trim_by_label="Post-menstrual Age",
+  trim_vec = c(24, 38), # trim vec controls the beginning and the end of models
+  time_unit=7,
+  x_labels_linear=c("Gestational Age", "pH associated with highest CO2 on blood gas"),
+  x_labels_nonlin_rcs5=c("Maternal age"),
+  x_labels_nonlin_rcs4=c("Gestational Age"),
+  x_labels_nonlin_rcs3=c("Birth weight"),
+  x_labels_fct = c("Site (EN)"),
+  x_labels_tag = c("Baby Gender (EN)___Female"),
+  x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
+  y_label="Primary outcome (EN)___Unfavorable", 
+  cluster_label="PreVent study ID",
+  r2=0.9,
+  rcs5_low="0%",
+  rcs4_low="0%",
+  cv_nfold=5, 
+  na_frac_max=1, 
+  test_data=NULL, 
+  num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
+  num_col2_label="None",
+  imputation="Zero",
+  impute_per_cluster=FALSE,
+  winsorizing=FALSE,
+  aggregation=FALSE,
+  stratified_cv=FALSE,
+  r_abs=0.8, 
+  type=c("pearson","spearman")[1],
+  rank=TRUE,
+  seed_value=333,
+  window_size=2, # the length of each window
+  step_size=2, # each beginning of the window increase by step_size
+  fix_knots=FALSE
+){
   
   # prepare start window points for each model trim_vec
   min_trim_start <- max(floor( min(data[,dict_ml$varname[which(dict_ml$label_front==trim_by_label)]]/time_unit, na.rm=TRUE) ), trim_vec[1], na.rm = TRUE)
@@ -48,7 +56,13 @@ front_multi_regression_timely <- function(data = subset_df(data_ml, "40w"),
                                           dict_data = dict_data,
                                           trim_by_label=trim_by_label, 
                                           trim_vec=as.numeric(trim_vec), 
-                                          x_labels=x_labels, 
+                                          x_labels_linear=x_labels_linear,
+                                          x_labels_nonlin_rcs5=x_labels_nonlin_rcs5,
+                                          x_labels_nonlin_rcs4=x_labels_nonlin_rcs4,
+                                          x_labels_nonlin_rcs3=x_labels_nonlin_rcs3,
+                                          x_labels_fct = x_labels_fct,
+                                          x_labels_tag = x_labels_tag,
+                                          x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
                                           y_label=y_label, 
                                           cluster_label=cluster_label,
                                           rcs5_low=rcs5_low,
@@ -67,7 +81,8 @@ front_multi_regression_timely <- function(data = subset_df(data_ml, "40w"),
                                           r2=r2,
                                           type=type,
                                           rank=rank,
-                                          seed_value=seed_value) 
+                                          seed_value=seed_value,
+                                          fix_knots = fix_knots) 
       
       
       # observation frequency

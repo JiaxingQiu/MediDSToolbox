@@ -215,6 +215,12 @@ shinyServer(function(input, output, session) {
                            dict_data = dict_ml,
                            trim_by_label=input$ml_trim_by_label, 
                            trim_vec=as.numeric(input$ml_trim_vec), 
+                           x_labels_linear=input$ml_linear_num_labels,
+                           x_labels_nonlin_rcs5 = input$ml_nonlin_rcs5_labels,
+                           x_labels_nonlin_rcs4 = input$ml_nonlin_rcs4_labels,
+                           x_labels_nonlin_rcs3 = input$ml_nonlin_rcs3_labels,
+                           x_labels_fct = input$ml_fct_labels_mdl,
+                           x_labels_tag = input$ml_tag_labels_mdl,
                            x_labels=unique(c(input$ml_tag_labels_mdl, input$ml_fct_labels_mdl,input$ml_linear_num_labels,input$ml_nonlin_rcs3_labels,input$ml_nonlin_rcs4_labels,input$ml_nonlin_rcs5_labels)), 
                            y_label=input$ml_y_label, 
                            cluster_label=input$ml_cluster_label,
@@ -233,8 +239,7 @@ shinyServer(function(input, output, session) {
                            r_abs=input$ml_r_abs, 
                            r2=input$ml_r2,
                            type=input$ml_type,
-                           rank=FALSE,
-                           seed_value=333) 
+                           fix_knots = input$ml_fix_knots) 
   })
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {
@@ -242,6 +247,12 @@ shinyServer(function(input, output, session) {
                                   dict_data = dict_ml,
                                   trim_by_label=input$ml_trim_by_label, 
                                   trim_vec=as.numeric(input$ml_trim_vec), 
+                                  x_labels_linear=input$ml_linear_num_labels,
+                                  x_labels_nonlin_rcs5 = input$ml_nonlin_rcs5_labels,
+                                  x_labels_nonlin_rcs4 = input$ml_nonlin_rcs4_labels,
+                                  x_labels_nonlin_rcs3 = input$ml_nonlin_rcs3_labels,
+                                  x_labels_fct = input$ml_fct_labels_mdl,
+                                  x_labels_tag = input$ml_tag_labels_mdl,
                                   x_labels=unique(c(input$ml_tag_labels_mdl, input$ml_fct_labels_mdl,input$ml_linear_num_labels,input$ml_nonlin_rcs3_labels,input$ml_nonlin_rcs4_labels,input$ml_nonlin_rcs5_labels)), 
                                   y_label=input$ml_y_label, 
                                   cluster_label=input$ml_cluster_label,
@@ -260,10 +271,9 @@ shinyServer(function(input, output, session) {
                                   r_abs=input$ml_r_abs, 
                                   r2=input$ml_r2,
                                   type=input$ml_type,
-                                  rank=FALSE,
-                                  seed_value=333,
                                   window_size = input$ml_window_size,
-                                  step_size = input$ml_step_size) 
+                                  step_size = input$ml_step_size,
+                                  fix_knots = input$ml_fix_knots) 
   })
   # ---- 3. unsupervised ml ----
   observeEvent(input$unml_trim_by_label, {

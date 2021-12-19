@@ -267,9 +267,14 @@ sidebar <- dashboardSidebar(
                                       choices = c("1", "2", "5", "10"),
                                       selected = c("10"),
                                       inline = TRUE),
-                         checkboxInput("ml_stratified_cv", 
-                                       "Stratified CV", 
-                                       value = TRUE),
+                         fluidRow(
+                           column(width=6,checkboxInput("ml_fix_knots", 
+                                                        "Fix # Knots", 
+                                                        value = TRUE) ),
+                           column(width=6,checkboxInput("ml_stratified_cv", 
+                                                        "Stratified CV", 
+                                                        value = TRUE))
+                         ),
                          selectInput("ml_num_col2_label",
                                      "Joint effect (continuous predictors only)",
                                      choices = in.ml_num_col2_label)
