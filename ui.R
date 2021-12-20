@@ -547,7 +547,8 @@ body <- dashboardBody(
                                  tableOutput("cv_eval_trace_tbl")
                         ),
                         tabPanel("EX-Validation",
-                                 tableOutput("test_tbl")
+                                 tableOutput("test_tbl"),
+                                 dataTableOutput("test_data")
                         )
             )
     ),

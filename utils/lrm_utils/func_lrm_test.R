@@ -6,6 +6,7 @@ lrm_test <- function(
 ){
   res_df <- NULL
   if(!is.null(test_data)){
+    summary(test_data)
     y_prob <- as.numeric(predict(mdl_obj, test_data))
     y_pred <- as.numeric(ifelse(y_prob<=threshold,0,1))
     y_true <- as.numeric(test_data[,y_col])

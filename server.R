@@ -585,6 +585,16 @@ shinyServer(function(input, output, session) {
     MLreports <- MLreports()
     MLreports$test_tbl # external test score table
   })
+  output$test_data <- renderDataTable({
+    test_data <- NULL
+    if(!is.null(input$ex_test_csv)){
+      ext <- tools::file_ext(input$ex_test_csv$datapath)
+      req(input$ex_test_csv)
+      try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+      test_data <- read.csv(input$ex_test_csv$datapath)
+    }
+    head(test_data,10)
+  })
   # Timely Models ----
   output$timely_freq_plot <- renderPlot({
     MLreports_timely <- MLreports_timely()
