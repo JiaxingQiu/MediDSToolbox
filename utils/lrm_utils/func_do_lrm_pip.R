@@ -66,7 +66,11 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
   dict_df <- get.dict(df)
   print(dict_df)
   print("--- do_lrm_cv ---")
-  model_obj <- do_lrm_cv(df=df, dict_df=dict_df, cv_nfold=cv_nfold, na_frac_max=na_frac_max, external_df=test_data, stratified_cv=stratified_cv)
+  model_obj <- do_lrm_cv(df=df, 
+                         dict_df=dict_df, 
+                         cv_nfold=cv_nfold, 
+                         na_frac_max=na_frac_max, 
+                         stratified_cv=stratified_cv)
   
   # --- inference object / report ---
   infer_obj <- lrm_infer(df=df, 
@@ -77,9 +81,21 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                          penalty=model_obj$cv_obj$model_info$penalty,
                          num_col2=num_col2)
   
+  # --- external testing results ---
+  
+  test_obj <- NULL
+  try({
+    test_obj <- lrm_test(
+      test_data = test_data,
+      y_col = y_col,
+      mdl_obj = infer_obj$mdl_obj)
+  },TRUE)
+  
+  
   return(list("redun_obj"=redun_obj,
               "model_obj"=model_obj, 
               "infer_obj"=infer_obj,
+              "test_obj"=test_obj,
               "dof_obj"=dof_obj))
   
 }

@@ -172,7 +172,7 @@ sidebar <- dashboardSidebar(
                          fluidRow(
                            column(width=5,checkboxInput("ml_aggregation", 
                                                         "Aggregation", 
-                                                        value = TRUE) ),
+                                                        value = FALSE) ),
                            column(width=5,checkboxInput("ml_winsorizing",
                                                         "Winsorizing",
                                                         value = FALSE))
@@ -277,7 +277,11 @@ sidebar <- dashboardSidebar(
                          ),
                          selectInput("ml_num_col2_label",
                                      "Joint effect (continuous predictors only)",
-                                     choices = in.ml_num_col2_label)
+                                     choices = in.ml_num_col2_label),
+                         # Input: Select a file ----
+                         fileInput("ex_test_csv", "External test data (.csv)",
+                                   multiple = FALSE,
+                                   accept = c("text/csv","text/comma-separated-values,text/plain",".csv"))
                          #helpText("please refer to 'Predictor Clus' page for correlation, redundancy, missingness and complexity information within / across predictors, for advanced model structure tuning")
         )),
     div(id = 'sidebar_ml_timely',
@@ -532,16 +536,21 @@ body <- dashboardBody(
             h3("Machine Learning (supervised) -- Multivariable Regression"),
             fluidRow(column(1,actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
-                        tabPanel("Evaluation", 
-                                 tableOutput("model_tbl"),
-                                 tableOutput("score_tbl"),
-                                 tableOutput("cv_eval_trace_tbl")
-                        ),
                         tabPanel("Inference", 
                                  plotOutput("effect_plot", height = "600px"),
                                  plotOutput("infer_plot"),
                                  plotOutput("anova_plot"),
-                                 verbatimTextOutput("model_prt"))) ),
+                                 verbatimTextOutput("model_prt")),
+                        tabPanel("IN-Validation", 
+                                 tableOutput("model_tbl"),
+                                 tableOutput("score_tbl"),
+                                 tableOutput("cv_eval_trace_tbl")
+                        ),
+                        tabPanel("EX-Validation",
+                                 tableOutput("test_tbl")
+                        )
+            )
+    ),
     tabItem(tabName = "ml_timely",
             h3("Machine Learning (supervised) -- Regression over time"),
             fluidRow(column(1,actionButton("ml_timely_go", "Go",icon=icon("play-circle"))) ),

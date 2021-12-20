@@ -18,7 +18,7 @@ front_multi_regression <- function(
   rcs4_low="50%",
   cv_nfold=5, 
   na_frac_max=0.3, 
-  test_data=NULL, 
+  test_data=data_ml[58000:58994,], 
   num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
   num_col2_label="None",
   imputation="None",
@@ -32,7 +32,6 @@ front_multi_regression <- function(
   seed_value=333,
   fix_knots = FALSE
 ){
-  
   
   set.seed(seed = seed_value)
   # front end wrapper for any type of regression
@@ -226,14 +225,6 @@ front_multi_regression <- function(
                         "delete" =  "Correlation criteria delete variables --- ")
     
   }
-  # x_redun_obj <- list("obj" = results$redun_obj$redun_obj,
-  #                     "keep" = ifelse(is.null(results$redun_obj$redun_obj), "Redundancy analysis keep variables --- ", paste0("Redundancy analysis keep variables --- ",paste0(results$redun_obj$redun_obj$In,collapse = ", ")) ),
-  #                     "delete"= ifelse(is.null(results$redun_obj$redun_obj), "Redundancy analysis delete variables --- ", paste0("Redundancy analysis delete variables --- ", paste0(results$redun_obj$redun_obj$Out,collapse = ", ")) ))
-  # 
-  
-  # spearman2 rho degree of freedom object
-  dof_obj=results$dof_obj
-  print(dof_obj)
   
   return(list(effect_plot=effect_plot, 
               cali_plot=cali_plot,
@@ -244,7 +235,8 @@ front_multi_regression <- function(
               mdl_obj = mdl_obj,
               x_corre_obj = x_corre_obj,
               x_redun_obj = ifelse(is.null(results$redun_obj$redun_obj), "", results$redun_obj$redun_obj),
-              dof_obj = dof_obj
+              dof_obj = results$dof_obj,
+              test_tbl=as.data.frame(results$test_obj)
   ))
   
   

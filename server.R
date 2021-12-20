@@ -2,7 +2,7 @@ library(shinydashboard)
 library(shinyjs)
 library(shinydashboardPlus)
 library(shiny)
-
+options(shiny.maxRequestSize = 500*1024^2)
 
 shinyServer(function(input, output, session) {
   
@@ -211,6 +211,13 @@ shinyServer(function(input, output, session) {
   })
   
   MLreports <- eventReactive(input$ml_multi_go, {
+    test_data <- NULL
+    if(!is.null(input$ex_test_csv)){
+      ext <- tools::file_ext(input$ex_test_csv$datapath)
+      req(input$ex_test_csv)
+      try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+      test_data <- read.csv(input$ex_test_csv$datapath)
+    }
     front_multi_regression(data = data_ml,
                            dict_data = dict_ml,
                            trim_by_label=input$ml_trim_by_label, 
@@ -229,6 +236,7 @@ shinyServer(function(input, output, session) {
                            num_labels_linear=input$ml_linear_num_labels, 
                            num_col2_label=input$ml_num_col2_label, 
                            na_frac_max=input$ml_na_frac_max, 
+                           test_data = test_data,
                            imputation=input$ml_imputation,
                            winsorizing=input$ml_winsorizing,
                            aggregation = input$ml_aggregation,
@@ -572,6 +580,10 @@ shinyServer(function(input, output, session) {
   output$model_prt <- renderPrint({
     MLreports <- MLreports()
     print(MLreports$mdl_obj) # model score table
+  })
+  output$test_tbl <- renderTable({
+    MLreports <- MLreports()
+    MLreports$test_tbl # external test score table
   })
   # Timely Models ----
   output$timely_freq_plot <- renderPlot({
