@@ -579,7 +579,7 @@ shinyServer(function(input, output, session) {
   })
   output$model_prt <- renderPrint({
     MLreports <- MLreports()
-    print(MLreports$mdl_obj) # model score table
+    print(MLreports$mdl_obj) # model coef table
   })
   output$test_tbl <- renderTable({
     MLreports <- MLreports()
@@ -598,6 +598,26 @@ shinyServer(function(input, output, session) {
     summary(MLreports$test_data) # external test score table
     
   })
+  output$download_test_data <- downloadHandler(
+    filename = function() {
+      paste('test_data_predicted_', Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      MLreports <- MLreports()
+      write.csv(MLreports$test_data, file, row.names = FALSE)
+    }
+  )
+  output$download_mdl <- downloadHandler(
+    filename = function() {
+      paste('mdl_', Sys.Date(), ".rda")
+    },
+    content = function(file) {
+      MLreports <- MLreports()
+      saveRDS(MLreports$mdl_obj, file)
+    }
+  )
+  
+  
   # Timely Models ----
   output$timely_freq_plot <- renderPlot({
     MLreports_timely <- MLreports_timely()

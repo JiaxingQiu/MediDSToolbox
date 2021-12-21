@@ -534,7 +534,7 @@ body <- dashboardBody(
                                  plotOutput("dof_plot")))),
     tabItem(tabName = "ml_multi",
             h3("Machine Learning (supervised) -- Multivariable Regression"),
-            fluidRow(column(1,actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
+            fluidRow(column(1, actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Inference", 
                                  plotOutput("effect_plot", height = "600px"),
@@ -542,11 +542,13 @@ body <- dashboardBody(
                                  plotOutput("anova_plot"),
                                  verbatimTextOutput("model_prt")),
                         tabPanel("IN-Validation", 
+                                 downloadButton("download_mdl","Model"),
                                  tableOutput("model_tbl"),
                                  tableOutput("score_tbl"),
                                  tableOutput("cv_eval_trace_tbl")
                         ),
                         tabPanel("EX-Validation",
+                                 downloadButton("download_test_data","Y-hat"),
                                  tableOutput("test_tbl"),
                                  dataTableOutput("test_data")
                         )
