@@ -236,7 +236,8 @@ front_multi_regression <- function(
               x_corre_obj = x_corre_obj,
               x_redun_obj = ifelse(is.null(results$redun_obj$redun_obj), "", results$redun_obj$redun_obj),
               dof_obj = results$dof_obj,
-              test_tbl=as.data.frame(results$test_obj)
+              test_tbl=results$test_obj$res_df,
+              test_data=results$test_obj$test_data
   ))
   
   

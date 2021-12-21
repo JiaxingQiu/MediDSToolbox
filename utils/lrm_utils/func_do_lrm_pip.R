@@ -84,12 +84,14 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
   # --- external testing results ---
   
   test_obj <- NULL
-  try({
+  tryCatch({
     test_obj <- lrm_test(
       test_data = test_data,
       y_col = y_col,
       mdl_obj = infer_obj$mdl_obj)
-  },TRUE)
+  },error=function(e){
+    print(e)
+  })
   
   
   return(list("redun_obj"=redun_obj,
