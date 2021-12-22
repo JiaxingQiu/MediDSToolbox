@@ -139,8 +139,8 @@ sidebar <- dashboardSidebar(
              menuSubItem('Univariate Heatmap', tabName = 'ml_uni'), # univariable regression
              menuSubItem('Feature Selection', tabName = 'ml_select'),
              menuSubItem('Predictor Clus', tabName = 'ml_clus'),
-             menuSubItem('Ridge Regression', tabName = 'ml_multi'), # multivariable regression
-             menuSubItem('Regress Over Time', tabName = 'ml_timely')),
+             menuSubItem('Regression', tabName = 'ml_multi'), # multivariable regression
+             menuSubItem('Regression over Time', tabName = 'ml_timely')),
     ## Show panel only when sidebar is selected
     useShinyjs(),
     div(id = 'sidebar_ml_setup',
@@ -286,8 +286,16 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_timely',
         conditionalPanel("input.sidebar == 'ml_timely'",
-                         numericInput("ml_window_size", "Window size", 1),
-                         numericInput("ml_step_size", "Step size", 1)
+                         h5("-- Train & Validation --"),
+                         fluidRow(
+                           column(width=5, numericInput("ml_window_size", "Window size", 1)),
+                           column(width=5, numericInput("ml_step_size", "Step", 1))
+                         ),
+                         h5("-- Forecast --"),
+                         fluidRow(
+                           column(width=5, numericInput("ml_test_size", "Test size", 1)),
+                           column(width=5, numericInput("ml_lag_size", "Lag", 1))
+                         )
                          #helpText("Window size defines the length of data inputted to each model."),
                          #helpText("Step size defines the gap between two neighbour windows."),
                          #helpText("Time models are trained and validated at given 'Trim by' time points between '[from,to)' you defined in the 'Setup' page."),
@@ -541,13 +549,13 @@ body <- dashboardBody(
                                  plotOutput("infer_plot"),
                                  plotOutput("anova_plot"),
                                  verbatimTextOutput("model_prt")),
-                        tabPanel("IN-Validation", 
+                        tabPanel("Internal Validation", 
                                  downloadButton("download_mdl","Model"),
                                  tableOutput("model_tbl"),
                                  tableOutput("score_tbl"),
                                  tableOutput("cv_eval_trace_tbl")
                         ),
-                        tabPanel("EX-Validation",
+                        tabPanel("External Validation",
                                  downloadButton("download_test_data","Y-hat (engineered)"),
                                  downloadButton("download_test_data_org","Y-hat (original)"),
                                  tableOutput("test_tbl"),
@@ -562,7 +570,7 @@ body <- dashboardBody(
                         tabPanel("Distribution",
                                  plotOutput("timely_freq_plot"), 
                                  tableOutput("timely_freq_table") ),
-                        tabPanel("Scores", 
+                        tabPanel("Performance", 
                                  plotOutput("timely_score_plot"),
                                  tableOutput("timely_score_table") ),
                         tabPanel("Chi-Square", 
