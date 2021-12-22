@@ -18,7 +18,7 @@ front_multi_regression <- function(
   rcs4_low="50%",
   cv_nfold=5, 
   na_frac_max=0.3, 
-  test_data=data_ml[58000:58994,], 
+  test_data=NULL, 
   num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
   num_col2_label="None",
   imputation="None",
@@ -57,9 +57,10 @@ front_multi_regression <- function(
   data_org$rel_time <-  unlist(data_org %>%
     group_by(cluster_id) %>%
     group_map(~(.x[,rel_time_col] - max(.x[,rel_time_col],na.rm=TRUE)) ), use.names = FALSE)
-  
   data_org <- assign.dict(data_org, dict_data)
   data_org <- data_org %>% filter(data_org[,trim_by_col]>=trim_vec[1]*time_unit & data_org[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+  
+  # --- preprocess data ----
   data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
   data$cluster_id <- data[,cluster_col]
   # impute numeric inputs
@@ -96,7 +97,6 @@ front_multi_regression <- function(
       }
     }
   }
-  
   
   # winsorize numeric columns
   if(winsorizing){
@@ -148,6 +148,105 @@ front_multi_regression <- function(
   data <- assign.dict(data, dict_data)
   
   
+  # --- preprocessing test data if given ---
+  if (!is.null(test_data)){
+    # save non-engineered test dataset in a original data
+    test_data_org <- test_data
+    # keep internal data
+    data_internal <- data
+    # reassign data(tmp) by test data
+    data <- test_data
+    data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+    data$cluster_id <- data[,cluster_col]
+    # impute numeric inputs
+    if(!impute_per_cluster){
+      if(imputation=="Mean"){
+        data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+      }
+      if(imputation=="Median"){
+        data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+      }
+      if(imputation=="Zero"){
+        data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+      }
+    }else{
+      if(imputation=="Mean"){
+        for(sbj in unique(data[,cluster_col]) ){
+          for(col in num_cols){
+            data[which(data[,cluster_col]==sbj & is.na(data[,col])), col] <- mean(data[which(data[,cluster_col]==sbj), col], na.rm=TRUE)
+          }
+        }
+      }
+      if(imputation=="Median"){
+        for(sbj in unique(data[,cluster_col]) ){
+          for(col in num_cols){
+            data[which(data[,cluster_col]==sbj & is.na(data[,col])), col] <- median(data[which(data[,cluster_col]==sbj), col], na.rm=TRUE)
+          }
+        }
+      }
+      if(imputation=="Zero"){
+        for(sbj in unique(data[,cluster_col]) ){
+          for(col in num_cols){
+            data[which(data[,cluster_col]==sbj & is.na(data[,col])), col] <- 0
+          }
+        }
+      }
+    }
+    
+    # winsorize numeric columns
+    if(winsorizing){
+      data[,num_cols] <- winsorize(data[,num_cols])
+    }
+    # aggregation if required
+    if(aggregation){
+      df_y <- NULL
+      df_fct <- NULL
+      df_num <- NULL
+      
+      # y tag - max 
+      if(dict_data[y_col, "type"]=="num"){
+        df_y <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(y_col), ~mean(.,na.rm = TRUE)) %>% as.data.frame()
+        colnames(df_y) <- c(cluster_col, y_col)
+      }else if(dict_data[y_col, "type"]=="fct"){
+        df_y <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(y_col), ~max(.,0,na.rm = TRUE)) %>% as.data.frame()
+        colnames(df_y) <- c(cluster_col, y_col) 
+      }
+      # x num - mean
+      if(length(num_cols)>0){
+        df_num <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(num_cols), ~mean(.,na.rm = TRUE)) %>% as.data.frame()
+        colnames(df_num) <- c(cluster_col, num_cols)
+      }
+      #x fct - max
+      if(length(fct_cols)>0){
+        df_fct <- data %>% group_by(data[,cluster_col]) %>% 
+          summarise_at(vars(fct_cols), ~max(.,na.rm = TRUE)) %>%
+          mutate_at(vars(fct_cols), function(x) ifelse(is.infinite(x), 0, x)) %>%
+          as.data.frame()
+        colnames(df_fct) <- c(cluster_col, fct_cols)
+      }
+      data <- df_y
+      if (!is.null(df_fct)){
+        data <- merge(data, df_fct)
+      }
+      if (!is.null(df_num)){
+        data <- merge(data, df_num)
+      }
+    }
+    linear_cols <- NULL
+    if(!is.null(num_labels_linear)){
+      linear_cols <- rownames(dict_data[which(dict_data$label_front%in%num_labels_linear), ])
+    }
+    num_col2 <- NULL
+    if(num_col2_label!="None"){
+      num_col2 <- rownames(dict_data[which(dict_data$label_front==num_col2_label[1]),])
+    }
+    data <- assign.dict(data, dict_data)
+    # reassign temporary data to test_data
+    test_data <- data
+    
+    # keep data as internal training data
+    data <- data_internal
+  }
   
   #  --- run corresponding models --- 
   if(dict_data[y_col, "type"]=="fct"){
@@ -168,6 +267,7 @@ front_multi_regression <- function(
                           rcs4_low=rcs4_low,
                           cv_nfold=cv_nfold,
                           test_data=test_data, 
+                          test_data_org=test_data_org,
                           na_frac_max=na_frac_max, 
                           linear_cols=linear_cols,
                           num_col2=num_col2,
@@ -237,7 +337,8 @@ front_multi_regression <- function(
               x_redun_obj = ifelse(is.null(results$redun_obj$redun_obj), "", results$redun_obj$redun_obj),
               dof_obj = results$dof_obj,
               test_tbl=results$test_obj$res_df,
-              test_data=results$test_obj$test_data
+              test_data=results$test_obj$test_data,
+              test_data_org=results$test_obj$test_data_org
   ))
   
   

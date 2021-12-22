@@ -548,9 +548,10 @@ body <- dashboardBody(
                                  tableOutput("cv_eval_trace_tbl")
                         ),
                         tabPanel("EX-Validation",
-                                 downloadButton("download_test_data","Y-hat"),
+                                 downloadButton("download_test_data","Y-hat (engineered)"),
+                                 downloadButton("download_test_data_org","Y-hat (original)"),
                                  tableOutput("test_tbl"),
-                                 dataTableOutput("test_data")
+                                 dataTableOutput("test_data_org")
                         )
             )
     ),

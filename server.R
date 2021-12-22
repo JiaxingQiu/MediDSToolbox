@@ -585,26 +585,27 @@ shinyServer(function(input, output, session) {
     MLreports <- MLreports()
     MLreports$test_tbl # external test score table
   })
-  output$test_data <- renderDataTable({
-    # test_data <- NULL
-    # if(!is.null(input$ex_test_csv)){
-    #   ext <- tools::file_ext(input$ex_test_csv$datapath)
-    #   req(input$ex_test_csv)
-    #   try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
-    #   test_data <- read.csv(input$ex_test_csv$datapath)
-    # }
-    # summary(test_data)
+  output$test_data_org <- renderDataTable({
     MLreports <- MLreports()
-    summary(MLreports$test_data) # external test score table
+    summary(MLreports$test_data_org) # external test score table
     
   })
   output$download_test_data <- downloadHandler(
     filename = function() {
-      paste('test_data_predicted_', Sys.Date(), ".csv", sep = "")
+      paste('test_data_yhat_engineered_', Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
       MLreports <- MLreports()
       write.csv(MLreports$test_data, file, row.names = FALSE)
+    }
+  )
+  output$download_test_data_org <- downloadHandler(
+    filename = function() {
+      paste('test_data_yhat_original_', Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      MLreports <- MLreports()
+      write.csv(MLreports$test_data_org, file, row.names = FALSE)
     }
   )
   output$download_mdl <- downloadHandler(

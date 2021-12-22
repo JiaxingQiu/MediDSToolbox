@@ -14,7 +14,8 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                        rcs5_low="70%", # knots to use talk to matthew (AIC? BIC? )
                        rcs4_low="50%",
                        cv_nfold=5,
-                       test_data=NULL, 
+                       test_data=NULL, # test data that is engineered same way as training dataset
+                       test_data_org = NULL,
                        na_frac_max=0.3, 
                        linear_cols=NULL,
                        num_col2=NULL,
@@ -87,6 +88,7 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
   tryCatch({
     test_obj <- lrm_test(
       test_data = test_data,
+      test_data_org = test_data_org,
       y_col = y_col,
       mdl_obj = infer_obj$mdl_obj)
   },error=function(e){
