@@ -136,7 +136,7 @@ sidebar <- dashboardSidebar(
     menuItem("ML (supervised)", tabName = "ml", startExpanded = FALSE,
              menuSubItem('Set up', tabName = 'ml_setup'),
              menuSubItem('Summary', tabName = 'ml_summ'),
-             menuSubItem('Univariate Heatmap', tabName = 'ml_uni'), # univariable regression
+             menuSubItem('Univariate Effect', tabName = 'ml_uni'), # univariable regression
              menuSubItem('Feature Selection', tabName = 'ml_select'),
              menuSubItem('Predictor Clus', tabName = 'ml_clus'),
              menuSubItem('Regression', tabName = 'ml_multi'), # multivariable regression
@@ -239,24 +239,24 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_clus',
         conditionalPanel("input.sidebar == 'ml_clus'",
-                         helpText("--- Correlation ---"),
+                         helpText(">>> ------ Correlation ------"),
                          selectInput("ml_type",
                                      label = NULL,
-                                     choices = c("spearman","pearson")),
+                                     choices = c("pearson","spearman")),
                          sliderInput("ml_r_abs",
-                                     label = "Cutoff (pearson r / spearman rho)",
+                                     label = "Max |pearson r| or |spearman rho|",
                                      min = 0,  max = 1, step = 0.05, value = 0.9),
-                         helpText("--- Redundancy ---"),
+                         helpText(">>> ------ Redundancy ------"),
                          sliderInput("ml_r2",
-                                     label = "Cutoff (R2)",
+                                     label = "Max spearman rho^2",
                                      min = 0,  max = 1, step = 0.05, value = 0.9),
-                         helpText("--- Missingness ---"),
+                         helpText(">>> ------ Missingness ------"),
                          sliderInput("ml_na_frac_max",
                                      "Max NA fraction",
                                      min = 0,  max = 1, step = 0.1, value = 0.5),
-                         helpText("--- Spearman2 dof ---"),
+                         helpText(">>> ------ Degree of Freedom ------"),
                          sliderInput("ml_rcs_vec",
-                                     label="Rcs knots breaks (r2 in percentile)",
+                                     label="# knots breaks by rho^2 rank",
                                      min = 0,  max = 100, step = 5, value = c(30, 50))
         )),
     div(id = 'sidebar_ml_multi',
@@ -275,31 +275,26 @@ sidebar <- dashboardSidebar(
                                                         "Stratified CV", 
                                                         value = TRUE))
                          ),
-                         selectInput("ml_num_col2_label",
-                                     "Joint effect (continuous predictors only)",
-                                     choices = in.ml_num_col2_label),
                          # Input: Select a file ----
-                         fileInput("ex_test_csv", "External test data (.csv)",
+                         fileInput("ex_test_csv", "External CSV",
                                    multiple = FALSE,
-                                   accept = c("text/csv","text/comma-separated-values,text/plain",".csv"))
-                         #helpText("please refer to 'Predictor Clus' page for correlation, redundancy, missingness and complexity information within / across predictors, for advanced model structure tuning")
+                                   accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
+                         selectInput("ml_num_col2_label",
+                                     "Joint effect (2D continuous predictors)",
+                                     choices = in.ml_num_col2_label)
         )),
     div(id = 'sidebar_ml_timely',
         conditionalPanel("input.sidebar == 'ml_timely'",
-                         h5("-- Train & Validation --"),
+                         helpText(">>> ------ Train and Validation ------"),
                          fluidRow(
-                           column(width=5, numericInput("ml_window_size", "Window size", 1)),
-                           column(width=5, numericInput("ml_step_size", "Step", 1))
+                           column(width=6, numericInput("ml_window_size", "Train-set size", 1)),
+                           column(width=6, numericInput("ml_step_size", "Step", 1))
                          ),
-                         h5("-- Forecast --"),
+                         helpText(">>> ------ Test and Forecasting ------"),
                          fluidRow(
-                           column(width=5, numericInput("ml_test_size", "Test size", 1)),
-                           column(width=5, numericInput("ml_lag_size", "Lag", 1))
+                           column(width=6, numericInput("ml_test_size", "Test-set size", 1)),
+                           column(width=6, numericInput("ml_lag_size", "Lag", 1))
                          )
-                         #helpText("Window size defines the length of data inputted to each model."),
-                         #helpText("Step size defines the gap between two neighbour windows."),
-                         #helpText("Time models are trained and validated at given 'Trim by' time points between '[from,to)' you defined in the 'Setup' page."),
-                         #helpText("Outcome group distribution, model performance and predictor importance will be reported as a function of time.")
                          
         )),
     
