@@ -32,8 +32,13 @@ front_multi_regression_timely <- function(
   seed_value=333,
   window_size=2, # the length of each window
   step_size=2, # each beginning of the window increase by step_size
+  test_size = 1,
+  lag_size = 0,
   fix_knots=FALSE
 ){
+  
+  # find the trim by column
+  trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
   
   # prepare start window points for each model trim_vec
   min_trim_start <- max(floor( min(data[,dict_ml$varname[which(dict_ml$label_front==trim_by_label)]]/time_unit, na.rm=TRUE) ), trim_vec[1], na.rm = TRUE)
@@ -46,11 +51,23 @@ front_multi_regression_timely <- function(
   score_tbl_all <- c()
   # predictor importance table
   anova_tbl_all <- c()
+  # external test result table
+  test_tbl_all <- c()
+  
   # loop through all start points for trim_vec
   for (trim_start in trim_start_list){
     try({
       # trim_vec for current model
       trim_vec = c(trim_start, trim_start+window_size)
+      
+      # prepare test data
+      if(any(c(test_size,lag_size)<=0)){
+        test_data<- NULL
+      }else{
+        test_trim_vec = c(trim_start+window_size+lag_size, trim_start+window_size+lag_size+test_size)
+        test_data <- data %>% filter(data[,trim_by_col]>=test_trim_vec[1]*time_unit & data[,trim_by_col]<test_trim_vec[2]*time_unit ) %>% as.data.frame()
+      }
+      
       # model report object
       MLreports <- front_multi_regression(data = data,
                                           dict_data = dict_data,
@@ -70,6 +87,8 @@ front_multi_regression_timely <- function(
                                           num_labels_linear=num_labels_linear, 
                                           num_col2_label="None", 
                                           na_frac_max=na_frac_max, 
+                                          test_data=test_data, 
+                                          engineer_test_data=FALSE,
                                           imputation=imputation,
                                           winsorizing=winsorizing,
                                           aggregation = aggregation,
@@ -92,7 +111,6 @@ front_multi_regression_timely <- function(
       freq_tbl$rel_time <- trim_vec[1]
       freq_tbl_all <- as.data.frame(bind_rows(freq_tbl_all, freq_tbl))
       
-      
       # performance
       score_tbl <- MLreports$score_tbl
       score_tbl$window <- paste0("[", trim_vec[1], ", ", trim_vec[2],")")
@@ -107,8 +125,20 @@ front_multi_regression_timely <- function(
       anova_tbl$rel_time <- trim_vec[1]
       anova_tbl$window <- paste0("[", trim_vec[1], ", ", trim_vec[2],")")
       anova_tbl$p_val <- round(as.data.frame(anova(MLreports$mdl_obj))[anova_tbl$varname,"P"],4)
-      
       anova_tbl_all <- bind_rows(anova_tbl_all, anova_tbl)
+      
+      # external test result table if any
+      if(!is.null(MLreports$test_tbl)){
+        tryCatch({
+          test_tbl <- MLreports$test_tbl[2,] # second row
+          test_tbl$window <- paste0("[", test_trim_vec[1], ", ", test_trim_vec[2],")")
+          test_tbl$rel_time <- test_trim_vec[1]
+          test_tbl_all <- bind_rows(test_tbl_all, test_tbl)
+        },error=function(e){
+          print(paste0("Error! Fail to test on data in ", paste0("[", test_trim_vec[1], ", ", test_trim_vec[2],")")))
+          print(e)
+        })
+      }
     },TRUE)
     
   }
@@ -173,12 +203,25 @@ front_multi_regression_timely <- function(
     scale_x_continuous(breaks = score_tbl_all$rel_time,label = score_tbl_all$window) + scale_fill_gradientn(colours = rev(rainbow(4)))+
     geom_text(aes(label=round(p_val,3),angle = 30))
   
+  test_plot <- NULL
+  if(!is.null(test_tbl_all)){
+    test_plot <- ggplot(test_tbl_all, aes(x=rel_time, y=AUROC))+
+      geom_point()+
+      geom_line()+
+      scale_x_continuous(breaks = test_tbl_all$rel_time,label = test_tbl_all$window) +
+      theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5)) +
+      labs(x=trim_by_label, y="test_AUROC")
+  }
+  
   
   return(list("timely_freq_plot" = freq_plot,
               "timely_freq_table" = freq_tbl_all,
               "timely_score_plot" = score_plot,
               "timely_score_table" = score_tbl_all,
               "timely_infer_plot" = infer_plot,
-              "timely_infer_table" = anova_tbl_all))
+              "timely_infer_table" = anova_tbl_all,
+              "timely_test_plot" = test_plot,
+              "timely_test_table" = test_tbl_all
+              ))
   
 }

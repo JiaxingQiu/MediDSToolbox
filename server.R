@@ -281,6 +281,8 @@ shinyServer(function(input, output, session) {
                                   type=input$ml_type,
                                   window_size = input$ml_window_size,
                                   step_size = input$ml_step_size,
+                                  test_size = input$ml_test_size,
+                                  lag_size = input$ml_lag_size,
                                   fix_knots = input$ml_fix_knots) 
   })
   # ---- 3. unsupervised ml ----
@@ -632,6 +634,10 @@ shinyServer(function(input, output, session) {
     MLreports_timely <- MLreports_timely()
     MLreports_timely$timely_infer_plot 
   })
+  output$timely_test_plot <- renderPlot({
+    MLreports_timely <- MLreports_timely()
+    MLreports_timely$timely_test_plot 
+  })
   output$timely_freq_table <- renderTable({
     MLreports_timely <- MLreports_timely()
     MLreports_timely$timely_freq_table 
@@ -643,6 +649,10 @@ shinyServer(function(input, output, session) {
   output$timely_infer_table <- renderTable({
     MLreports_timely <- MLreports_timely()
     MLreports_timely$timely_infer_table 
+  })
+  output$timely_test_table <- renderTable({
+    MLreports_timely <- MLreports_timely()
+    MLreports_timely$timely_test_table 
   })
   
   

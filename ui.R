@@ -568,6 +568,9 @@ body <- dashboardBody(
                         tabPanel("Performance", 
                                  plotOutput("timely_score_plot"),
                                  tableOutput("timely_score_table") ),
+                        tabPanel("Forecasting", 
+                                 plotOutput("timely_test_plot"),
+                                 tableOutput("timely_test_table") ),
                         tabPanel("Chi-Square", 
                                  plotOutput("timely_infer_plot"),
                                  tableOutput("timely_infer_table") )
