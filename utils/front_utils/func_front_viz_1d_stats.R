@@ -83,6 +83,13 @@ front_viz_1d_stats <- function(
                                   cluster_col = cluster_col,
                                   group_by_col = group_by_col)
     
+    if (length(group_by_col)>=1){
+      plot_1d_stats_obj$p_pct <-  plot_1d_stats_obj$p_pct + ggtitle(paste0("Percentile (group by ", group_by_label,")"))
+      plot_1d_stats_obj$p_mean <-  plot_1d_stats_obj$p_mean + ggtitle(paste0("Mean (group by ", group_by_label,")"))
+      plot_1d_stats_obj$p_denom <-  plot_1d_stats_obj$p_denom + ggtitle(paste0("Denominator (group by ", group_by_label,")"))
+      plot_1d_stats_obj$p_violin <-  plot_1d_stats_obj$p_violin + ggtitle(paste0("Violin + Box (group by ", group_by_label,")"))
+    }
+    
   },TRUE)
   return(plot_1d_stats_obj)
 }

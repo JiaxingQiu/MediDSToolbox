@@ -19,6 +19,9 @@ viz_1d_stats <- function(
   }else{
     data$group <- as.character(data[,group_by_col])
   }
+  for ( g_level in intersect(unique(as.character(data$group)),c("Unknown","NA"))  ){
+    data$group[which(as.character(data$group)==g_level)] <- NA
+  }
   data$x <- as.character(data[,x_col])
   
   # --- gates ---
@@ -157,43 +160,6 @@ viz_1d_stats <- function(
                                               labels = x_labels)
     }
   }
-  
-  # ---- organize into 1 plot object ----
-  # plot_obj <- NULL
-  # nrows <- 0
-  # if(!is.null(p_denom)) {
-  #   nrows <- nrows + 1
-  #   plot_obj <- p_denom
-  # }
-  # if(!is.null(p_violin)){
-  #   plot_obj <- ggpubr::ggarrange(p_violin,
-  #                                 plot_obj,
-  #                                 ncol=1,nrow=2,
-  #                                 heights = c(1,nrows),
-  #                                 common.legend = TRUE,
-  #                                 legend="right")
-  #   nrows <- nrows + 1
-  # }
-  # 
-  # if(!is.null(p_pct)){
-  #   plot_obj <- ggpubr::ggarrange(p_pct,
-  #                                 plot_obj,
-  #                                 ncol=1,nrow=2,
-  #                                 heights = c(1,nrows),
-  #                                 common.legend = TRUE,
-  #                                 legend="right")
-  #   nrows <- nrows + 1
-  # }
-  # if(!is.null(p_mean)){
-  #   plot_obj <- ggpubr::ggarrange(p_mean,
-  #                                 plot_obj,
-  #                                 ncol=1,nrow=2,
-  #                                 heights = c(1,nrows),
-  #                                 common.legend = TRUE,
-  #                                 legend="right")
-  #   nrows <- nrows + 1
-  # }
-  # 
   
   
   # make a summary table to return for user to download
