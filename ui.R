@@ -469,13 +469,17 @@ body <- dashboardBody(
                                               id = "eda_1d_p_denom_brush",
                                               resetOnNew = TRUE))
                         ),
-                        tabPanel("Violin+Box", 
+                        tabPanel("Violin Box", 
                                  plotOutput("eda_1d_p_violin",
                                             height = "400px",
                                             dblclick = "eda_1d_p_violin_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_violin_brush",
                                               resetOnNew = TRUE))
+                        ),
+                        tabPanel("Plot Table",
+                                 downloadButton("download_eda_1d_df_summ","csv"),
+                                 dataTableOutput("eda_1d_df_summ")
                         )
             )
     ),
@@ -504,8 +508,19 @@ body <- dashboardBody(
     tabItem(tabName = "ml_summ",
             h3("Machine Learning (supervised) -- Summary Table"),
             fluidRow(column(1,actionButton("ml_summ_go", "Go",icon=icon("play-circle")))),
-            fluidRow(plotOutput("na_plot", width ="2000px"),
-                     dataTableOutput("summary_table"))),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Summary",
+                                 plotOutput("na_plot", width ="2000px"),
+                                 dataTableOutput("summary_table")
+                        ),
+                        tabPanel("Details (num)",
+                                 dataTableOutput("num_detail_table")
+                        ),
+                        tabPanel("Details (fct)",
+                                 dataTableOutput("fct_detail_table")
+                        )
+                        )
+            ),
     tabItem(tabName = "ml_uni",
             h3("Machine Learning (supervised) -- Univariable Percentile Heatmap"),
             fluidRow(column(1,actionButton("ml_uni_go", "Go",icon=icon("play-circle")))),

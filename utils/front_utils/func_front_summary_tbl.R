@@ -24,7 +24,9 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   
   # --- summary table ---
   res_df <- NULL
-  try({
+  num_detail_df <- NULL
+  fct_detail_df <- NULL
+  tryCatch({
     # convert numeric stratify_col to discrete IQR groups
     df_agg <- data.frame(key=unique(data$key),stringsAsFactors=FALSE)
     if(!is.null(num_cols)){
@@ -74,11 +76,8 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
       label(df_agg[,var]) <- dict_data[var,"label"]
     }
     
-    tbl1 <- summ_tbl(data=df_agg, num_vars=num_cols,  num_denom ="avail", fct_vars=fct_cols, fct_denom = "known", keys=c('key'),y=c(stratify_col) )
-    tbl_st1 <- print(tbl1, varLabels = TRUE, printToggle = FALSE)
-    tbl2 <- summ_tbl(data=df_agg, num_vars=num_cols,  num_denom ="avail", keys=c('key'),y=c(stratify_col))
-    tbl_st2 <- print(tbl2, varLabels = TRUE, printToggle = FALSE, nonnormal=num_cols)
-    tbl_st <- rbind(tbl_st1, tbl_st2)
+    tbl_obj <- summ_tbl(data=df_agg, num_vars = num_cols, fct_vars = fct_cols, num_denom = "avail", fct_denom = "known", keys=c('key'),y=c(stratify_col) )
+    tbl_st <- print(tbl_obj$tbl, varLabels = TRUE)
     res_df <- as.data.frame(tbl_st)%>%tibble::rownames_to_column()
     res_df <- res_df[which(res_df$rowname!="n.1"),]
     res_df$rowname  <- gsub("..median..IQR..", " median[IQR]", res_df$rowname )
@@ -86,7 +85,12 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
     res_df$rowname  <- gsub("..Yes....", " = Yes", res_df$rowname )
     colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))] <- paste0(stratify_col," = ",colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))]) 
     
-  },TRUE)
+    num_detail_df <- tbl_obj$num_detail_df
+    fct_detail_df <- tbl_obj$fct_detail_df
+    
+  },error=function(e){
+    print(e)
+  })
   
   # --- NA plot ---
   for (fct_col in fct_cols){
@@ -94,6 +98,9 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   }
   na_obj <-  Hmisc::naclus(data[,c(num_cols,fct_cols)])
   
-  return(list("summ_df" = res_df, "na_obj"=na_obj))
+  return(list("summ_df" = res_df, 
+              "num_detail_df" = num_detail_df,
+              "fct_detail_df" = fct_detail_df,
+              "na_obj"=na_obj))
   
 }

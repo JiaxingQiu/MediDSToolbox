@@ -93,8 +93,8 @@ viz_1d_stats <- function(
   df_all <- data %>% 
     group_by(x) %>% 
     summarise(n_sbj = n_distinct(cluster), # how many babies have the data
-              q_val = quantile(y, probs = intervals, na.rm=TRUE),
-              percentile = as.factor(intervals)) %>% 
+              q_val = quantile(y, probs = intervals, na.rm=TRUE), # quantiles
+              percentile = as.factor(intervals)) %>%  
     as.data.frame()
   df_all$group <- 'All' 
   
@@ -131,12 +131,12 @@ viz_1d_stats <- function(
   # --- denominator ---
   df_all_denom <- data %>% 
     group_by(x) %>% 
-    summarise(n_sbj = n_distinct(cluster)) %>% 
+    summarise(n_sbj = n_distinct(cluster[!is.na(y)])) %>% 
     as.data.frame()
   df_all_denom$group="All"
   df_grouped_denom <- data %>% 
     group_by(group, x) %>% 
-    summarise(n_sbj = n_distinct(cluster)) %>% 
+    summarise(n_sbj = n_distinct(cluster[!is.na(y)])) %>% 
     as.data.frame()
   df_denom <- dplyr::distinct( dplyr::bind_rows(df_all_denom, df_grouped_denom) )
   df_denom$group <- factor(df_denom$group,levels = union('All',sort(unique(data$group)))) 
@@ -194,10 +194,46 @@ viz_1d_stats <- function(
   #   nrows <- nrows + 1
   # }
   # 
+  
+  
+  # make a summary table to return for user to download
+  df_summ <- NULL
+  try({
+    df_summ_all <- data %>% 
+      group_by(x) %>% 
+      summarise(n_sbj = n_distinct(cluster), # how many babies have the data,
+                n_sbj_avail = n_distinct(cluster[!is.na(y)]), # how many babies have responce data available
+                q25 = quantile(y, probs = 0.25, na.rm=TRUE), # quantiles
+                q50 = quantile(y, probs = 0.50, na.rm=TRUE), # quantiles
+                q75 = quantile(y, probs = 0.75, na.rm=TRUE), # quantiles
+                q90 = quantile(y, probs = 0.90, na.rm=TRUE), # quantiles
+                q90 = quantile(y, probs = 0.95, na.rm=TRUE), # quantiles
+                avg = mean(y, na.rm=TRUE)) %>%  
+      as.data.frame()
+    df_summ_all$group <- 'Overall' 
+    
+    df_summ_grouped <- data %>% 
+      group_by(group, x) %>% 
+      summarise(n_sbj = n_distinct(cluster), # how many babies have the data
+                n_sbj_avail = n_distinct(cluster[!is.na(y)]), # how many babies have responce data available
+                q25 = quantile(y, probs = 0.25, na.rm=TRUE), # quantiles
+                q50 = quantile(y, probs = 0.50, na.rm=TRUE), # quantiles
+                q75 = quantile(y, probs = 0.75, na.rm=TRUE), # quantiles
+                q90 = quantile(y, probs = 0.90, na.rm=TRUE), # quantiles
+                q90 = quantile(y, probs = 0.95, na.rm=TRUE), # quantiles
+                avg = mean(y, na.rm=TRUE)) %>% 
+      as.data.frame()
+    df_summ <- dplyr::distinct( dplyr::bind_rows(df_summ_all, df_summ_grouped) )
+    colnames(df_summ) <- c(x_col,paste0(y_col,"__", c("n_sbj", "n_sbj_avail", "q25" ,  "q50",   "q75",   "q90",   "avg")), ifelse(length(group_by_col)==0, "Group", group_by_col) )
+    df_summ <- df_summ[,union(c(x_col,ifelse(length(group_by_col)==0, "Group", group_by_col)),colnames(df_summ))]# change column sequence
+  }, silent = FALSE)
+  if(is.null(df_summ)){print("df_summ is null")}else{print(head(df_summ,10))}
+  
   return(list(
     "p_denom" = p_denom,
     "p_violin" = p_violin,
     "p_pct" = p_pct,
-    "p_mean" = p_mean
+    "p_mean" = p_mean,
+    "df_summ" = df_summ
   ))
 }

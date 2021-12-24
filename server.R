@@ -404,6 +404,20 @@ shinyServer(function(input, output, session) {
       ranges_eda_1d_p_denom$y <- NULL
     }
   })
+  output$eda_1d_df_summ <- renderDataTable({
+    eda_1d_obj <- stats1dViz()
+    eda_1d_obj$df_summ
+  })
+  output$download_eda_1d_df_summ <- downloadHandler(
+    filename = function() {
+      paste('plot_summary_', Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      eda_1d_obj <- stats1dViz()
+      write.csv(eda_1d_obj$df_summ, file, row.names = FALSE)
+    }
+  )
+  
   output$plot_2d_stats <- renderPlot({
     stats2dViz()
   })
@@ -436,6 +450,14 @@ shinyServer(function(input, output, session) {
   output$summary_table <- renderDataTable({
     summ_obj <- summReport()
     summ_obj$summ_df
+  })
+  output$num_detail_table <- renderDataTable({
+    summ_obj <- summReport()
+    summ_obj$num_detail_df
+  })
+  output$fct_detail_table <- renderDataTable({
+    summ_obj <- summReport()
+    summ_obj$fct_detail_df
   })
   output$na_plot <- renderPlot({
     summ_obj <- summReport()

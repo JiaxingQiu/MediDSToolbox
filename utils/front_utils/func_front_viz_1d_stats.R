@@ -14,8 +14,8 @@ front_viz_1d_stats <- function(
   # distributions
   y_label = "IH (SPO2<90%) >=10s event counts per day", # num or fct(tag) y / response variable
   x_label ="Post-menstrual Age", # num or fct
-  cluster_label = "Subject ID",
-  group_by_label = "GA weeks" # fct
+  cluster_label = "PreVent study ID",
+  group_by_label = "GA weeks binned" # fct
   
 ){
   # ---- Usage ----
