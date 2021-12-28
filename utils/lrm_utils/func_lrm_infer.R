@@ -28,11 +28,14 @@ lrm_infer <-  function(df,
   base_mean <- mean(df_org[,y_col],na.rm=TRUE)
   df_org$y_hat <- logit2prob(predictrms(mdl_final, newdata = df_org))
   df_org$rel_risk <- df_org$y_hat / base_mean
-  time_pred_plot <- ggplot(df_org, aes(x=rel_time, y=rel_risk))+
+  df_org$y_true <- as.factor(df_org[,y_col])
+  time_pred_plot <- ggplot(df_org, aes(x=rel_time, y=rel_risk, group=y_true, fill=y_true))+
     stat_summary(geom = "line", fun = mean) +
     stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3) +
     ylab("relative risk") +
-    xlab("relative time before event")
+    xlab("time to events") +
+    scale_fill_discrete(name = y_col)+
+    theme(legend.position="top")
   
   
   
