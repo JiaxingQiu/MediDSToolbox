@@ -1,4 +1,8 @@
-do_init <- function(df, dict_df, y_col, x_cols, cluster_col, 
+do_init <- function(df, 
+                    dict_df, 
+                    y_col, 
+                    x_cols, 
+                    cluster_col, 
                     rcs5_low="70%",
                     rcs4_low="50%",
                     linear_cols=NULL){

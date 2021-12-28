@@ -20,7 +20,6 @@ front_multi_regression <- function(
   na_frac_max=0.3, 
   test_data=NULL, 
   engineer_test_data=TRUE,
-  num_labels_linear=c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day"),
   num_col2_label="None",
   imputation="None",
   impute_per_cluster=FALSE,
@@ -31,11 +30,11 @@ front_multi_regression <- function(
   type=c("pearson","spearman")[1],
   rank=TRUE,
   seed_value=333,
-  fix_knots = FALSE
+  fix_knots = FALSE,
+  trim_ctrl=FALSE # whether or not to trim control group the same way as event group
 ){
   
   set.seed(seed = seed_value)
-  # front end wrapper for any type of regression
   
   # ---- pre-process ----
   x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
@@ -61,8 +60,16 @@ front_multi_regression <- function(
   data_org <- assign.dict(data_org, dict_data)
   data_org <- data_org %>% filter(data_org[,trim_by_col]>=trim_vec[1]*time_unit & data_org[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
   
-  # --- preprocess data ----
-  data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+  # --- data for training ----
+  # trim time range
+  if(trim_ctrl){
+    data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+  }else{
+    data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+    data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
+    data <- bind_rows(data_pos, data_ctrl)
+    data <- assign.dict(data, dict_data)
+  }
   data$cluster_id <- data[,cluster_col]
   # impute numeric inputs
   if(!impute_per_cluster){
@@ -137,10 +144,6 @@ front_multi_regression <- function(
     if (!is.null(df_num)){
       data <- merge(data, df_num)
     }
-  }
-  linear_cols <- NULL
-  if(!is.null(num_labels_linear)){
-    linear_cols <- rownames(dict_data[which(dict_data$label_front%in%num_labels_linear), ])
   }
   num_col2 <- NULL
   if(num_col2_label!="None"){
@@ -233,10 +236,6 @@ front_multi_regression <- function(
           data <- merge(data, df_num)
         }
       }
-      linear_cols <- NULL
-      if(!is.null(num_labels_linear)){
-        linear_cols <- rownames(dict_data[which(dict_data$label_front%in%num_labels_linear), ])
-      }
       num_col2 <- NULL
       if(num_col2_label!="None"){
         num_col2 <- rownames(dict_data[which(dict_data$label_front==num_col2_label[1]),])
@@ -270,7 +269,6 @@ front_multi_regression <- function(
                           test_data=test_data, 
                           test_data_org=test_data_org,
                           na_frac_max=na_frac_max, 
-                          linear_cols=linear_cols,
                           num_col2=num_col2,
                           stratified_cv=stratified_cv,
                           r_abs=r_abs, 
@@ -291,7 +289,6 @@ front_multi_regression <- function(
                           cv_nfold=cv_nfold,
                           test_data=test_data, 
                           na_frac_max=na_frac_max, 
-                          linear_cols=linear_cols,
                           num_col2=num_col2,
                           stratified_cv=stratified_cv,
                           r_abs=r_abs, 

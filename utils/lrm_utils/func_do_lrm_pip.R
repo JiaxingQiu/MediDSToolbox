@@ -17,7 +17,6 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                        test_data=NULL, # test data that is engineered same way as training dataset
                        test_data_org = NULL,
                        na_frac_max=0.3, 
-                       linear_cols=NULL,
                        num_col2=NULL,
                        stratified_cv=TRUE,
                        r_abs=0.8, 
@@ -47,7 +46,7 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
   dict_df <- get.dict(df)
   print(dict_df)
   print("--- do_init ---")
-  do_obj <- do_init(df, dict_df, y_col=y_col, x_cols, cluster_col, rcs5_low=rcs5_low,rcs4_low=rcs4_low,linear_cols=linear_cols)
+  do_obj <- do_init(df, dict_df, y_col=y_col, x_cols, cluster_col, rcs5_low=rcs5_low,rcs4_low=rcs4_low,linear_cols=x_cols_linear)
   # if knots are fixed by user, overwrite the dictionary dataframe in do_obj
   if(fix_knots){
     dict_init <- do_obj$dict_final

@@ -162,6 +162,9 @@ sidebar <- dashboardSidebar(
                          sliderInput("ml_trim_vec",
                                      label="[ from, to )",
                                      min = 0,  max = 100, step = 1, value = c(0, 99)),
+                         checkboxInput("ml_trim_ctrl", 
+                                       "Trim Control Group", 
+                                       value = TRUE),
                          fluidRow(
                            column(width=5,selectInput("ml_imputation",
                                                       "Imputation",

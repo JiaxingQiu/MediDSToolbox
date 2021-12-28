@@ -8,7 +8,6 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   
   
   
-  #as.numeric(gsub('[^0-9.]','',df_name))
   trim_by_col <- intersect(colnames(data),rownames(dict_data[which(dict_data$label_front==trim_by_label), ]))
   if (length(trim_by_col)>0){
     data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
