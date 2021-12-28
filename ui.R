@@ -379,24 +379,24 @@ body <- dashboardBody(
             ## each function in the list create an HTML tag to use in the layout
             ## documentation is here: https://shiny.rstudio.com/articles/tag-glossary.html # names(tags)
             tags$h1("Medical Data Science Toolbox"),
-            tags$blockquote("For tools inside the box, we think outside the box. ", cite = "Jiaxing Qiu"),
+            tags$blockquote("For tools in the box, we think outside the box. ", cite = "Jiaxing Qiu"),
             
-            tags$p(tags$b("Inventor: "),"Jiaxing (Joy) Qiu, M.S in Data Science"),
-            tags$p("Thanks to the professionals at the Center for Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia,
-                   your professional advises and research experiences inspire this data-driven research toolbox!"),
+            tags$p(tags$b("Inventor: "),"Jiaxing (Joy) Qiu, M.S., Data Science, School of Data Science, University of Virginia"),
+            tags$p("Thanks to Center of Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia,
+                   the helpful comments and professional expriences inspire these creative tools in the box!"),
             
             
             tags$h2("Objectives"),
             tags$p("The objectives of this toolbox include but not limited to --"),
             tags$ol(
-              tags$li("facilitate medical research hypothesis generation"),
-              tags$li("bridge communitations between healthcare professionals and technicians interactively"),
-              tags$li("visualize biomedical time series / longitudinal data"),
+              tags$li("facilitate medical data science research hypothesis generation"),
+              tags$li("bridge communitations between clinitians and technicians interactively"),
+              tags$li("visualize biomedical research data and especially longitudinal datasets"),
               tags$li("provide baseline predictive models by supervised learning, such as logistic and linear regression"),
               tags$li("provide reliable model evaluation and rubost inference results that adjust for", 
                       tags$b("repeated measures"),
                       "commonly seen in biomedical research"),
-              tags$li("provide clustering results by unsupervised learning, potentially reduce the cost of manually reviewing")
+              tags$li("provide clustering results by unsupervised learning, potentially reduce cost of medical data science research")
             ),
             tags$h3("Exploratory Data Analysis"),
             tags$em("Exploring your data does as much harm as not to explore it at all. -- Frank E Harrell"),
@@ -513,11 +513,14 @@ body <- dashboardBody(
                                  plotOutput("na_plot", width ="2000px"),
                                  dataTableOutput("summary_table")
                         ),
-                        tabPanel("Details (num)",
+                        tabPanel("Numeric",
                                  dataTableOutput("num_detail_table")
                         ),
-                        tabPanel("Details (fct)",
+                        tabPanel("Factor",
                                  dataTableOutput("fct_detail_table")
+                        ),
+                        tabPanel("Response",
+                                 dataTableOutput("rsps_table")
                         )
                         )
             ),

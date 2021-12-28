@@ -26,6 +26,7 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   res_df <- NULL
   num_detail_df <- NULL
   fct_detail_df <- NULL
+  rsps_df <- NULL
   tryCatch({
     # convert numeric stratify_col to discrete IQR groups
     df_agg <- data.frame(key=unique(data$key),stringsAsFactors=FALSE)
@@ -76,6 +77,7 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
       label(df_agg[,var]) <- dict_data[var,"label"]
     }
     
+    # summary table stratefied by response
     tbl_obj <- summ_tbl(data=df_agg, num_vars = num_cols, fct_vars = fct_cols, num_denom = "avail", fct_denom = "known", keys=c('key'),y=c(stratify_col) )
     tbl_st <- print(tbl_obj$tbl, varLabels = TRUE)
     res_df <- as.data.frame(tbl_st)%>%tibble::rownames_to_column()
@@ -85,8 +87,22 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
     res_df$rowname  <- gsub("..Yes....", " = Yes", res_df$rowname )
     colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))] <- paste0(stratify_col," = ",colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))]) 
     
+    # numeric and factor predictor details
     num_detail_df <- tbl_obj$num_detail_df
     fct_detail_df <- tbl_obj$fct_detail_df
+    
+    # factor response details
+    if(dict_data$type[which(dict_data$varname==stratify_col)]=="fct"){
+      data$y <- data[, stratify_col]
+      data$clu_col <- data[,clu_col]
+      data$trim_by_col <- data[,trim_by_col]
+      rsps_df <- data %>% group_by(y) %>% summarise(
+        n_cluster = n_distinct(clu_col),
+        n_episode = sum(trim_by_col==(trim_vec[2]-1)*time_unit), # number of episodes counted by "anchor" 
+        n_row = n()
+      ) %>% as.data.frame()
+    }
+    
     
   },error=function(e){
     print(e)
@@ -101,6 +117,7 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   return(list("summ_df" = res_df, 
               "num_detail_df" = num_detail_df,
               "fct_detail_df" = fct_detail_df,
+              "rsps_df" = rsps_df,
               "na_obj"=na_obj))
   
 }

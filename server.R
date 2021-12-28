@@ -459,6 +459,10 @@ shinyServer(function(input, output, session) {
     summ_obj <- summReport()
     summ_obj$fct_detail_df
   })
+  output$rsps_table <- renderDataTable({
+    summ_obj <- summReport()
+    summ_obj$rsps_df
+  })
   output$na_plot <- renderPlot({
     summ_obj <- summReport()
     plot(summ_obj$na_obj) 
