@@ -94,10 +94,12 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
     # factor response details
     if(dict_data$type[which(dict_data$varname==stratify_col)]=="fct"){
       
-      data$y <- data[, stratify_col]
+      data$y <- data[,stratify_col]
       data$clu_col <- data[,clu_col]
       data$trim_by_col <- data[,trim_by_col]
-      rsps_df <- data %>% group_by(y) %>% summarise(
+      rsps_df <- data %>% 
+        filter(!is.na(trim_by_col)) %>%
+        group_by(y) %>% summarise(
         n_cluster = n_distinct(clu_col),
         n_episode = sum(diff(trim_by_col)<0), # number of episodes counted by the jump of relative time
         n_row = n()
