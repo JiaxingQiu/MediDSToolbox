@@ -571,7 +571,7 @@ body <- dashboardBody(
                                  verbatimTextOutput("model_prt")
                         ),
                         tabPanel("Fitted Y", 
-                                 plotOutput("fitted_effect_plot")
+                                 plotOutput("fitted_effect_plot", height = "700px")
                         ),
                         tabPanel("In-Validation", 
                                  downloadButton("download_mdl","Model"),
