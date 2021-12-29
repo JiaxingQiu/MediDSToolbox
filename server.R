@@ -588,15 +588,17 @@ shinyServer(function(input, output, session) {
     MLreports <- MLreports()
     MLreports$effect_plot
   })
+  output$fitted_effect_plot<- renderPlot({
+    MLreports <- MLreports()
+    MLreports$fitted_effect_plot
+  })
   output$anova_plot <- renderPlot({
     MLreports <- MLreports()
     plot(anova(MLreports$mdl_obj))
   })
-  output$infer_plot <- renderPlot({
+  output$inter_cali_plot <- renderPlot({
     MLreports <- MLreports()
-    ggpubr::ggarrange(MLreports$cali_plot,
-                      MLreports$time_pred_plot,
-                      ncol=2,nrow=1)
+    MLreports$cali_plot #MLreports$time_pred_plot
   })
   output$model_tbl <- renderTable({
     MLreports <- MLreports()

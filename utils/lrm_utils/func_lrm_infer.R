@@ -6,14 +6,17 @@ lrm_infer <-  function(
   cluster_col, 
   penalty,
   num_col2=NULL,
-  fold_risk=FALSE,
-  y_max=10
+  fold_risk=TRUE,
+  y_max=3
 ){
   
+  eff_plot_final <- NULL
+  fitted_eff_plot <- NULL
+  mdl_final <- NULL
   
+  # train the final model on the whole dataset
   dd <- datadist(df)
   options(datadist=dd, na.action=na.omit)
-  mdl_final <- NULL
   while(is.null(mdl_final)){
     print(penalty)
     try({
@@ -22,19 +25,51 @@ lrm_infer <-  function(
     penalty <- penalty - 0.5
   }
   
-  y_col <- strsplit(as.character(fml), " ~")[[1]][1]
+  y_col <- dict_df$varname[which(dict_df$mlrole=="output")]
+  x_num_cols <- dict_df$varname[which(dict_df$mlrole=="input" & dict_df$type=="num")]
+  
   # global mean of outcome
   base_mean <- mean(df_org[,y_col],na.rm=TRUE)
+  print(paste0("-- baseline response mean -- ", base_mean))
   
-  # --- inference ---- (1d marginal effects)
-  # redefine mapping funtion
-  plogis_fix <- function(y_logodds){
-    y_prob <- plogis(y_logodds)
-    y_prob[which(y_prob>y_max)] <- y_max
-    return(y_prob)
-  }
-  eff_plot <- ggplot(rms::Predict(mdl_final, fun=plogis_fix), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
-  if(fold_risk){
+  if(!fold_risk){
+    # --- inference ---- (1d marginal effects)
+    # redefine mapping funtion
+    plogis_fix <- function(y_logodds){
+      y_prob <- plogis(y_logodds)
+      y_prob[which(y_prob>y_max)] <- y_max
+      return(y_prob)
+    }
+    eff_plot <- ggplot(rms::Predict(mdl_final, fun=plogis_fix), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
+    
+    # --- prepare fitted y and x to plot ---
+    df_org$y_pred  <- plogis_fix(predictrms(mdl_final, newdata = df_org))
+    df_org$y_true <- as.factor(df_org[,y_col])
+    df_org$relative_time <- df_org$rel_time
+    x_num_cols <- union("relative_time", x_num_cols)
+  
+    
+    # --- prediction over time and each numeric variable ---
+    df_plot <- data.frame()
+    for (x_col in x_num_cols){
+      df_plot_pred <-  df_org[,c(x_col, "y_pred", "y_true")]
+      colnames(df_plot_pred) <- c("predictor_value", "y_pred", "y_true")
+      df_plot_pred$predictor_name <- x_col
+      df_plot <- bind_rows(df_plot, df_plot_pred)
+    }
+    fitted_eff_plot <- ggplot(df_plot, aes(x=predictor_value, y=y_pred, group=y_true)) +
+      stat_summary(geom = "line", fun = mean, size=0.3, color='grey') +
+      geom_smooth(aes(color=y_true))+
+      facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
+      ylab("Fitted Probability") +
+      xlab("Predictor Value") +
+      scale_color_discrete(name = y_col)+
+      theme(legend.position="top") +
+      ylim(0, min(max(df_org$y_pred),y_max) )
+    
+  }else{
+    
+    # --- inference ---- (1d marginal effects)
     # redefine mapping funtion
     foldrisk <- function(y_logodds){
       y_fold_risk <- plogis(y_logodds)/base_mean
@@ -42,23 +77,32 @@ lrm_infer <-  function(
       return(y_fold_risk)
     }
     eff_plot <- ggplot(rms::Predict(mdl_final, fun=foldrisk), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
+    
+    # --- prepare fitted y and x to plot ---
+    df_org$y_pred  <- foldrisk(predictrms(mdl_final, newdata = df_org))
+    df_org$y_true <- as.factor(df_org[,y_col])
+    df_org$relative_time <- df_org$rel_time
+    x_num_cols <- union("relative_time", x_num_cols)
+    
+    
+    # --- prediction over time and each numeric variable ---
+    df_plot <- data.frame()
+    for (x_col in x_num_cols){
+      df_plot_pred <-  df_org[,c(x_col, "y_pred", "y_true")]
+      colnames(df_plot_pred) <- c("predictor_value", "y_pred", "y_true")
+      df_plot_pred$predictor_name <- x_col
+      df_plot <- bind_rows(df_plot, df_plot_pred)
+    }
+    fitted_eff_plot <- ggplot(df_plot, aes(x=predictor_value, y=y_pred, group=y_true)) +
+      stat_summary(geom = "line", fun = mean, size=0.3, color='grey') +
+      geom_smooth(aes(color=y_true))+
+      facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
+      ylab("Fold Increase Risk") +
+      xlab("Predictor Value") +
+      scale_color_discrete(name = y_col)+
+      theme(legend.position="top") +
+      ylim(0,  min(max(df_org$y_pred),y_max))
   }
-  
-  # --- prediction over time ---
-  time_pred_plot <- NULL
-  
-  df_org$y_hat <- logit2prob(predictrms(mdl_final, newdata = df_org))
-  df_org$rel_risk <- df_org$y_hat / base_mean
-  df_org$y_true <- as.factor(df_org[,y_col])
-  time_pred_plot <- ggplot(df_org, aes(x=rel_time, y=rel_risk, group=y_true, fill=y_true))+
-    stat_summary(geom = "line", fun = mean) +
-    stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3) +
-    ylab("relative risk") +
-    xlab("time to events") +
-    scale_fill_discrete(name = y_col)+
-    theme(legend.position="top")
-  
-  
   
   
   nrow <- 3
@@ -94,6 +138,7 @@ lrm_infer <-  function(
     }
   }
   if (!is.null(bplot_obj_all)){ eff_plot$continuous <- bplot_obj_all }
+  
   # rearrange eff_plot object
   eff_plot_final <- NULL
   if (!is.null(eff_plot$continuous)){
@@ -106,13 +151,12 @@ lrm_infer <-  function(
     }
   }
   if(is.null(eff_plot$continuous) & is.null(eff_plot$discrete)){
-    eff_plot_final <-  eff_plot
+    eff_plot_final <- eff_plot
   }
   
-  anova_obj <- anova(mdl_final)
   
   return(list("effect_plot_final"=eff_plot_final,
-              "time_pred_plot" = time_pred_plot,
+              "fitted_effect_plot"=fitted_eff_plot,
               "mdl_obj"= mdl_final))
   
   

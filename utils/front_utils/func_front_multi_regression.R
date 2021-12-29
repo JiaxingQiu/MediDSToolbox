@@ -322,10 +322,9 @@ front_multi_regression <- function(
   cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace
   # inference reports
   effect_plot <- results$infer_obj$effect_plot_final
-  time_pred_plot <- results$infer_obj$time_pred_plot
+  fitted_effect_plot <- results$infer_obj$fitted_effect_plot
   # print model objects
   mdl_obj <- results$infer_obj$mdl_obj
-  # redundency object
   # redundency object
   if(!is.null(results$rmcor_obj)){
     x_corre_obj <- list("trace" = results$rmcor_obj$cor_trace,
@@ -346,7 +345,7 @@ front_multi_regression <- function(
               score_tbl=score_tbl,
               model_tbl=model_tbl,
               cv_eval_trace_tbl=cv_eval_trace_tbl,
-              time_pred_plot = time_pred_plot,
+              fitted_effect_plot = fitted_effect_plot,
               mdl_obj = mdl_obj,
               x_corre_obj = x_corre_obj,
               x_redun_obj = ifelse(is.null(results$redun_obj$redun_obj), "", results$redun_obj$redun_obj),
