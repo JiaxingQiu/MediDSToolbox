@@ -22,7 +22,8 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                        r_abs=0.8, 
                        type=c("pearson","spearman")[1],
                        rank=TRUE,
-                       fix_knots=FALSE){
+                       fix_knots=FALSE,
+                       fold_risk=FALSE){
   
   
   do_obj <- NULL
@@ -79,7 +80,8 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                          fml=model_obj$cv_obj$model_info$formula, 
                          cluster_col=model_obj$cv_obj$model_info$cluster_col, 
                          penalty=model_obj$cv_obj$model_info$penalty,
-                         num_col2=num_col2)
+                         num_col2=num_col2,
+                         fold_risk=fold_risk)
   
   # --- external testing results ---
   

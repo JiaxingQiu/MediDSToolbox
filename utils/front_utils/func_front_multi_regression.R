@@ -30,8 +30,9 @@ front_multi_regression <- function(
   type=c("pearson","spearman")[1],
   rank=TRUE,
   seed_value=333,
-  fix_knots = FALSE,
-  trim_ctrl=FALSE # whether or not to trim control group the same way as event group
+  fix_knots = TRUE,
+  trim_ctrl=TRUE,
+  fold_risk=FALSE
 ){
   
   set.seed(seed = seed_value)
@@ -60,16 +61,18 @@ front_multi_regression <- function(
   data_org <- assign.dict(data_org, dict_data)
   data_org <- data_org %>% filter(data_org[,trim_by_col]>=trim_vec[1]*time_unit & data_org[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
   
-  # --- data for training ----
-  # trim time range
-  if(trim_ctrl){
-    data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-  }else{
-    data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-    data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
-    data <- bind_rows(data_pos, data_ctrl)
-    data <- assign.dict(data, dict_data)
+  # trim time info
+  if (length(trim_by_col)>0 ){
+    # if there is a valid event / control group split, and user choose not to trim the control group
+    if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA)) & !trim_ctrl){
+      data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+      data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
+      data <- bind_rows(data_pos, data_ctrl)
+    }else{
+      data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+    }
   }
+  # add cluster id
   data$cluster_id <- data[,cluster_col]
   # impute numeric inputs
   if(!impute_per_cluster){
@@ -274,7 +277,8 @@ front_multi_regression <- function(
                           r_abs=r_abs, 
                           type=type,
                           rank=rank,
-                          fix_knots=fix_knots)
+                          fix_knots=fix_knots,
+                          fold_risk = fold_risk)
     
   }else if(dict_data[y_col, "type"]=="num"){
     results <- do_ols_pip(data=data, 

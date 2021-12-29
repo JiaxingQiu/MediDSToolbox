@@ -146,7 +146,8 @@ shinyServer(function(input, output, session) {
       trim_vec=as.numeric(input$ml_trim_vec), 
       time_unit=input$ml_trim_time_unit,
       stratify_by=input$ml_y_label, 
-      cluster_label=input$ml_cluster_label
+      cluster_label=input$ml_cluster_label,
+      trim_ctrl = input$ml_trim_ctrl
     )
   })
   uniHeatmap <- eventReactive(input$ml_uni_go, {
@@ -163,7 +164,8 @@ shinyServer(function(input, output, session) {
                         winsorizing=input$ml_winsorizing,
                         aggregation = input$ml_aggregation,
                         time_unit=input$ml_trim_time_unit,
-                        impute_per_cluster=input$ml_impute_per_cluster)
+                        impute_per_cluster=input$ml_impute_per_cluster,
+                        trim_ctrl = input$ml_trim_ctrl)
   })
   XselectReports <- eventReactive(input$ml_select_go, {
     front_X_select(
@@ -184,7 +186,8 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$ml_impute_per_cluster,
       winsorizing=input$ml_winsorizing,
       standardize=input$ml_select_standardize,
-      aggregation=input$ml_aggregation
+      aggregation=input$ml_aggregation,
+      trim_ctrl = input$ml_trim_ctrl
     )
   })
   
@@ -206,7 +209,8 @@ shinyServer(function(input, output, session) {
                  type=input$ml_type,
                  rank=FALSE,
                  rcs5_low=paste0(input$ml_rcs_vec[1],"%"),
-                 rcs4_low=paste0(input$ml_rcs_vec[2],"%")
+                 rcs4_low=paste0(input$ml_rcs_vec[2],"%"),
+                 trim_ctrl = input$ml_trim_ctrl
     ) 
   })
   
@@ -247,7 +251,8 @@ shinyServer(function(input, output, session) {
                            r2=input$ml_r2,
                            type=input$ml_type,
                            fix_knots = input$ml_fix_knots,
-                           trim_ctrl = input$ml_trim_ctrl) 
+                           trim_ctrl = input$ml_trim_ctrl,
+                           fold_risk = input$ml_fold_risk) 
   })
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {

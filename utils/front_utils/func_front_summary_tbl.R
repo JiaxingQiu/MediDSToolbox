@@ -1,26 +1,40 @@
 front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
                               dict_data = dict_ml,
                               trim_by_label="Post-menstrual Age",
-                              trim_vec = c(22, 40),
+                              trim_vec = c(22, 24),
                               time_unit = 7,
                               stratify_by="Primary outcome (EN)___Unfavorable", 
-                              cluster_label=cluster_front_labels[1]){
+                              cluster_label=cluster_front_labels[1],
+                              trim_ctrl=TRUE # whether or not to trim control group the same way as event group
+                              ){
   
   
+  data <- assign.dict(data, dict_data, overwrite = TRUE)
+  dict_data <- get.dict(data)
   
   trim_by_col <- intersect(colnames(data),rownames(dict_data[which(dict_data$label_front==trim_by_label), ]))
-  if (length(trim_by_col)>0){
-    data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-  }
-  
   num_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]) )
   fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit!="tag01"), ]) )
   tag_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit=="tag01"), ]) )
   
   clu_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
   stratify_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==stratify_by),]) )
+  y_col <- stratify_col
   data$key <- data[,clu_col]
   
+  
+  if (length(trim_by_col)>0 ){
+    # if there is a valid event / control group split, and user choose not to trim the control group
+    if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA)) & !trim_ctrl){
+      data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+      data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
+      data <- bind_rows(data_pos, data_ctrl)
+    }else{
+      data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+    }
+  }
+  
+  data <- assign.dict(data, dict_data)
   # --- summary table ---
   res_df <- NULL
   num_detail_df <- NULL

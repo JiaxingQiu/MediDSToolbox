@@ -40,7 +40,7 @@ sidebar <- dashboardSidebar(
                          
                          fluidRow(
                            column(width=8,selectInput("eda_trim_by_label",
-                                                      label="Time over",
+                                                      label="Trim",
                                                       choices = in.eda_trim_by_label) ),
                            column(width=4,numericInput("eda_trim_time_unit", "/", in.eda_trim_time_unit))
                          ),
@@ -155,7 +155,7 @@ sidebar <- dashboardSidebar(
                          #helpText("For continuous response ('num'), Linear Regression will be used. For binary response ('tag'), Logistic Regression will be used."),
                          fluidRow(
                            column(width=8,selectInput("ml_trim_by_label",
-                                                      label="Time over",
+                                                      label="Trim",
                                                       choices = in.ml_trim_by_label) ),
                            column(width=4, numericInput("ml_trim_time_unit", "/", in.ml_trim_time_unit) )
                          ),
@@ -264,18 +264,23 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_multi',
         conditionalPanel("input.sidebar == 'ml_multi'",
-                         
-                         radioButtons("ml_cv_nfold",
-                                      "CV folds",
-                                      choices = c("1", "2", "5", "10"),
-                                      selected = c("10"),
-                                      inline = TRUE),
+                         fluidRow(
+                           column(width=6,
+                                  radioButtons("ml_cv_nfold",
+                                               "CV folds",
+                                               choices = c("1", "5", "10"),
+                                               selected = c("10"),
+                                               inline = TRUE) ),
+                           column(width=6,checkboxInput("ml_stratified_cv", 
+                                                        "Stratified", 
+                                                        value = TRUE))
+                         ),
                          fluidRow(
                            column(width=6,checkboxInput("ml_fix_knots", 
-                                                        "Fix # Knots", 
+                                                        "Fix Knots X", 
                                                         value = TRUE) ),
-                           column(width=6,checkboxInput("ml_stratified_cv", 
-                                                        "Stratified CV", 
+                           column(width=6,checkboxInput("ml_fold_risk", 
+                                                        "Fold Risk Y", 
                                                         value = TRUE))
                          ),
                          # Input: Select a file ----
@@ -315,7 +320,7 @@ sidebar <- dashboardSidebar(
                                      choices = in.unml_cluster_label),
                          fluidRow(
                            column(width=8,selectInput("unml_trim_by_label",
-                                                      label="Time over",
+                                                      label="Trim",
                                                       choices = in.unml_trim_by_label,
                                                       selected = in.unml_trim_by_label[1]) ),
                            column(width=4, numericInput("unml_trim_time_unit", "/", in.unml_trim_time_unit) )
@@ -384,16 +389,15 @@ body <- dashboardBody(
             tags$h1("Medical Data Science Toolbox"),
             tags$blockquote("For tools in the box, we think outside the box. ", cite = "Jiaxing Qiu"),
             
-            tags$p(tags$b("Inventor: "),"Jiaxing (Joy) Qiu, M.S., Data Science, School of Data Science, University of Virginia"),
-            tags$p("Thanks to Center of Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia,
-                   the helpful comments and professional expriences inspire these creative tools in the box!"),
+            tags$p(tags$b("Inventor: "),"Jiaxing (Joy) Qiu, M.S. in Data Science, University of Virginia"),
+            tags$p("Thanks to the Center for Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia."),
             
             
             tags$h2("Objectives"),
             tags$p("The objectives of this toolbox include but not limited to --"),
             tags$ol(
-              tags$li("facilitate medical data science research hypothesis generation"),
-              tags$li("bridge communitations between clinitians and technicians interactively"),
+              tags$li("facilitate medical research hypothesis generation"),
+              tags$li("bridge communitations between clinicians and technicians interactively"),
               tags$li("visualize biomedical research data and especially longitudinal datasets"),
               tags$li("provide baseline predictive models by supervised learning, such as logistic and linear regression"),
               tags$li("provide reliable model evaluation and rubost inference results that adjust for", 

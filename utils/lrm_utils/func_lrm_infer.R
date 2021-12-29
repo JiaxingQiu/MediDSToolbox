@@ -1,10 +1,13 @@
-lrm_infer <-  function(df, 
-                       df_org, 
-                       dict_df, 
-                       fml, 
-                       cluster_col, 
-                       penalty,
-                       num_col2=NULL){
+lrm_infer <-  function(
+  df, 
+  df_org, 
+  dict_df, 
+  fml, 
+  cluster_col, 
+  penalty,
+  num_col2=NULL,
+  fold_risk=FALSE
+){
   
   
   dd <- datadist(df)
@@ -18,14 +21,24 @@ lrm_infer <-  function(df,
     penalty <- penalty - 0.5
   }
   
-  # --- inference ---- (1d marginal effects)
-  eff_plot <- ggplot(rms::Predict(mdl_final, fun=plogis), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
-  
-  # --- prediction over time ---
-  time_pred_plot <- NULL
   y_col <- strsplit(as.character(fml), " ~")[[1]][1]
   # global mean of outcome
   base_mean <- mean(df_org[,y_col],na.rm=TRUE)
+  
+  # --- inference ---- (1d marginal effects)
+  eff_plot <- ggplot(rms::Predict(mdl_final, fun=plogis), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
+  if(fold_risk){
+    # redefine mapping funtion
+    foldrisk <- function(y_logodds){
+      y_fold_risk <- plogis(y_logodds)/base_mean
+      return(y_fold_risk)
+    }
+    eff_plot <- ggplot(rms::Predict(mdl_final, fun=foldrisk), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
+  }
+  
+  # --- prediction over time ---
+  time_pred_plot <- NULL
+  
   df_org$y_hat <- logit2prob(predictrms(mdl_final, newdata = df_org))
   df_org$rel_risk <- df_org$y_hat / base_mean
   df_org$y_true <- as.factor(df_org[,y_col])
