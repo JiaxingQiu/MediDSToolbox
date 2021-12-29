@@ -111,7 +111,7 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
       data$trim_by_col <- data[,trim_by_col]
       rsps_df <- data %>% group_by(y) %>% summarise(
         n_cluster = n_distinct(clu_col),
-        n_episode = sum(trim_by_col==(trim_vec[2]-1)*time_unit), # number of episodes counted by "anchor" 
+        n_episode = sum( diff(trim_by_col[!is.na(trim_by_col)])<0 ), # number of episodes counted by jump in relative time 
         n_row = n()
       ) %>% as.data.frame()
     }

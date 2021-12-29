@@ -6,7 +6,8 @@ lrm_infer <-  function(
   cluster_col, 
   penalty,
   num_col2=NULL,
-  fold_risk=FALSE
+  fold_risk=FALSE,
+  y_max=10
 ){
   
   
@@ -26,11 +27,18 @@ lrm_infer <-  function(
   base_mean <- mean(df_org[,y_col],na.rm=TRUE)
   
   # --- inference ---- (1d marginal effects)
-  eff_plot <- ggplot(rms::Predict(mdl_final, fun=plogis), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
+  # redefine mapping funtion
+  plogis_fix <- function(y_logodds){
+    y_prob <- plogis(y_logodds)
+    y_prob[which(y_prob>y_max)] <- y_max
+    return(y_prob)
+  }
+  eff_plot <- ggplot(rms::Predict(mdl_final, fun=plogis_fix), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')
   if(fold_risk){
     # redefine mapping funtion
     foldrisk <- function(y_logodds){
       y_fold_risk <- plogis(y_logodds)/base_mean
+      y_fold_risk[which(y_fold_risk>y_max)] <- y_max
       return(y_fold_risk)
     }
     eff_plot <- ggplot(rms::Predict(mdl_final, fun=foldrisk), anova=anova(mdl_final), pval=TRUE, size.anova=2, sepdiscrete='list')

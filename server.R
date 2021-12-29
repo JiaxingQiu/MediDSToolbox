@@ -252,7 +252,8 @@ shinyServer(function(input, output, session) {
                            type=input$ml_type,
                            fix_knots = input$ml_fix_knots,
                            trim_ctrl = input$ml_trim_ctrl,
-                           fold_risk = input$ml_fold_risk) 
+                           fold_risk = input$ml_fold_risk,
+                           y_max = input$ml_y_max) 
   })
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {

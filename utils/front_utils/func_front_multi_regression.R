@@ -32,7 +32,8 @@ front_multi_regression <- function(
   seed_value=333,
   fix_knots = TRUE,
   trim_ctrl=TRUE,
-  fold_risk=FALSE
+  fold_risk=FALSE,
+  y_max=10
 ){
   
   set.seed(seed = seed_value)
@@ -289,7 +290,8 @@ front_multi_regression <- function(
                           type=type,
                           rank=rank,
                           fix_knots=fix_knots,
-                          fold_risk = fold_risk)
+                          fold_risk = fold_risk,
+                          y_max=y_max)
     
   }else if(dict_data[y_col, "type"]=="num"){
     results <- do_ols_pip(data=data, 

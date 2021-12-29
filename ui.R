@@ -283,6 +283,7 @@ sidebar <- dashboardSidebar(
                                                         "Fold Risk Y", 
                                                         value = TRUE))
                          ),
+                         numericInput("ml_y_max", "Max predicted Y", 10),
                          # Input: Select a file ----
                          fileInput("ex_test_csv", "External CSV",
                                    multiple = FALSE,
