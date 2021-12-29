@@ -156,6 +156,7 @@ front_multi_regression <- function(
   
   
   # --- preprocessing test data if given and engineer_test_data is TRUE---
+  test_data_org <- NULL
   if (!is.null(test_data)){
     # if not to engineer the test data
     if(!engineer_test_data){
@@ -167,7 +168,17 @@ front_multi_regression <- function(
       data_internal <- data
       # reassign data(tmp) by test data
       data <- test_data
-      data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+      # trim time info
+      if (length(trim_by_col)>0 ){
+        # if there is a valid event / control group split, and user choose not to trim the control group
+        if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA)) & !trim_ctrl){
+          data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+          data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
+          data <- bind_rows(data_pos, data_ctrl)
+        }else{
+          data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
+        }
+      }
       data$cluster_id <- data[,cluster_col]
       # impute numeric inputs
       if(!impute_per_cluster){
