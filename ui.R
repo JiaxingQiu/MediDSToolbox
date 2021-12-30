@@ -272,7 +272,7 @@ sidebar <- dashboardSidebar(
                                                selected = c("10"),
                                                inline = TRUE) ),
                            column(width=6,checkboxInput("ml_stratified_cv", 
-                                                        "Stratified", 
+                                                        "Stratified CV", 
                                                         value = TRUE))
                          ),
                          fluidRow(
