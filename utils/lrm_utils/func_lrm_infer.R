@@ -1,3 +1,6 @@
+library(tidytext)
+library(ggplot2)
+
 lrm_infer <-  function(
   df, 
   df_org, 
@@ -58,13 +61,14 @@ lrm_infer <-  function(
       df_plot_pred$predictor_name <- x_col
       df_plot <- bind_rows(df_plot, df_plot_pred)
     }
-    fitted_eff_plot <- ggplot(df_plot, aes(x=predictor_value, y=y_pred, group=y_true)) +
-      stat_summary(geom = "line", fun = mean, size=0.3, color='grey') +
-      geom_smooth(aes(color=y_true))+
+    fitted_eff_plot <- ggplot(df_plot, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
+      stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
+      geom_smooth()+
       facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
       ylab("Fitted Probability") +
       xlab("Predictor Value") +
       scale_color_discrete(name = y_col)+
+      scale_color_manual(values=c( "blue", "orange"))+
       theme(legend.position="top") +
       ylim(0, min(max(df_org$y_pred),y_max) )
     
@@ -94,13 +98,14 @@ lrm_infer <-  function(
       df_plot_pred$predictor_name <- x_col
       df_plot <- bind_rows(df_plot, df_plot_pred)
     }
-    fitted_eff_plot <- ggplot(df_plot, aes(x=predictor_value, y=y_pred, group=y_true)) +
-      stat_summary(geom = "line", fun = mean, size=0.3, color='grey') +
-      geom_smooth(aes(color=y_true))+
+    fitted_eff_plot <- ggplot(df_plot, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
+      stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
+      geom_smooth()+
       facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
       ylab("Fold Increase Risk") +
       xlab("Predictor Value") +
       scale_color_discrete(name = y_col)+
+      scale_color_manual(values=c( "blue", "orange"))+
       theme(legend.position="top") +
       ylim(0,  min(max(df_org$y_pred),y_max))
   }
@@ -191,10 +196,11 @@ lrm_infer <-  function(
     colnames(df_plot_scores_raw) <- "score_value"
     df_plot_scores_raw$score_by <- rownames(df_plot_scores_raw)
     
-    scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=variable)) +
+    scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=reorder_within(variable, score_value,score_by) )) +
       geom_point()+
       geom_vline(data=df_plot_scores_raw, aes(xintercept=score_value))+
-      facet_wrap(~score_by, scales = "free", ncol = 1)+
+      scale_y_reordered() +
+      facet_wrap(~score_by, scales = "free", ncol = 2)+
       theme(axis.title.x=element_blank(),
             axis.title.y=element_blank())
     
