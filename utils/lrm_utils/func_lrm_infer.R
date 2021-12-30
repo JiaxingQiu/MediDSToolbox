@@ -7,7 +7,8 @@ lrm_infer <-  function(
   penalty,
   num_col2=NULL,
   fold_risk=TRUE,
-  y_max=3
+  y_max=3,
+  fea_permu = FALSE
 ){
   
   eff_plot_final <- NULL
@@ -155,9 +156,59 @@ lrm_infer <-  function(
   }
   
   
+  # ---- feature importance by permutation each predictor ----
+  scores_raw <- NULL
+  scores_all <- NULL
+  scores_plot <- NULL
+  if(fea_permu){
+    
+    test_obj_raw <- lrm_test(test_data = df,
+                             y_col=y_col,
+                             mdl_obj = mdl_final)
+    scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+    scores_all <- data.frame()
+    for (x_col in dict_df$varname[which(dict_df$mlrole=="input")]){
+      df_shuffled <- df
+      # shuffle the predictor
+      df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
+      test_obj <- lrm_test(test_data = df_shuffled,
+                           y_col=y_col,
+                           mdl_obj = mdl_final)
+      scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+      scores$varname <- x_col
+      scores_all <- bind_rows(scores_all, scores)
+    }
+    scores_all <- scores_all[,union("varname", colnames(scores_all))]
+    
+    df_plot_scores_all <- data.frame()
+    for (score_col in setdiff(colnames(scores_all), "varname") ){
+      df_plot_scores <- scores_all[,c("varname",score_col)]
+      colnames(df_plot_scores) <- c("variable", "score_value")
+      df_plot_scores$score_by <- score_col
+      df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores) 
+    }
+    df_plot_scores_raw <- as.data.frame(t(scores_raw))
+    colnames(df_plot_scores_raw) <- "score_value"
+    df_plot_scores_raw$score_by <- rownames(df_plot_scores_raw)
+    
+    scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=variable)) +
+      geom_point()+
+      geom_vline(data=df_plot_scores_raw, aes(xintercept=score_value))+
+      facet_wrap(~score_by, scales = "free", ncol = 1)+
+      theme(axis.title.x=element_blank(),
+            axis.title.y=element_blank())
+    
+  }
+  
+  
+  
+  
   return(list("effect_plot_final"=eff_plot_final,
               "fitted_effect_plot"=fitted_eff_plot,
-              "mdl_obj"= mdl_final))
+              "mdl_obj"= mdl_final,
+              "scores_raw_df"=scores_raw,
+              "scores_drop_df"=scores_all,
+              "scores_plot"=scores_plot))
   
   
 }

@@ -24,7 +24,8 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                        rank=TRUE,
                        fix_knots=FALSE,
                        fold_risk=FALSE,
-                       y_max=10){
+                       y_max=10,
+                       fea_permu = FALSE){
   
   
   do_obj <- NULL
@@ -83,7 +84,8 @@ do_lrm_pip <- function(data=subset_df(data_ml, "40w"), # data for model training
                          penalty=model_obj$cv_obj$model_info$penalty,
                          num_col2=num_col2,
                          fold_risk=fold_risk,
-                         y_max=y_max)
+                         y_max=y_max,
+                         fea_permu=fea_permu)
   
   # --- external testing results ---
   

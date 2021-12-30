@@ -33,7 +33,8 @@ front_multi_regression <- function(
   fix_knots = TRUE,
   trim_ctrl=TRUE,
   fold_risk=FALSE,
-  y_max=10
+  y_max=10,
+  fea_permu = FALSE
 ){
   
   set.seed(seed = seed_value)
@@ -291,7 +292,8 @@ front_multi_regression <- function(
                           rank=rank,
                           fix_knots=fix_knots,
                           fold_risk = fold_risk,
-                          y_max=y_max)
+                          y_max=y_max,
+                          fea_permu = fea_permu)
     
   }else if(dict_data[y_col, "type"]=="num"){
     results <- do_ols_pip(data=data, 
@@ -339,6 +341,10 @@ front_multi_regression <- function(
                         "delete" =  "Correlation criteria delete variables --- ")
     
   }
+  # feature importance by permutation object
+  results$infer_obj$scores_raw_df$varname <- "BASELINE"
+  fea_rank_score_df <- NULL
+  fea_rank_score_df <- bind_rows( results$infer_obj$scores_raw_df, results$infer_obj$scores_drop_df)
   
   return(list(effect_plot=effect_plot, 
               cali_plot=cali_plot,
@@ -352,7 +358,9 @@ front_multi_regression <- function(
               dof_obj = results$dof_obj,
               test_tbl=results$test_obj$res_df,
               test_data=results$test_obj$test_data,
-              test_data_org=results$test_obj$test_data_org
+              test_data_org=results$test_obj$test_data_org,
+              fea_rank_score_df = fea_rank_score_df,
+              fea_rank_plot = results$infer_obj$scores_plot
   ))
   
   

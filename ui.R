@@ -279,11 +279,16 @@ sidebar <- dashboardSidebar(
                            column(width=6,checkboxInput("ml_fix_knots", 
                                                         "Fix Knots X", 
                                                         value = TRUE) ),
+                           column(width=6,checkboxInput("ml_fea_permu", 
+                                                        "Ranking X", 
+                                                        value = TRUE) )
+                         ),
+                         fluidRow(
+                           column(width=6,numericInput("ml_y_max", "Max Y", 10) ),
                            column(width=6,checkboxInput("ml_fold_risk", 
                                                         "Fold Risk Y", 
                                                         value = TRUE))
                          ),
-                         numericInput("ml_y_max", "Max predicted Y", 10),
                          # Input: Select a file ----
                          fileInput("ex_test_csv", "External CSV",
                                    multiple = FALSE,
@@ -565,13 +570,10 @@ body <- dashboardBody(
             h3("Machine Learning (supervised) -- Multivariable Regression"),
             fluidRow(column(1, actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
-                        tabPanel("Coefficients", 
+                        tabPanel("Inference", 
                                  plotOutput("effect_plot", height = "600px"),
                                  plotOutput("anova_plot"),
                                  verbatimTextOutput("model_prt")
-                        ),
-                        tabPanel("Fitted Y", 
-                                 plotOutput("fitted_effect_plot", height = "700px")
                         ),
                         tabPanel("In-Validation", 
                                  downloadButton("download_mdl","Model"),
@@ -585,6 +587,14 @@ body <- dashboardBody(
                                  downloadButton("download_test_data_org","Y-hat (original)"),
                                  tableOutput("test_tbl"),
                                  dataTableOutput("test_data_org")
+                        ),
+                        tabPanel("Fitted Y", 
+                                 plotOutput("fitted_effect_plot", height = "700px")
+                        ),
+                        tabPanel("Ranked X",
+                                 downloadButton("download_fea_rank_score_df","Score table"),
+                                 plotOutput("fea_rank_plot", height = "1000px"),
+                                 tableOutput("fea_rank_score_df")
                         )
             )
     ),

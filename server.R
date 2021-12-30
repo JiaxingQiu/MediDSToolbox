@@ -253,7 +253,8 @@ shinyServer(function(input, output, session) {
                            fix_knots = input$ml_fix_knots,
                            trim_ctrl = input$ml_trim_ctrl,
                            fold_risk = input$ml_fold_risk,
-                           y_max = input$ml_y_max) 
+                           y_max = input$ml_y_max,
+                           fea_permu = input$ml_fea_permu ) 
   })
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {
@@ -653,6 +654,23 @@ shinyServer(function(input, output, session) {
     }
   )
   
+  output$fea_rank_score_df <- renderTable({
+    MLreports <- MLreports()
+    MLreports$fea_rank_score_df # external test score table
+  })
+  output$fea_rank_plot <-  renderPlot({
+    MLreports <- MLreports()
+    MLreports$fea_rank_plot
+  })
+  output$download_fea_rank_score_df <- downloadHandler(
+    filename = function() {
+      paste('fea_rank_score_', Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      MLreports <- MLreports()
+      write.csv(MLreports$fea_rank_score_df, file, row.names = FALSE)
+    }
+  )
   
   # Timely Models ----
   output$timely_freq_plot <- renderPlot({
