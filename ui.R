@@ -570,24 +570,22 @@ body <- dashboardBody(
                                  tableOutput("devel_cv_eval_trace_tbl")
                         ),
                         tabPanel("Inference", 
-                                 downloadButton("infer_download_mdl","Model (.rda)"),
+                                 downloadButton("devel_download_mdl","Model (.rda)"),
                                  plotOutput("infer_effect_plot_1d", height = "600px"),
                                  plotOutput("infer_anova_plot"),
                                  verbatimTextOutput("infer_model_prt"),
                                  plotOutput("infer_effect_plot_2d", height = "600px")
                         ),
                         tabPanel("Performance",
-                                 fluidRow(column(width=4,
-                                                 selectInput("perform_from",
+                                 fluidRow(column(3,selectInput("perform_from",
                                                              label=NULL,
                                                              choices = c("Internal", "External")) ),
-                                          column(width=4,
-                                                 selectInput("perform_dataset",
+                                          column(3,selectInput("perform_dataset",
                                                              label=NULL,
-                                                             choices = c("Engineered", "Original")) ) 
+                                                             choices = c("Engineered", "Original")) ),
+                                          downloadButton("perform_download_df_hat","Y hat (.csv)"),
+                                          downloadButton("perform_download_scores_tbl","X rank (.csv)")
                                  ),
-                                 downloadButton("perform_download_df_hat","Y hat (.csv)"),
-                                 downloadButton("perform_download_scores_tbl","X rank (.csv)"),
                                  plotOutput("perform_fitted_eff_plot", height = "600px"),
                                  plotOutput("perform_scores_plot", height = "600px"),
                                  tableOutput("perform_scores_tbl")

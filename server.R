@@ -602,13 +602,13 @@ shinyServer(function(input, output, session) {
     MLreports$devel_score_summ_tbl # model score table
   })
   # inference
-  output$infer_download_mdl <- downloadHandler(
+  output$devel_download_mdl <- downloadHandler(
     filename = function() {
       paste('mdl_', Sys.Date(), ".rda")
     },
     content = function(file) {
       MLreports <- MLreports()
-      saveRDS(MLreports$infer_final_model_obj, file)
+      saveRDS(MLreports$devel_final_model_obj, file)
     }
   )
   output$infer_effect_plot_1d <- renderPlot({
@@ -621,11 +621,11 @@ shinyServer(function(input, output, session) {
   })
   output$infer_anova_plot <- renderPlot({
     MLreports <- MLreports()
-    plot(anova(MLreports$infer_final_model_obj))
+    plot(anova(MLreports$devel_final_model_obj))
   })
   output$infer_model_prt <- renderPrint({
     MLreports <- MLreports()
-    print(MLreports$infer_final_model_obj) # model coef table
+    print(MLreports$devel_final_model_obj) # model coef table
   })
   
   # performance

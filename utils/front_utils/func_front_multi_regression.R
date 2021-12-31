@@ -32,7 +32,7 @@ front_multi_regression <- function(
   fix_knots = TRUE,
   trim_ctrl=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=10
+  y_map_max=3
 ){
   
   set.seed(seed = seed_value)
@@ -308,11 +308,11 @@ front_multi_regression <- function(
   devel_score_summ_tbl <- devel_score_summ_tbl[,union(c("success_nfold","train_AUROC_mean","valid_AUROC_mean","train_AUROC_se","valid_AUROC_se"), colnames(devel_score_summ_tbl))]
   devel_cali_plot <- results$model_obj$cv_obj$calibration_curve
   devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace
+  devel_final_model_obj <- results$model_obj$mdl_obj # for print, anova and save locally
   
   # model inference reports
-  infer_effect_plot_1d <- results$model_obj$effects_plot_1d
-  infer_effect_plot_2d <- results$model_obj$effects_plot_2d
-  infer_final_model_obj <- results$model_obj$mdl_obj # for print, anova and save locally
+  infer_effect_plot_1d <- results$infer_obj$eff_plot_1d
+  infer_effect_plot_2d <- results$infer_obj$eff_plot_2d
   
   # model performance reports on new dataset 
   perform_in_df_hat <- results$perform_obj$internal$df_hat
@@ -340,9 +340,9 @@ front_multi_regression <- function(
                devel_score_summ_tbl = devel_score_summ_tbl,
                devel_cali_plot = devel_cali_plot,
                devel_cv_eval_trace_tbl = devel_cv_eval_trace_tbl,
+               devel_final_model_obj = devel_final_model_obj,
                infer_effect_plot_1d = infer_effect_plot_1d,
                infer_effect_plot_2d = infer_effect_plot_2d,
-               infer_final_model_obj = infer_final_model_obj,
                perform_in_df_hat = perform_in_df_hat,
                perform_inorg_df_hat = perform_inorg_df_hat,
                perform_ex_df_hat = perform_ex_df_hat,

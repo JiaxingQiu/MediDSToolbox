@@ -5,10 +5,7 @@ do_lrm_cv <- function(df=df,
                       cv_nfold=5, 
                       tune_by="logloss",  
                       stratified_cv=TRUE, 
-                      samepen_patience=5,
-                      y_map_func = "log_odds",
-                      y_map_max = 3,
-                      joint_col2=NULL){
+                      samepen_patience=5){
   # ---- Usage ----
   # dictionary oriented (do) cross validation logistic regression machine learning pipeline
   
@@ -120,20 +117,12 @@ do_lrm_cv <- function(df=df,
     penalty <- penalty - 0.5
   }
   
-  # within model inference
-  infer_obj <- lrm_infer(mdl_obj=mdl_final,
-                         y_map_func=y_map_func,
-                         y_map_max = y_map_max,
-                         joint_col2=joint_col2,
-                         df=df)
-  
+ 
   return(list("df_final" = df,
               "dict_final" = dict_mdl,
               "fml_obj"=fml_obj,
               "cv_obj"=cv_obj,
-              "mdl_obj"=mdl_final,
-              "effects_plot_1d"=infer_obj$eff_plot_1d,
-              "effects_plot_2d"=infer_obj$eff_plot_2d
+              "mdl_obj"=mdl_final
   ))
   
 }

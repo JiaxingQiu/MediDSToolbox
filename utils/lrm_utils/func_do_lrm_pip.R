@@ -65,7 +65,7 @@ do_lrm_pip <- function(data, # data for model training engineered
   }
   
   # --- dictionary oriented (do) cross validate modeling ---
-  print("--- do_lrm_cv (model infer) ---")
+  print("--- do_lrm_cv ---")
   df <- init_obj$df_final
   dict_df <- init_obj$dict_final
   print(head(dict_df,5))
@@ -73,12 +73,16 @@ do_lrm_pip <- function(data, # data for model training engineered
                          dict_df=dict_df, 
                          cv_nfold=cv_nfold, 
                          na_frac_max=na_frac_max, 
-                         stratified_cv=stratified_cv,
-                         y_map_func=y_map_func,
+                         stratified_cv=stratified_cv)
+  
+  # --- lrm_infer modeling ---
+  print("--- lrm_infer  ---")
+  # within model inference
+  infer_obj <- lrm_infer(mdl_obj = model_obj$mdl_obj,
+                         y_map_func = y_map_func,
                          y_map_max = y_map_max,
-                         joint_col2=joint_col2)
-  
-  
+                         joint_col2 = joint_col2,
+                         df = model_obj$df_final)
   
   # --- lrm_perform (internal performance) ---
   print("--- lrm_perform ---")
@@ -119,6 +123,7 @@ do_lrm_pip <- function(data, # data for model training engineered
   
   return(list("redun_obj"=redun_obj,
               "model_obj"=model_obj, 
+              "infer_obj"=infer_obj,
               "perform_obj"=perform_obj,
               "dof_obj"=init_obj$spearman2_rho))
   
