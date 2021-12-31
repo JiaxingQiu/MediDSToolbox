@@ -226,6 +226,7 @@ shinyServer(function(input, output, session) {
                            dict_data = dict_ml,
                            trim_by_label=input$ml_trim_by_label, 
                            trim_vec=as.numeric(input$ml_trim_vec), 
+                           time_unit = input$ml_trim_time_unit,
                            x_labels_linear=input$ml_linear_num_labels,
                            x_labels_nonlin_rcs5 = input$ml_nonlin_rcs5_labels,
                            x_labels_nonlin_rcs4 = input$ml_nonlin_rcs4_labels,
@@ -235,26 +236,24 @@ shinyServer(function(input, output, session) {
                            x_labels=unique(c(input$ml_tag_labels_mdl, input$ml_fct_labels_mdl,input$ml_linear_num_labels,input$ml_nonlin_rcs3_labels,input$ml_nonlin_rcs4_labels,input$ml_nonlin_rcs5_labels)), 
                            y_label=input$ml_y_label, 
                            cluster_label=input$ml_cluster_label,
+                           r2=input$ml_r2,
                            rcs5_low=paste0(input$ml_rcs_vec[1],"%"),
                            rcs4_low=paste0(input$ml_rcs_vec[2],"%"),
-                           num_col2_label=input$ml_num_col2_label, 
+                           cv_nfold = as.numeric(input$ml_cv_nfold),
                            na_frac_max=input$ml_na_frac_max, 
                            test_data = test_data,
+                           joint_col2_label=input$ml_joint_col2_label, 
                            imputation=input$ml_imputation,
+                           impute_per_cluster=input$ml_impute_per_cluster,
                            winsorizing=input$ml_winsorizing,
                            aggregation = input$ml_aggregation,
                            stratified_cv=input$ml_stratified_cv,
-                           cv_nfold = as.numeric(input$ml_cv_nfold),
-                           time_unit=input$ml_trim_time_unit,
-                           impute_per_cluster=input$ml_impute_per_cluster,
                            r_abs=input$ml_r_abs, 
-                           r2=input$ml_r2,
                            type=input$ml_type,
                            fix_knots = input$ml_fix_knots,
                            trim_ctrl = input$ml_trim_ctrl,
-                           fold_risk = input$ml_fold_risk,
-                           y_max = input$ml_y_max,
-                           fea_permu = input$ml_fea_permu ) 
+                           y_map_func = input$ml_y_map_func,  
+                           y_map_max = input$ml_y_max) 
   })
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {
@@ -273,7 +272,7 @@ shinyServer(function(input, output, session) {
                                   cluster_label=input$ml_cluster_label,
                                   rcs5_low=paste0(input$ml_rcs_vec[1],"%"),
                                   rcs4_low=paste0(input$ml_rcs_vec[2],"%"),
-                                  num_col2_label=input$ml_num_col2_label, 
+                                  joint_col2_label=input$ml_joint_col2_label, 
                                   na_frac_max=input$ml_na_frac_max, 
                                   imputation=input$ml_imputation,
                                   winsorizing=input$ml_winsorizing,
@@ -585,92 +584,152 @@ shinyServer(function(input, output, session) {
     plot(XclusReports$ml_summ_obj$na_obj)
   })
   # Regression ----
-  output$effect_plot <- renderPlot({
+  ## development
+  output$devel_cali_plot <- renderPlot({
     MLreports <- MLreports()
-    MLreports$effect_plot
+    MLreports$devel_cali_plot #MLreports$time_pred_plot
   })
-  output$fitted_effect_plot<- renderPlot({
+  output$devel_model_info_tbl <- renderTable({
     MLreports <- MLreports()
-    MLreports$fitted_effect_plot
+    MLreports$devel_model_info_tbl # model info table
   })
-  output$anova_plot <- renderPlot({
+  output$devel_cv_eval_trace_tbl <- renderTable({
     MLreports <- MLreports()
-    plot(anova(MLreports$mdl_obj))
+    MLreports$devel_cv_eval_trace_tbl # model info table
   })
-  output$inter_cali_plot <- renderPlot({
+  output$devel_score_summ_tbl <- renderTable({
     MLreports <- MLreports()
-    MLreports$cali_plot #MLreports$time_pred_plot
+    MLreports$devel_score_summ_tbl # model score table
   })
-  output$model_tbl <- renderTable({
-    MLreports <- MLreports()
-    MLreports$model_tbl # model info table
-  })
-  output$cv_eval_trace_tbl <- renderTable({
-    MLreports <- MLreports()
-    MLreports$cv_eval_trace_tbl # model info table
-  })
-  output$score_tbl <- renderTable({
-    MLreports <- MLreports()
-    MLreports$score_tbl # model score table
-  })
-  output$model_prt <- renderPrint({
-    MLreports <- MLreports()
-    print(MLreports$mdl_obj) # model coef table
-  })
-  output$test_tbl <- renderTable({
-    MLreports <- MLreports()
-    MLreports$test_tbl # external test score table
-  })
-  output$test_data_org <- renderDataTable({
-    MLreports <- MLreports()
-    summary(MLreports$test_data_org) # external test score table
-    
-  })
-  output$download_test_data <- downloadHandler(
-    filename = function() {
-      paste('test_data_yhat_engineered_', Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      MLreports <- MLreports()
-      write.csv(MLreports$test_data, file, row.names = FALSE)
-    }
-  )
-  output$download_test_data_org <- downloadHandler(
-    filename = function() {
-      paste('test_data_yhat_original_', Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      MLreports <- MLreports()
-      write.csv(MLreports$test_data_org, file, row.names = FALSE)
-    }
-  )
-  output$download_mdl <- downloadHandler(
+  # inference
+  output$infer_download_mdl <- downloadHandler(
     filename = function() {
       paste('mdl_', Sys.Date(), ".rda")
     },
     content = function(file) {
       MLreports <- MLreports()
-      saveRDS(MLreports$mdl_obj, file)
+      saveRDS(MLreports$infer_final_model_obj, file)
     }
   )
+  output$infer_effect_plot_1d <- renderPlot({
+    MLreports <- MLreports()
+    MLreports$infer_effect_plot_1d
+  })
+  output$infer_effect_plot_2d <- renderPlot({
+    MLreports <- MLreports()
+    MLreports$infer_effect_plot_2d
+  })
+  output$infer_anova_plot <- renderPlot({
+    MLreports <- MLreports()
+    plot(anova(MLreports$infer_final_model_obj))
+  })
+  output$infer_model_prt <- renderPrint({
+    MLreports <- MLreports()
+    print(MLreports$infer_final_model_obj) # model coef table
+  })
   
-  output$fea_rank_score_df <- renderTable({
-    MLreports <- MLreports()
-    MLreports$fea_rank_score_df # external test score table
-  })
-  output$fea_rank_plot <-  renderPlot({
-    MLreports <- MLreports()
-    MLreports$fea_rank_plot
-  })
-  output$download_fea_rank_score_df <- downloadHandler(
+  # performance
+  output$perform_download_df_hat <- downloadHandler(
     filename = function() {
-      paste('fea_rank_score_', Sys.Date(), ".csv", sep = "")
+      paste('df_y_hat_', Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
       MLreports <- MLreports()
-      write.csv(MLreports$fea_rank_score_df, file, row.names = FALSE)
+      df_hat <- NULL
+      if(input$perform_from=="Internal"){
+        if(input$perform_dataset=="Engineered"){
+          df_hat <- MLreports$perform_in_df_hat
+        }else if(input$perform_dataset=="Original"){
+          df_hat <- MLreports$perform_inorg_df_hat
+        }
+      }else if(input$perform_from=="External"){
+        if(input$perform_dataset=="Engineered"){
+          df_hat <- MLreports$perform_ex_df_hat
+        }else if(input$perform_dataset=="Original"){
+          df_hat <- MLreports$perform_exorg_df_hat
+        }
+      }
+      write.csv(df_hat, file, row.names = FALSE)
     }
   )
+  output$perform_download_scores_tbl <- downloadHandler(
+    filename = function() {
+      paste('df_x_rank_', Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      MLreports <- MLreports()
+      scores_tbl <- NULL
+      if(input$perform_from=="Internal"){
+        if(input$perform_dataset=="Engineered"){
+          scores_tbl <- MLreports$perform_in_scores_tbl
+        }else if(input$perform_dataset=="Original"){
+          scores_tbl <- MLreports$perform_inorg_scores_tbl
+        }
+      }else if(input$perform_from=="External"){
+        if(input$perform_dataset=="Engineered"){
+          scores_tbl <- MLreports$perform_ex_scores_tbl
+        }else if(input$perform_dataset=="Original"){
+          scores_tbl <- MLreports$perform_exorg_scores_tbl
+        }
+      }
+      write.csv(scores_tbl, file, row.names = FALSE)
+    }
+  )
+  output$perform_fitted_eff_plot<- renderPlot({
+    MLreports <- MLreports()
+    fitted_eff_plot <- NULL
+    if(input$perform_from=="Internal"){
+      if(input$perform_dataset=="Engineered"){
+        fitted_eff_plot <- MLreports$perform_in_fitted_eff_plot
+      }else if(input$perform_dataset=="Original"){
+        fitted_eff_plot <- MLreports$perform_inorg_fitted_eff_plot
+      }
+    }else if(input$perform_from=="External"){
+      if(input$perform_dataset=="Engineered"){
+        fitted_eff_plot <- MLreports$perform_ex_fitted_eff_plot
+      }else if(input$perform_dataset=="Original"){
+        fitted_eff_plot <- MLreports$perform_exorg_fitted_eff_plot
+      }
+    }
+    fitted_eff_plot
+  })
+  output$perform_scores_plot<- renderPlot({
+    MLreports <- MLreports()
+    scores_plot <- NULL
+    if(input$perform_from=="Internal"){
+      if(input$perform_dataset=="Engineered"){
+        scores_plot <- MLreports$perform_in_scores_plot
+      }else if(input$perform_dataset=="Original"){
+        scores_plot <- MLreports$perform_inorg_scores_plot
+      }
+    }else if(input$perform_from=="External"){
+      if(input$perform_dataset=="Engineered"){
+        scores_plot <- MLreports$perform_ex_scores_plot
+      }else if(input$perform_dataset=="Original"){
+        scores_plot <- MLreports$perform_exorg_scores_plot
+      }
+    }
+    scores_plot
+  })
+  output$perform_scores_tbl <- renderTable({
+    MLreports <- MLreports()
+    scores_tbl <- NULL
+    if(input$perform_from=="Internal"){
+      if(input$perform_dataset=="Engineered"){
+        scores_tbl <- MLreports$perform_in_scores_tbl
+      }else if(input$perform_dataset=="Original"){
+        scores_tbl <- MLreports$perform_inorg_scores_tbl
+      }
+    }else if(input$perform_from=="External"){
+      if(input$perform_dataset=="Engineered"){
+        scores_tbl <- MLreports$perform_ex_scores_tbl
+      }else if(input$perform_dataset=="Original"){
+        scores_tbl <- MLreports$perform_exorg_scores_tbl
+      }
+    }
+    scores_tbl
+  })
+  
   
   # Timely Models ----
   output$timely_freq_plot <- renderPlot({

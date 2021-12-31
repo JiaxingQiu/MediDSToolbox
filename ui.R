@@ -264,38 +264,31 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_multi',
         conditionalPanel("input.sidebar == 'ml_multi'",
+                         radioButtons("ml_cv_nfold",
+                                      "CV folds",
+                                      choices = c("1", "2", "5", "10"),
+                                      selected = c("10"),
+                                      inline = TRUE),
+                         checkboxInput("ml_stratified_cv", 
+                                       "Stratified CV", 
+                                       value = TRUE),
+                         checkboxInput("ml_fix_knots", 
+                                       "Fix Knots X", 
+                                       value = TRUE),
                          fluidRow(
-                           column(width=6,
-                                  radioButtons("ml_cv_nfold",
-                                               "CV folds",
-                                               choices = c("1", "5", "10"),
-                                               selected = c("10"),
-                                               inline = TRUE) ),
-                           column(width=6,checkboxInput("ml_stratified_cv", 
-                                                        "Stratified CV", 
-                                                        value = TRUE))
+                           column(width=7, selectInput("ml_y_map_func", 
+                                                       "Response type", 
+                                                       choices = c("fold_risk", "probability", "log_odds")  ) ),
+                           column(width=4, numericInput("ml_y_max", "max", 3))
                          ),
-                         fluidRow(
-                           column(width=6,checkboxInput("ml_fix_knots", 
-                                                        "Fix Knots X", 
-                                                        value = TRUE) ),
-                           column(width=6,checkboxInput("ml_fea_permu", 
-                                                        "Ranking X", 
-                                                        value = TRUE) )
-                         ),
-                         fluidRow(
-                           column(width=6,numericInput("ml_y_max", "Max Y", 10) ),
-                           column(width=6,checkboxInput("ml_fold_risk", 
-                                                        "Fold Risk Y", 
-                                                        value = TRUE))
-                         ),
+                         
                          # Input: Select a file ----
                          fileInput("ex_test_csv", "External CSV",
                                    multiple = FALSE,
                                    accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
-                         selectInput("ml_num_col2_label",
-                                     "Joint effect (2D continuous predictors)",
-                                     choices = in.ml_num_col2_label)
+                         selectInput("ml_joint_col2_label",
+                                     "Joint effect with",
+                                     choices = in.ml_joint_col2_label)
         )),
     div(id = 'sidebar_ml_timely',
         conditionalPanel("input.sidebar == 'ml_timely'",
@@ -570,31 +563,34 @@ body <- dashboardBody(
             h3("Machine Learning (supervised) -- Multivariable Regression"),
             fluidRow(column(1, actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
+                        tabPanel("Development", 
+                                 plotOutput("devel_cali_plot"),
+                                 tableOutput("devel_model_info_tbl"),
+                                 tableOutput("devel_score_summ_tbl"),
+                                 tableOutput("devel_cv_eval_trace_tbl")
+                        ),
                         tabPanel("Inference", 
-                                 plotOutput("effect_plot", height = "600px"),
-                                 plotOutput("anova_plot"),
-                                 verbatimTextOutput("model_prt")
+                                 downloadButton("infer_download_mdl","Model (.rda)"),
+                                 plotOutput("infer_effect_plot_1d", height = "600px"),
+                                 plotOutput("infer_anova_plot"),
+                                 verbatimTextOutput("infer_model_prt"),
+                                 plotOutput("infer_effect_plot_2d", height = "600px")
                         ),
-                        tabPanel("In-Validation", 
-                                 downloadButton("download_mdl","Model"),
-                                 plotOutput("inter_cali_plot"),
-                                 tableOutput("model_tbl"),
-                                 tableOutput("score_tbl"),
-                                 tableOutput("cv_eval_trace_tbl")
-                        ),
-                        tabPanel("Ex-Validation",
-                                 downloadButton("download_test_data","Y-hat (engineered)"),
-                                 downloadButton("download_test_data_org","Y-hat (original)"),
-                                 tableOutput("test_tbl"),
-                                 dataTableOutput("test_data_org")
-                        ),
-                        tabPanel("Fitted Y", 
-                                 plotOutput("fitted_effect_plot", height = "700px")
-                        ),
-                        tabPanel("Ranked X",
-                                 downloadButton("download_fea_rank_score_df","Score table"),
-                                 plotOutput("fea_rank_plot", height = "1000px"),
-                                 tableOutput("fea_rank_score_df")
+                        tabPanel("Performance",
+                                 fluidRow(column(width=4,
+                                                 selectInput("perform_from",
+                                                             label=NULL,
+                                                             choices = c("Internal", "External")) ),
+                                          column(width=4,
+                                                 selectInput("perform_dataset",
+                                                             label=NULL,
+                                                             choices = c("Engineered", "Original")) ) 
+                                 ),
+                                 downloadButton("perform_download_df_hat","Y hat (.csv)"),
+                                 downloadButton("perform_download_scores_tbl","X rank (.csv)"),
+                                 plotOutput("perform_fitted_eff_plot", height = "600px"),
+                                 plotOutput("perform_scores_plot", height = "600px"),
+                                 tableOutput("perform_scores_tbl")
                         )
             )
     ),

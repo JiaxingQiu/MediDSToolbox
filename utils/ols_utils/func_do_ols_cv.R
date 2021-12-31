@@ -45,7 +45,7 @@ do_ols_cv <- function(df=df,
                         cluster_col = cluster_col)
   
   
-  
+  # cross-validation
   cv_obj <- NULL
   cv_obj <- ols_cv(df = df, 
                    external_df = external_df, 

@@ -60,7 +60,6 @@ do_init <- function(df,
   
   
   dict_mdl <- get.dict(df)
-  print(dict_mdl)
   selected_cols <- rownames(dict_mdl[which(dict_mdl$mdl_term_init!=""),])
   df <- df[,selected_cols]
   

@@ -1,5 +1,4 @@
 do_ols_pip <- function(data=data_ml, # data for model training
-                       data_org, # data with timely column for inference
                        dict_data=dict_ml,
                        x_cols=c("ga_days","ca_days"), # predictor
                        y_col="Desat_80_v2_IH_event_dur_sec", # response
@@ -48,7 +47,12 @@ do_ols_pip <- function(data=data_ml, # data for model training
   model_obj <- do_ols_cv(df=df, dict_df=dict_df, cv_nfold=cv_nfold, na_frac_max=na_frac_max, external_df=test_data,stratified_cv=stratified_cv)
   
   # --- inference object / report ---
-  infer_obj <- ols_infer(df=df, df_org=data_org, dict_df=dict_df, fml=model_obj$cv_obj$model_info$formula, cluster_col=model_obj$cv_obj$model_info$cluster_col, num_col2=num_col2)
+  infer_obj <- ols_infer(df=df, 
+                         df_org=df, 
+                         dict_df=dict_df, 
+                         fml=model_obj$cv_obj$model_info$formula, 
+                         cluster_col=model_obj$cv_obj$model_info$cluster_col, 
+                         num_col2=num_col2)
   
   return(list("redun_obj"=redun_obj,
               "model_obj"=model_obj, 
