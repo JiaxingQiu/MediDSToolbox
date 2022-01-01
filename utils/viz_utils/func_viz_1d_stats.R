@@ -1,10 +1,10 @@
 viz_1d_stats <- function(
   data=data_viz,
   dict_data=dict_viz,
-  y_col="c02bloodgas",
-  x_col="ca_days",
-  cluster_col="subjectnbr",
-  group_by_col="GA_bins"
+  y_col="mean_hr",
+  x_col="skewness_spo2",
+  cluster_col="id",
+  group_by_col="bc_res_mix"
 ){
   
   # visualize distribution information given any value of x 
@@ -24,6 +24,14 @@ viz_1d_stats <- function(
   }
   data$x <- as.character(data[,x_col])
   
+  if (dict_data[x_col,"type"]=="num"){
+    data$x <- as.numeric(data[,x_col])
+    if(n_distinct(data$x)>10000){
+      x_cut <- stringr::str_split_fixed(gsub("]","",gsub("[(]","",as.character(cut(data$x,1000)))),",",2)[,1]
+      data$x <- round(as.numeric(x_cut),4)
+    }
+  }
+  
   # --- gates ---
   if(dict_data[x_col,"type"]=="fct"){
     plot_violin <- TRUE
@@ -36,15 +44,14 @@ viz_1d_stats <- function(
     plot_mean <- TRUE
     plot_pct <- FALSE
     plot_denom <- TRUE
-    data$x <- as.numeric(data[,x_col])
   }
   if(dict_data[x_col,"type"]=="num" & dict_data[y_col,"type"]=="num"){
     plot_violin <- FALSE
     plot_mean <- TRUE
     plot_pct <- TRUE
     plot_denom <- TRUE
-    data$x <- as.numeric(data[,x_col])
   }
+  
   
   
   # initiate plots
@@ -111,10 +118,20 @@ viz_1d_stats <- function(
   df <- dplyr::distinct( dplyr::bind_rows(df_all, df_grouped) )
   df$group <- factor(df$group,levels = union('All', sort(unique(data$group))))
   if(plot_pct){
+    # tuning smoothing method and formula based on data size
+    smooth_method <- NULL
+    smooth_formula <- NULL
+    if(nrow(df_all)<5e+03) {
+      smooth_method <- "loess"
+    }
+    if(nrow(df_all)>=5e+06) {
+      smooth_method <- "glm"
+      smooth_formula <- "y ~ poly(x, 7)"
+    }
     p_pct <- ggplot(df[!is.na(df$group),], aes(x=x, y=q_val)) +
       geom_line(aes(linetype=percentile),size=0.5, color='grey') +
-      geom_smooth(aes(linetype=percentile),size=0.5, color='black') +
-      geom_smooth(data=df[!is.na(df$group)&df$percentile==0.5,], size=0.7, color='red') +
+      geom_smooth(aes(linetype=percentile, color=percentile),size=0.5, method = smooth_method, formula = smooth_formula) +
+      scale_color_manual(values = c("black","red","black","black","black")) +
       scale_linetype_manual(values=c(5,1,2,3,4)) +
       xlab(paste0(dict_data[x_col,"label_front"], "    ", dict_data[x_col,"unit"]))+
       ylab(paste0(dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
@@ -129,7 +146,6 @@ viz_1d_stats <- function(
                                             breaks = x_breaks,
                                             labels = x_labels)
     }
-    
   }
   # --- denominator ---
   df_all_denom <- data %>% 
