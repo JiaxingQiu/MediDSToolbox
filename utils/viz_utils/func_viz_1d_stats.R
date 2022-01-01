@@ -28,7 +28,7 @@ viz_1d_stats <- function(
     data$x <- as.numeric(data[,x_col])
     if(n_distinct(data$x)>10000){
       x_cut <- stringr::str_split_fixed(gsub("]","",gsub("[(]","",as.character(cut(data$x,1000)))),",",2)[,1]
-      data$x <- round(as.numeric(x_cut),4)
+      data$x <- as.numeric(x_cut)
     }
   }
   
