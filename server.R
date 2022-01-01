@@ -415,7 +415,7 @@ shinyServer(function(input, output, session) {
   })
   output$download_eda_1d_df_summ <- downloadHandler(
     filename = function() {
-      paste('plot_summary_', Sys.Date(), ".csv", sep = "")
+      paste0('plot_summary_', Sys.Date(), ".csv")
     },
     content = function(file) {
       eda_1d_obj <- stats1dViz()
@@ -604,7 +604,7 @@ shinyServer(function(input, output, session) {
   # inference
   output$devel_download_mdl <- downloadHandler(
     filename = function() {
-      paste('mdl_', Sys.Date(), ".rda")
+      paste0('mdl_', Sys.Date(), ".rda")
     },
     content = function(file) {
       MLreports <- MLreports()
@@ -631,7 +631,7 @@ shinyServer(function(input, output, session) {
   # performance
   output$perform_download_df_hat <- downloadHandler(
     filename = function() {
-      paste('df_y_hat_', Sys.Date(), ".csv", sep = "")
+      paste0('df_y_hat_', Sys.Date(), ".csv")
     },
     content = function(file) {
       MLreports <- MLreports()
@@ -654,7 +654,7 @@ shinyServer(function(input, output, session) {
   )
   output$perform_download_scores_tbl <- downloadHandler(
     filename = function() {
-      paste('df_x_rank_', Sys.Date(), ".csv", sep = "")
+      paste0('df_x_rank_', Sys.Date(), ".csv")
     },
     content = function(file) {
       MLreports <- MLreports()

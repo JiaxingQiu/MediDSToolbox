@@ -54,92 +54,97 @@ lrm_perform <- function(
   df_hat <- df
   
   # reformat plot dataframes by group
-  fit_eff_plot_list <- list()
-  i=0
-  df_plot_num <- data.frame()
-  df_plot_fct <- data.frame()
-  for (x_col in x_cols){
-    df_plot_pred <- df[,c(x_col, "y_pred", "y_true")]
-    colnames(df_plot_pred) <- c("predictor_value", "y_pred", "y_true")
-    df_plot_pred$predictor_name <- x_col
-    if ( n_distinct(df_plot_pred$predictor_value) < 5 | !is.numeric(df_plot_pred$predictor_value)){
-      df_plot_pred$predictor_value <- as.character(df_plot_pred$predictor_value)
-      df_plot_fct <- bind_rows(df_plot_fct, df_plot_pred)
-    }else{
-      df_plot_num <- bind_rows(df_plot_num, df_plot_pred)
+  tryCatch({
+    fit_eff_plot_list <- list()
+    i=0
+    df_plot_num <- data.frame()
+    df_plot_fct <- data.frame()
+    for (x_col in x_cols){
+      df_plot_pred <- df[,c(x_col, "y_pred", "y_true")]
+      colnames(df_plot_pred) <- c("predictor_value", "y_pred", "y_true")
+      df_plot_pred$predictor_name <- x_col
+      if ( n_distinct(df_plot_pred$predictor_value) < 5 | !is.numeric(df_plot_pred$predictor_value)){
+        df_plot_pred$predictor_value <- as.character(df_plot_pred$predictor_value)
+        df_plot_fct <- bind_rows(df_plot_fct, df_plot_pred)
+      }else{
+        df_plot_num <- bind_rows(df_plot_num, df_plot_pred)
+      }
     }
-  }
-  if(nrow(df_plot_num)>0){
-    i = i+1
-    # fitted version of marginal effect plots
-    fit_eff_plot_list[[i]] <- ggplot(df_plot_num, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
-      #stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
-      geom_smooth(method = "glm", formula = "y ~ poly(x, 5)")+
-      facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
-      ylab("Fitted Probability") +
-      xlab("Predictor Value") +
-      scale_color_discrete(name = y_col)+
-      scale_color_manual(values=c( "blue", "orange"))+
-      theme(legend.position="top") +
-      ylim(0, min(max(df$y_pred),y_map_max) )
-  }
-  if(nrow(df_plot_num)>0){
-    i = i+1
-    # fitted version of marginal effect plots
-    fit_eff_plot_list[[i]] <- ggplot(df_plot_fct, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
-      #stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
-      geom_boxplot()+
-      facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
-      ylab("Fitted Probability") +
-      xlab("Predictor Value") +
-      scale_color_discrete(name = y_col)+
-      scale_color_manual(values=c( "blue", "orange"))+
-      theme(legend.position="top") +
-      ylim(0, min(max(df$y_pred),y_map_max) )
-  }
-  
-  fit_eff_plot_list <- fit_eff_plot_list[!sapply(fit_eff_plot_list,is.null)]
-  fitted_eff_plot <- ggpubr::ggarrange(plotlist = fit_eff_plot_list, ncol=1)
+    if(nrow(df_plot_num)>0){
+      i = i+1
+      # fitted version of marginal effect plots
+      fit_eff_plot_list[[i]] <- ggplot(df_plot_num, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
+        #stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
+        geom_smooth(method = "glm", formula = "y ~ poly(x, 5)")+
+        facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
+        ylab(y_map_func) +
+        xlab("Predictor Value") +
+        scale_color_discrete(name = y_col)+
+        scale_color_manual(values=c( "blue", "orange"))+
+        theme(legend.position="top") +
+        ylim(0, min(max(df$y_pred),y_map_max) )
+    }
+    if(nrow(df_plot_fct)>0){
+      i = i+1
+      # fitted version of marginal effect plots
+      fit_eff_plot_list[[i]] <- ggplot(df_plot_fct, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
+        #stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
+        geom_boxplot()+
+        facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
+        ylab(y_map_func) +
+        xlab("Predictor Value") +
+        scale_color_discrete(name = y_col)+
+        scale_color_manual(values=c( "blue", "orange"))+
+        theme(legend.position="top") +
+        ylim(0, min(max(df$y_pred),y_map_max) )
+    }
+    
+    fit_eff_plot_list <- fit_eff_plot_list[!sapply(fit_eff_plot_list,is.null)]
+    fitted_eff_plot <- ggpubr::ggarrange(plotlist = fit_eff_plot_list, ncol=1)
+    
+  },error=function(e){print(e)})
   
   # ----------- feature permutation importance -------------
-  test_obj_raw <- lrm_test(test_data = df,
-                           y_col = y_col,
+  tryCatch({
+    test_obj_raw <- lrm_test(test_data = df,
+                             y_col = y_col,
+                             mdl_obj = mdl_obj)
+    scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+    scores_all <- data.frame()
+    for (x_col in x_cols){
+      df_shuffled <- df
+      # shuffle the predictor
+      df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
+      test_obj <- lrm_test(test_data = df_shuffled,
+                           y_col=y_col,
                            mdl_obj = mdl_obj)
-  scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
-  scores_all <- data.frame()
-  for (x_col in x_cols){
-    df_shuffled <- df
-    # shuffle the predictor
-    df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
-    test_obj <- lrm_test(test_data = df_shuffled,
-                         y_col=y_col,
-                         mdl_obj = mdl_obj)
-    scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
-    scores$varname <- x_col
-    scores_all <- bind_rows(scores_all, scores)
-  }
-  scores_all <- scores_all[,union("varname", colnames(scores_all))]
-  scores_raw$varname <- "none"
-  scores_all_final <- bind_rows(scores_all, scores_raw)
-  colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
-  
-  # make permutation importance plot 
-  df_plot_scores_all <- data.frame()
-  for (score_col in setdiff(colnames(scores_all_final), "removed_variable") ){
-    df_plot_scores <- scores_all_final[,c("removed_variable", score_col)]
-    colnames(df_plot_scores) <- c("removed_variable", "score_value")
-    df_plot_scores$score_by <- score_col
-    df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores) 
-  }
-  
-  scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=tidytext::reorder_within(removed_variable, score_value, score_by) )) +
-    geom_point()+
-    geom_vline(data=df_plot_scores_all[which(df_plot_scores_all$removed_variable=="none"),], aes(xintercept=score_value))+
-    tidytext::scale_y_reordered() +
-    facet_wrap(~score_by, scales = "free", ncol = 2)+
-    theme(axis.title.x=element_blank(),
-          axis.title.y=element_blank())
-  
+      scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+      scores$varname <- x_col
+      scores_all <- bind_rows(scores_all, scores)
+    }
+    scores_all <- scores_all[,union("varname", colnames(scores_all))]
+    scores_raw$varname <- "none"
+    scores_all_final <- bind_rows(scores_all, scores_raw)
+    colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
+    
+    # make permutation importance plot 
+    df_plot_scores_all <- data.frame()
+    for (score_col in setdiff(colnames(scores_all_final), "removed_variable") ){
+      df_plot_scores <- scores_all_final[,c("removed_variable", score_col)]
+      colnames(df_plot_scores) <- c("removed_variable", "score_value")
+      df_plot_scores$score_by <- score_col
+      df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores) 
+    }
+    
+    scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=tidytext::reorder_within(removed_variable, score_value, score_by) )) +
+      geom_point()+
+      geom_vline(data=df_plot_scores_all[which(df_plot_scores_all$removed_variable=="none"),], aes(xintercept=score_value))+
+      tidytext::scale_y_reordered() +
+      facet_wrap(~score_by, scales = "free", ncol = 2)+
+      theme(axis.title.x=element_blank(),
+            axis.title.y=element_blank())
+    
+  },error=function(e){print(e)})
   
   return(list(
     df_hat = df_hat,

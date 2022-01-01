@@ -77,6 +77,7 @@ do_lrm_pip <- function(data, # data for model training engineered
   
   # --- lrm_infer modeling ---
   print("--- lrm_infer  ---")
+  infer_obj <- NULL
   # within model inference
   infer_obj <- lrm_infer(mdl_obj = model_obj$mdl_obj,
                          y_map_func = y_map_func,

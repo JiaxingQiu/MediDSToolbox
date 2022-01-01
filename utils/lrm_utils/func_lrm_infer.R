@@ -1,7 +1,7 @@
 # non-temporal information in the dataset
 lrm_infer <-  function(
   mdl_obj, # a rms model object
-  y_map_func = "log_odds",
+  y_map_func = "fold_risk",
   y_map_max=3,
   joint_col2 = NULL,
   df = NULL # optinal, finally engineered modeling df underneath mdl_obj 
@@ -41,10 +41,25 @@ lrm_infer <-  function(
   }
   
   # 1d marginal effects plot
-  eff_plot <- ggplot(rms::Predict(mdl_obj, fun=ymap), anova=anova(mdl_obj), pval=TRUE, size.anova=2, sepdiscrete='list')
-  eff_plot_1d_list <- list(eff_plot$continuous, eff_plot$discrete)
-  eff_plot_1d_list <- eff_plot_1d_list[!sapply(eff_plot_1d_list,is.null)]
-  eff_plot_1d <- ggpubr::ggarrange(plotlist = eff_plot_1d_list, ncol=1)
+  eff_plot_1d_list <- list()
+  i=0
+  tryCatch({
+    eff_plot <- ggplot(rms::Predict(mdl_obj, fun=ymap), anova=anova(mdl_obj), pval=TRUE, size.anova=2, sepdiscrete='list')
+    if(!is.null(eff_plot$continuous)){
+      i=i+1
+      eff_plot_1d_list[[i]] <- eff_plot$continuous
+    }
+    if(!is.null(eff_plot$discrete)){
+      i=i+1
+      eff_plot_1d_list[[i]] <- eff_plot$discrete
+    }
+    if (is.null(eff_plot$continuous) & is.null(eff_plot$discrete)){
+      i=i+1
+      eff_plot_1d_list[[i]] <- eff_plot
+    }
+    eff_plot_1d_list <- eff_plot_1d_list[!sapply(eff_plot_1d_list,is.null)]
+    eff_plot_1d <- ggpubr::ggarrange(plotlist = eff_plot_1d_list, ncol=1)
+  },error=function(e){print(e)})
   
   
   # 2d marginal effects if joint_col2 given
