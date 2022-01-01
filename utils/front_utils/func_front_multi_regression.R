@@ -20,7 +20,7 @@ front_multi_regression <- function(
   na_frac_max=0.3, 
   test_data=NULL, 
   joint_col2_label=c("None","Gestational Age")[2],
-  imputation="None",
+  imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregation=FALSE,
@@ -35,6 +35,7 @@ front_multi_regression <- function(
   y_map_max=3
 ){
   
+  # ---- preprocessing ----
   set.seed(seed = seed_value)
   data <- assign.dict(data, dict_data)
   dict_data <- get.dict(data)
@@ -267,7 +268,7 @@ front_multi_regression <- function(
     data <- data_internal
   }
   
-  #  --- run corresponding models --- 
+  #  ---- modeling ---- 
   if(dict_data[y_col, "type"]=="fct"){
     results <- do_lrm_pip(data=data, 
                           dict_data=dict_data,
@@ -318,7 +319,7 @@ front_multi_regression <- function(
     
   }
   
-  # --- assign report object for the front end interface to the lowest level of reference ---
+  # ---- return ----
   
   #  model development reports 
   devel_model_info_tbl <- results$model_obj$cv_obj$model_info

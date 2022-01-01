@@ -8,38 +8,31 @@ front_X_clus <- function(
   y_label="Primary outcome (EN)___Unfavorable", 
   cluster_label="PreVent study ID",
   r2=0.9,
-  imputation="None",
+  rcs5_low="70%",
+  rcs4_low="50%",
+  imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregation=FALSE,
   r_abs=0.8, 
   type=c("pearson","spearman")[1],
   rank=TRUE,
-  rcs5_low="70%", # knots to use talk to matthew (AIC? BIC? )
-  rcs4_low="50%",
   trim_ctrl=TRUE 
 ){
   
-  # front end wrapper for any type of regression
+  # ---- pre-processing ----
+  data <- assign.dict(data, dict_data)
+  dict_data <- get.dict(data)
   
-  # ---- pre-process ----
+  # --- find corresponding column names ---
   x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
   num_cols <- intersect(x_cols, rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]))
   fct_cols <- setdiff(x_cols, num_cols)
   y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
   cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
-  rel_time_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label),])
   trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
   
-  # keep original df to keep temperal information
-  data_org <- data
-  data_org$cluster_id <- data_org[,cluster_col]
-  data_org$rel_time <-  unlist(data_org %>%
-                                 group_by(cluster_id) %>%
-                                 group_map(~(.x[,rel_time_col] - max(.x[,rel_time_col],na.rm=TRUE)) ), use.names = FALSE)
-  
-  data_org <- assign.dict(data_org, dict_data)
-  
+  # --- prepare engineered training and validation dataset (internal data) ---
   # trim time info
   if (length(trim_by_col)>0 ){
     # if there is a valid event / control group split, and user choose not to trim the control group
@@ -51,8 +44,7 @@ front_X_clus <- function(
       data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
     }
   }
-  
-  
+  # add cluster id
   data$cluster_id <- data[,cluster_col]
   # impute numeric inputs
   if(!impute_per_cluster){
@@ -88,18 +80,15 @@ front_X_clus <- function(
       }
     }
   }
-  
-  
   # winsorize numeric columns
   if(winsorizing){
     data[,num_cols] <- winsorize(data[,num_cols])
   }
-  # aggregatin if required
+  # aggregation if required
   if(aggregation){
     df_y <- NULL
     df_fct <- NULL
     df_num <- NULL
-    
     # y tag - max 
     if(dict_data[y_col, "type"]=="num"){
       df_y <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(y_col), ~mean(.,na.rm = TRUE)) %>% as.data.frame()
@@ -115,7 +104,10 @@ front_X_clus <- function(
     }
     #x fct - max
     if(length(fct_cols)>0){
-      df_fct <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(fct_cols), ~max(.,0,na.rm = TRUE)) %>% as.data.frame()
+      df_fct <- data %>% group_by(data[,cluster_col]) %>% 
+        summarise_at(vars(fct_cols), ~max(.,na.rm = TRUE)) %>%
+        mutate_at(vars(fct_cols), function(x) ifelse(is.infinite(x), 0, x)) %>%
+        as.data.frame()
       colnames(df_fct) <- c(cluster_col, fct_cols)
     }
     data <- df_y
@@ -153,23 +145,20 @@ front_X_clus <- function(
                         "delete" =  "Correlation criteria delete variables --- ")
     
   }
-  x_redun_obj = ifelse(is.null(results$redun_obj), "", results$redun_obj)
   
   
-  # ---- missingness and summary clus ----
-  summ_cols <- unique(c(x_cols, num_cols, fct_cols, y_col, cluster_col, rel_time_col, trim_by_col))
-  summ_cols <- intersect(colnames(results$df_final), summ_cols)
-  print(colnames(results$df_final))
-  print(summ_cols)
+  # ---- missingness and summary clus limited to refined dataset ----
+  summ_cols <-  intersect(colnames(results$df_final), unique(c(x_cols, num_cols, fct_cols, y_col, cluster_col, trim_by_col)) )
   ml_summ_obj <- front_summary_tbl(data = results$df_final[,summ_cols],
                                    dict_data = results$dict_final,
                                    trim_by_label=trim_by_label,
                                    trim_vec = trim_vec,
                                    stratify_by=y_label,
-                                   cluster_label=cluster_label)
+                                   cluster_label=cluster_label,
+                                   trim_ctrl = trim_ctrl)
   
   
-  # ---- spearman2 clus for degree of freedom ----
+  # ---- spearman2 clus for degree of freedom plot at front ----
   dof_obj <- NULL
   if (length(num_cols)>0){
     fml <- formula(paste(y_col," ~ ", paste(num_cols,collapse = "+")))
@@ -188,7 +177,7 @@ front_X_clus <- function(
   
   
   return(list("x_corre_obj"=x_corre_obj,
-              "x_redun_obj"=x_redun_obj,
+              "x_redun_obj"=results$redun_obj,
               "ml_summ_obj"=ml_summ_obj,
               "dof_obj"=dof_obj))
   
