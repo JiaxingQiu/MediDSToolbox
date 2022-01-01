@@ -3,7 +3,7 @@ front_multi_regression <- function(
   dict_data=dict_ml,
   trim_by_label="Post-menstrual Age",
   trim_vec = c(22, 40),
-  time_unit=7,
+  time_unit=7, # each row in the dataset is in the increment of which number
   x_labels_linear=c("Gestational Age", "pH associated with highest CO2 on blood gas"),
   x_labels_nonlin_rcs5=c("Maternal age"),
   x_labels_nonlin_rcs4=c("Gestational Age"),
@@ -36,8 +36,10 @@ front_multi_regression <- function(
 ){
   
   set.seed(seed = seed_value)
+  data <- assign.dict(data, dict_data)
+  dict_data <- get.dict(data)
   
-  # ---- pre-process ----
+  # --- find corresponding column names ---
   x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
   x_cols_linear <- rownames(dict_data[which(dict_data$label_front%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num"), ]) # linear numeric columns
   x_cols_nonlin_rcs5 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs5&dict_data$mlrole=="input"&dict_data$type=="num"), ])
@@ -54,9 +56,22 @@ front_multi_regression <- function(
   joint_col2 <- rownames(dict_data[which(dict_data$label_front==joint_col2_label),])
   if(length(joint_col2)==0) joint_col2 <- NULL
   
-  # keep un-engineered data 
+  # --- prepare original / no-engineering training and validation dataset (internal data)  ---
+  # keep non-engineered data 
   data_org <- data
-  
+  # trim time info
+  if (length(trim_by_col)>0 ){
+    # if there is a valid event / control group split, and user choose not to trim the control group
+    if (all(unique(as.character(data_org[,y_col])) %in% c(1,0,NA))){
+      # in the original dataset, always use trimmed event group and untrimmed control group
+      data_org_pos <- data_org %>%
+        filter(data_org[,y_col]==1 & data_org[,trim_by_col]>=trim_vec[1]*time_unit & data_org[,trim_by_col]<trim_vec[2]*time_unit ) %>% 
+        as.data.frame()
+      data_org_ctrl <- data_org %>% filter(data_org[,y_col]==0) %>% as.data.frame()
+      data_org <- bind_rows(data_org_pos, data_org_ctrl)
+    }
+  }
+  # --- prepare engineered training and validation dataset (internal data) ---
   # trim time info
   if (length(trim_by_col)>0 ){
     # if there is a valid event / control group split, and user choose not to trim the control group
@@ -68,7 +83,6 @@ front_multi_regression <- function(
       data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
     }
   }
-  
   # add cluster id
   data$cluster_id <- data[,cluster_col]
   # impute numeric inputs
@@ -105,7 +119,6 @@ front_multi_regression <- function(
       }
     }
   }
-  
   # winsorize numeric columns
   if(winsorizing){
     data[,num_cols] <- winsorize(data[,num_cols])
@@ -115,7 +128,6 @@ front_multi_regression <- function(
     df_y <- NULL
     df_fct <- NULL
     df_num <- NULL
-    
     # y tag - max 
     if(dict_data[y_col, "type"]=="num"){
       df_y <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(y_col), ~mean(.,na.rm = TRUE)) %>% as.data.frame()
@@ -147,16 +159,24 @@ front_multi_regression <- function(
   }
   data <- assign.dict(data, dict_data)
   
-
-  
-  # --- preprocessing test data if given and engineer_test_data is TRUE---
-  
-  if (!is.null(test_data)){
-    # save non-engineered test dataset in a original data
+  if (!is.null(test_data)){# if test_data given
+    # --- prepare original / no-engineering testing dataset (external data)  ---
     test_data_org <- test_data
-    # keep internal data
+    # trim time info
+    if (length(trim_by_col)>0 ){
+      # if there is a valid event / control group split, and user choose not to trim the control group
+      if (all(unique(as.character(test_data_org[,y_col])) %in% c(1,0,NA))){
+        # in the original dataset, always use trimmed event group and untrimmed control group
+        test_data_org_pos <- test_data_org %>%
+          filter(test_data_org[,y_col]==1 & test_data_org[,trim_by_col]>=trim_vec[1]*time_unit & test_data_org[,trim_by_col]<trim_vec[2]*time_unit ) %>% 
+          as.data.frame()
+        test_data_org_ctrl <- test_data_org %>% filter(test_data_org[,y_col]==0) %>% as.data.frame()
+        test_data_org <- bind_rows(test_data_org_pos, test_data_org_ctrl)
+      }
+    }
+    # --- prepare engineered testing dataset (external data)  ---
+    # reuse code by renaming test data
     data_internal <- data
-    # reassign data(tmp) by test data
     data <- test_data
     # trim time info
     if (length(trim_by_col)>0 ){
@@ -240,13 +260,11 @@ front_multi_regression <- function(
         data <- merge(data, df_num)
       }
     }
-    
     data <- assign.dict(data, dict_data)
     # reassign temporary data to test_data
     test_data <- data
     # keep data as internal training data
     data <- data_internal
-    
   }
   
   #  --- run corresponding models --- 

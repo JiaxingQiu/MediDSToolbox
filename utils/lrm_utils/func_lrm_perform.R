@@ -30,6 +30,7 @@ lrm_perform <- function(
   if (!is.null(rel_time_col) ){ x_cols <- union(x_cols, intersect(colnames(df), rel_time_col) ) }
   # global mean of outcome
   base_mean <- mean(df[,y_col],na.rm=TRUE)
+  print(paste0("--- baseline responce mean --- ", base_mean))
   # define the right mapping function for y-axis
   if(y_map_func == "probability"){
     ymap <- function(y_logodds){
