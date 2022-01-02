@@ -19,7 +19,6 @@ front_multi_regression_timely <- function(
   cv_nfold=5, 
   na_frac_max=1, 
   test_data=NULL, 
-  num_col2_label="None",
   imputation="Zero",
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
@@ -32,8 +31,9 @@ front_multi_regression_timely <- function(
   window_size=2, # the length of each window
   step_size=2, # each beginning of the window increase by step_size
   test_size = 1,
-  lag_size = 0,
-  fix_knots=FALSE
+  lag_size = 1,
+  fix_knots=FALSE,
+  trim_ctrl = TRUE
 ){
   
   # find the trim by column
@@ -64,7 +64,9 @@ front_multi_regression_timely <- function(
         test_data<- NULL
       }else{
         test_trim_vec = c(trim_start+window_size+lag_size, trim_start+window_size+lag_size+test_size)
-        test_data <- data %>% filter(data[,trim_by_col]>=test_trim_vec[1]*time_unit & data[,trim_by_col]<test_trim_vec[2]*time_unit ) %>% as.data.frame()
+        test_data <- data %>% 
+          filter(data[,trim_by_col]>=test_trim_vec[1]*time_unit & data[,trim_by_col]<test_trim_vec[2]*time_unit ) %>% 
+          as.data.frame()
       }
       
       # model report object
@@ -72,6 +74,7 @@ front_multi_regression_timely <- function(
                                           dict_data = dict_data,
                                           trim_by_label=trim_by_label, 
                                           trim_vec=as.numeric(trim_vec), 
+                                          time_unit=time_unit,
                                           x_labels_linear=x_labels_linear,
                                           x_labels_nonlin_rcs5=x_labels_nonlin_rcs5,
                                           x_labels_nonlin_rcs4=x_labels_nonlin_rcs4,
@@ -81,54 +84,57 @@ front_multi_regression_timely <- function(
                                           x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
                                           y_label=y_label, 
                                           cluster_label=cluster_label,
+                                          r2=r2,
                                           rcs5_low=rcs5_low,
                                           rcs4_low=rcs4_low,
-                                          num_col2_label="None", 
+                                          cv_nfold = as.numeric(cv_nfold),
                                           na_frac_max=na_frac_max, 
+                                          joint_col2_label= "None",
                                           test_data=test_data, 
-                                          engineer_test_data=FALSE,
-                                          imputation=imputation,
-                                          winsorizing=winsorizing,
+                                          imputation = imputation,
+                                          impute_per_cluster = impute_per_cluster,
+                                          winsorizing = winsorizing,
                                           aggregation = aggregation,
                                           stratified_cv = stratified_cv,
-                                          cv_nfold = as.numeric(cv_nfold),
-                                          time_unit=time_unit,
-                                          impute_per_cluster=impute_per_cluster,
                                           r_abs=r_abs, 
-                                          r2=r2,
                                           type=type,
                                           rank=rank,
                                           seed_value=seed_value,
-                                          fix_knots = fix_knots) 
+                                          fix_knots = fix_knots,
+                                          trim_ctrl = trim_ctrl,
+                                          y_map_func ="probability",
+                                          y_map_max = 1
+                                          ) 
       
       
       # observation frequency
-      freq_tbl <- as.data.frame(MLreports$mdl_obj$freq)
+      freq_tbl <- as.data.frame(MLreports$devel_final_model_obj$freq)
       colnames(freq_tbl) <- c(y_label,"freq")
       freq_tbl$window <- paste0("[", trim_vec[1], ", ", trim_vec[2],")")
       freq_tbl$rel_time <- trim_vec[1]
       freq_tbl_all <- as.data.frame(bind_rows(freq_tbl_all, freq_tbl))
       
       # performance
-      score_tbl <- MLreports$score_tbl
+      score_tbl <- MLreports$devel_score_summ_tbl
       score_tbl$window <- paste0("[", trim_vec[1], ", ", trim_vec[2],")")
       score_tbl$rel_time <- trim_vec[1]
       score_tbl_all <- bind_rows(score_tbl_all, score_tbl)
       
       # inference 
-      anova_tbl <- data.frame(plot(anova(MLreports$mdl_obj)))
+      anova_tbl <- data.frame(plot(anova(MLreports$devel_final_model_obj)))
       colnames(anova_tbl) <- c("chi_square")
       anova_tbl$varname <- rownames(anova_tbl)
       rownames(anova_tbl) <- 1:nrow(anova_tbl)
       anova_tbl$rel_time <- trim_vec[1]
       anova_tbl$window <- paste0("[", trim_vec[1], ", ", trim_vec[2],")")
-      anova_tbl$p_val <- round(as.data.frame(anova(MLreports$mdl_obj))[anova_tbl$varname,"P"],4)
+      anova_tbl$p_val <- round(as.data.frame(anova(MLreports$devel_final_model_obj))[anova_tbl$varname,"P"],4)
       anova_tbl_all <- bind_rows(anova_tbl_all, anova_tbl)
       
       # external test result table if any
-      if(!is.null(MLreports$test_tbl)){
+      if(!is.null(MLreports$perform_exorg_scores_tbl)){
         tryCatch({
-          test_tbl <- MLreports$test_tbl[2,] # second row
+          exorg_scores_tbl <- MLreports$perform_exorg_scores_tbl
+          test_tbl <- exorg_scores_tbl[which(exorg_scores_tbl$removed_variable=="none"),] 
           test_tbl$window <- paste0("[", test_trim_vec[1], ", ", test_trim_vec[2],")")
           test_tbl$rel_time <- test_trim_vec[1]
           test_tbl_all <- bind_rows(test_tbl_all, test_tbl)

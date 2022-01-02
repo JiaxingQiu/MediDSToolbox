@@ -19,7 +19,7 @@ front_multi_regression <- function(
   cv_nfold=5, 
   na_frac_max=0.3, 
   test_data=NULL, 
-  joint_col2_label=c("None","Gestational Age")[2],
+  joint_col2_label=c("None","Gestational Age")[1],
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=TRUE,
   winsorizing=TRUE,
@@ -66,7 +66,7 @@ front_multi_regression <- function(
   data_exorg <- NULL
   # ---- prepare original / no-engineering training and validation dataset (internal data)  ----
   if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
-    data_org_cntrl <- engineer(data = data[which(data[,y_col]==0),],
+    data_org <- engineer(data = data,
                            trim_by_col = trim_by_col,
                            trim_min=-Inf,
                            trim_max=Inf,
@@ -77,18 +77,6 @@ front_multi_regression <- function(
                            impute_per_cluster = FALSE,
                            winsorizing = FALSE,
                            aggregation = FALSE)
-    data_org_event <- engineer(data = data[which(data[,y_col]==1),],
-                           trim_by_col = trim_by_col,
-                           trim_min=trim_vec[1]*time_unit,
-                           trim_max=trim_vec[2]*time_unit,
-                           num_cols = num_cols,
-                           fct_cols = fct_cols,
-                           cluster_col = cluster_col,
-                           imputation = "None",
-                           impute_per_cluster = FALSE,
-                           winsorizing = FALSE,
-                           aggregation = FALSE)
-    data_org <- bind_rows(data_org_cntrl, data_org_event)
   }
   data_inorg <- assign.dict(data_org, dict_data)
   # ---- prepare engineered training and validation dataset (internal data) ----
@@ -135,29 +123,17 @@ front_multi_regression <- function(
   if (!is.null(test_data)){# if test_data given
    data <- test_data
    if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
-     data_org_cntrl <- engineer(data = data[which(data[,y_col]==0),],
-                                trim_by_col = trim_by_col,
-                                trim_min=-Inf,
-                                trim_max=Inf,
-                                num_cols = num_cols,
-                                fct_cols = fct_cols,
-                                cluster_col = cluster_col,
-                                imputation = "None",
-                                impute_per_cluster = FALSE,
-                                winsorizing = FALSE,
-                                aggregation = FALSE)
-     data_org_event <- engineer(data = data[which(data[,y_col]==1),],
-                                trim_by_col = trim_by_col,
-                                trim_min=trim_vec[1]*time_unit,
-                                trim_max=trim_vec[2]*time_unit,
-                                num_cols = num_cols,
-                                fct_cols = fct_cols,
-                                cluster_col = cluster_col,
-                                imputation = "None",
-                                impute_per_cluster = FALSE,
-                                winsorizing = FALSE,
-                                aggregation = FALSE)
-     data_org <- bind_rows(data_org_cntrl, data_org_event)
+     data_org <- engineer(data = data,
+                          trim_by_col = trim_by_col,
+                          trim_min=-Inf,
+                          trim_max=Inf,
+                          num_cols = num_cols,
+                          fct_cols = fct_cols,
+                          cluster_col = cluster_col,
+                          imputation = "None",
+                          impute_per_cluster = FALSE,
+                          winsorizing = FALSE,
+                          aggregation = FALSE)
    }
    data_exorg <- assign.dict(data_org, dict_data)
   }

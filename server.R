@@ -274,7 +274,6 @@ shinyServer(function(input, output, session) {
                                   cluster_label=input$ml_cluster_label,
                                   rcs5_low=paste0(input$ml_rcs_vec[1],"%"),
                                   rcs4_low=paste0(input$ml_rcs_vec[2],"%"),
-                                  joint_col2_label=input$ml_joint_col2_label, 
                                   na_frac_max=input$ml_na_frac_max, 
                                   imputation=input$ml_imputation,
                                   winsorizing=input$ml_winsorizing,
@@ -290,7 +289,8 @@ shinyServer(function(input, output, session) {
                                   step_size = input$ml_step_size,
                                   test_size = input$ml_test_size,
                                   lag_size = input$ml_lag_size,
-                                  fix_knots = input$ml_fix_knots) 
+                                  fix_knots = input$ml_fix_knots,
+                                  trim_ctrl = input$ml_trim_ctrl) 
   })
   # ---- 3. unsupervised ml ----
   observeEvent(input$unml_trim_by_label, {
