@@ -151,7 +151,7 @@ shinyServer(function(input, output, session) {
     )
   })
   uniHeatmap <- eventReactive(input$ml_uni_go, {
-    front_multi_heatmap(data=data_ml,
+    front_uni_heatmap(data=data_ml,
                         dict_data=dict_ml,
                         trim_by_label=input$ml_trim_by_label, 
                         trim_vec=as.numeric(input$ml_trim_vec),  
@@ -186,7 +186,6 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$ml_impute_per_cluster,
       winsorizing=input$ml_winsorizing,
       standardize=input$ml_select_standardize,
-      aggregation=input$ml_aggregation,
       trim_ctrl = input$ml_trim_ctrl
     )
   })
@@ -478,11 +477,11 @@ shinyServer(function(input, output, session) {
   })
   # Feature Selection ----
   output$ml_select_tuning_plot <- renderPlot({
-    XselectReports <- XselectReports()
-    lasso_cv <- XselectReports$cv_mdls$lasso_cv
-    ridge_cv <- XselectReports$cv_mdls$ridge_cv
-    lasso_trace <- XselectReports$trace_mdls$lasso_trace
-    ridge_trace <- XselectReports$trace_mdls$ridge_trace
+    x_select_obj <- XselectReports()
+    lasso_cv <- x_select_obj$cv_mdls$lasso_cv
+    ridge_cv <- x_select_obj$cv_mdls$ridge_cv
+    lasso_trace <- x_select_obj$trace_mdls$lasso_trace
+    ridge_trace <- x_select_obj$trace_mdls$ridge_trace
     print(lasso_cv$lambda.min)
     print(ridge_cv$lambda.min)
     
@@ -500,9 +499,9 @@ shinyServer(function(input, output, session) {
   })
   
   output$ml_select_vip <- renderPlot({
-    XselectReports <- XselectReports()
-    lasso_optimal <- XselectReports$optimal_mdls$lasso_optimal
-    ridge_optimal <- XselectReports$optimal_mdls$ridge_optimal
+    x_select_obj <- XselectReports()
+    lasso_optimal <- x_select_obj$optimal_mdls$lasso_optimal
+    ridge_optimal <- x_select_obj$optimal_mdls$ridge_optimal
     coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
     coef_df$vars <- as.character(rownames(lasso_optimal$beta))
     coef_df$penalty <- "Lasso"
@@ -533,9 +532,9 @@ shinyServer(function(input, output, session) {
   })
   
   output$ml_select_coef_df <- renderTable({
-    XselectReports <- XselectReports()
-    lasso_optimal <- XselectReports$optimal_mdls$lasso_optimal
-    ridge_optimal <- XselectReports$optimal_mdls$ridge_optimal
+    x_select_obj <- XselectReports()
+    lasso_optimal <- x_select_obj$optimal_mdls$lasso_optimal
+    ridge_optimal <- x_select_obj$optimal_mdls$ridge_optimal
     coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
     coef_df$vars <- as.character(rownames(lasso_optimal$beta))
     coef_df$penalty <- "Lasso"

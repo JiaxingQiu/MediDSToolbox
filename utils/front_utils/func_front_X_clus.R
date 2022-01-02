@@ -26,103 +26,54 @@ front_X_clus <- function(
   
   # --- find corresponding column names ---
   x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
-  num_cols <- intersect(x_cols, rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]))
-  fct_cols <- setdiff(x_cols, num_cols)
   y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
+  num_cols <- intersect(union(x_cols,y_col), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]))
+  fct_cols <- setdiff(union(x_cols,y_col), num_cols)
   cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
   trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
   
-  # --- prepare engineered training and validation dataset (internal data) ---
-  # trim time info
-  if (length(trim_by_col)>0 ){
-    # if there is a valid event / control group split, and user choose not to trim the control group
-    if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA)) & !trim_ctrl){
-      data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-      data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
-      data <- bind_rows(data_pos, data_ctrl)
-    }else{
-      data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-    }
-  }
-  # add cluster id
-  data$cluster_id <- data[,cluster_col]
-  # impute numeric inputs
-  if(!impute_per_cluster){
-    if(imputation=="Mean"){
-      data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
-    }
-    if(imputation=="Median"){
-      data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
-    }
-    if(imputation=="Zero"){
-      data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., 0)) %>% as.data.frame()
-    }
+  # ---- prepare engineered training and validation dataset (internal data) ----
+  if(trim_ctrl){
+    data <- engineer(data = data,
+                     trim_by_col = trim_by_col,
+                     trim_min=trim_vec[1]*time_unit,
+                     trim_max=trim_vec[2]*time_unit,
+                     num_cols = num_cols,
+                     fct_cols = fct_cols,
+                     cluster_col = cluster_col,
+                     imputation = imputation,
+                     impute_per_cluster = impute_per_cluster,
+                     winsorizing = winsorizing,
+                     aggregation = aggregation)
   }else{
-    if(imputation=="Mean"){
-      for(sbj in unique(data[,cluster_col]) ){
-        for(col in num_cols){
-          data[which(data[,cluster_col]==sbj & is.na(data[,col])), col] <- mean(data[which(data[,cluster_col]==sbj), col], na.rm=TRUE)
-        }
-      }
-    }
-    if(imputation=="Median"){
-      for(sbj in unique(data[,cluster_col]) ){
-        for(col in num_cols){
-          data[which(data[,cluster_col]==sbj & is.na(data[,col])), col] <- median(data[which(data[,cluster_col]==sbj), col], na.rm=TRUE)
-        }
-      }
-    }
-    if(imputation=="Zero"){
-      for(sbj in unique(data[,cluster_col]) ){
-        for(col in num_cols){
-          data[which(data[,cluster_col]==sbj & is.na(data[,col])), col] <- 0
-        }
-      }
-    }
+    data_event <- engineer(data = data[which(data[,y_col]==1),],
+                           trim_by_col = trim_by_col,
+                           trim_min=trim_vec[1]*time_unit,
+                           trim_max=trim_vec[2]*time_unit,
+                           num_cols = num_cols,
+                           fct_cols = fct_cols,
+                           cluster_col = cluster_col,
+                           imputation = imputation,
+                           impute_per_cluster = impute_per_cluster,
+                           winsorizing = winsorizing,
+                           aggregation = aggregation)
+    data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
+                           trim_by_col = trim_by_col,
+                           trim_min=-Inf,
+                           trim_max=Inf,
+                           num_cols = num_cols,
+                           fct_cols = fct_cols,
+                           cluster_col = cluster_col,
+                           imputation = imputation,
+                           impute_per_cluster = impute_per_cluster,
+                           winsorizing = winsorizing,
+                           aggregation = aggregation)
+    data <- bind_rows(data_cntrl, data_event)
   }
-  # winsorize numeric columns
-  if(winsorizing){
-    data[,num_cols] <- winsorize(data[,num_cols])
-  }
-  # aggregation if required
-  if(aggregation){
-    df_y <- NULL
-    df_fct <- NULL
-    df_num <- NULL
-    # y tag - max 
-    if(dict_data[y_col, "type"]=="num"){
-      df_y <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(y_col), ~mean(.,na.rm = TRUE)) %>% as.data.frame()
-      colnames(df_y) <- c(cluster_col, y_col)
-    }else if(dict_data[y_col, "type"]=="fct"){
-      df_y <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(y_col), ~max(.,0,na.rm = TRUE)) %>% as.data.frame()
-      colnames(df_y) <- c(cluster_col, y_col) 
-    }
-    # x num - mean
-    if(length(num_cols)>0){
-      df_num <- data %>% group_by(data[,cluster_col]) %>% summarise_at(vars(num_cols), ~mean(.,na.rm = TRUE)) %>% as.data.frame()
-      colnames(df_num) <- c(cluster_col, num_cols)
-    }
-    #x fct - max
-    if(length(fct_cols)>0){
-      df_fct <- data %>% group_by(data[,cluster_col]) %>% 
-        summarise_at(vars(fct_cols), ~max(.,na.rm = TRUE)) %>%
-        mutate_at(vars(fct_cols), function(x) ifelse(is.infinite(x), 0, x)) %>%
-        as.data.frame()
-      colnames(df_fct) <- c(cluster_col, fct_cols)
-    }
-    data <- df_y
-    if (!is.null(df_fct)){
-      data <- merge(data, df_fct)
-    }
-    if (!is.null(df_num)){
-      data <- merge(data, df_num)
-    }
-  }
-  data <- assign.dict(data, dict_data)
-  
+  data_in <- assign.dict(data, dict_data)
   
   # ---- redundancy clus ----
-  results <- do_x_redun(df=data, 
+  results <- do_x_redun(df=data_in, 
                         dict_df=dict_data, 
                         x_cols=x_cols, 
                         r_abs=r_abs, 
@@ -143,7 +94,6 @@ front_X_clus <- function(
                         "cor_df_org" = data.frame( fail_message = "less than 2 numeric variables", stringsAsFactors = FALSE), 
                         "keep" = "Correlation criteria keep variables --- ",
                         "delete" =  "Correlation criteria delete variables --- ")
-    
   }
   
   

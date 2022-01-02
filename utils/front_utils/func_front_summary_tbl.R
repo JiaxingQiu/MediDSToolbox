@@ -17,25 +17,40 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   num_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]) )
   fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit!="tag01"), ]) )
   tag_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit=="tag01"), ]) )
-  clu_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
+  cluster_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
   stratify_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==stratify_by),]) )
-  y_col <- stratify_col
-  data$key <- data[,clu_col]
   
-  
-  if (length(trim_by_col)>0 ){
-    # if there is a valid event / control group split, and user choose not to trim the control group
-    if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA)) & !trim_ctrl){
-      data_pos <- data %>% filter(data[,y_col]==1 & data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-      data_ctrl <- data %>% filter(data[,y_col]==0) %>% as.data.frame()
-      data <- bind_rows(data_pos, data_ctrl)
-    }else{
-      data <- data %>% filter(data[,trim_by_col]>=trim_vec[1]*time_unit & data[,trim_by_col]<trim_vec[2]*time_unit ) %>% as.data.frame()
-    }
+  # ---- prepare engineered training and validation dataset (internal data) ----
+  if(trim_ctrl){
+    data <- engineer(data = data,
+                     trim_by_col = trim_by_col,
+                     trim_min=trim_vec[1]*time_unit,
+                     trim_max=trim_vec[2]*time_unit,
+                     num_cols = num_cols,
+                     fct_cols = fct_cols,
+                     cluster_col = cluster_col)
+  }else{
+    data_event <- engineer(data = data[which(data[,stratify_col]==1),],
+                           trim_by_col = trim_by_col,
+                           trim_min=trim_vec[1]*time_unit,
+                           trim_max=trim_vec[2]*time_unit,
+                           num_cols = num_cols,
+                           fct_cols = fct_cols,
+                           cluster_col = cluster_col)
+    data_cntrl <- engineer(data = data[which(data[,stratify_col]==0),],
+                           trim_by_col = trim_by_col,
+                           trim_min=-Inf,
+                           trim_max=Inf,
+                           num_cols = num_cols,
+                           fct_cols = fct_cols,
+                           cluster_col = cluster_col)
+    data <- bind_rows(data_cntrl, data_event)
   }
+  data_in <- assign.dict(data, dict_data)
+  data <- data_in
   
-  data <- assign.dict(data, dict_data)
   # --- summary table ---
+  data$key <- data[,cluster_col]
   res_df <- NULL
   num_detail_df <- NULL
   fct_detail_df <- NULL
@@ -107,10 +122,10 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
     # factor response details
     if(dict_data$type[which(dict_data$varname==stratify_col)]=="fct"){
       data$y <- data[, stratify_col]
-      data$clu_col <- data[,clu_col]
+      data$cluster_col <- data[,cluster_col]
       data$trim_by_col <- data[,trim_by_col]
       rsps_df <- data %>% group_by(y) %>% summarise(
-        n_cluster = n_distinct(clu_col),
+        n_cluster = n_distinct(cluster_col),
         n_episode = sum( diff(trim_by_col[!is.na(trim_by_col)])<0 ), # number of episodes counted by jump in relative time 
         n_row = n()
       ) %>% as.data.frame()
