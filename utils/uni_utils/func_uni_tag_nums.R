@@ -1,7 +1,37 @@
-uni_tag_nums <- function(data, num_cols, tag_col, cluster_col, num_adjust_col=NULL, method="logit_rcs", pct=TRUE){
+uni_tag_nums <- function(data, 
+                         num_cols, 
+                         tag_col, 
+                         cluster_col, 
+                         num_adjust_col=NULL, 
+                         method="logit_rcs", 
+                         pct=TRUE,
+                         y_map_func=c("fold_risk", "probability", "log_odds")[1],
+                         y_map_max=3
+){
   # tag (1 default primary outcome) ~ num (pctl)
-  
-  # data is dict-oriented version
+  # define logit reversing function
+  prob2logit <- function(prob){
+    logit <- log(prob/(1-prob))
+    return(logit)
+  }
+  base_mean <- mean(data[,tag_col],na.rm=TRUE)
+  print(paste0("--- baseline responce mean --- ", base_mean))
+  if(y_map_func == "log_odds"){
+    ymap <- function(y_prob){
+      y_logodds <- ifelse(prob2logit(y_prob) > y_map_max, y_map_max, prob2logit(y_prob))
+      return(y_logodds)
+    }
+  }else if(y_map_func == "fold_risk"){
+    ymap <- function(y_prob){
+      y_fold_risk <- ifelse(y_prob/base_mean > y_map_max, y_map_max, y_prob/base_mean)
+      return(y_fold_risk)
+    }
+  }else{
+    ymap <- function(y_prob){
+      y_prob <- ifelse(y_prob > y_map_max, y_map_max, y_prob)
+      return(y_prob)
+    }
+  }
   
   df_result_all = data.frame()
   for(num_col in num_cols){
@@ -37,6 +67,8 @@ uni_tag_nums <- function(data, num_cols, tag_col, cluster_col, num_adjust_col=NU
       df_result_all <- bind_rows(df_result_all, df_result)
     }
   }
+  df_result_all$yhat <- ymap(df_result_all$prob)
+  
   return(df_result_all)
 }
 

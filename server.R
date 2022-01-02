@@ -152,20 +152,23 @@ shinyServer(function(input, output, session) {
   })
   uniHeatmap <- eventReactive(input$ml_uni_go, {
     front_uni_heatmap(data=data_ml,
-                        dict_data=dict_ml,
-                        trim_by_label=input$ml_trim_by_label, 
-                        trim_vec=as.numeric(input$ml_trim_vec),  
-                        num_labels=input$ml_num_labels, 
-                        y_label=input$ml_y_label, 
-                        cluster_label=input$ml_cluster_label,
-                        num_adjust_label=input$ml_num_adjust_label, 
-                        method=input$ml_method, 
-                        imputation=input$ml_imputation,
-                        winsorizing=input$ml_winsorizing,
-                        aggregation = input$ml_aggregation,
-                        time_unit=input$ml_trim_time_unit,
-                        impute_per_cluster=input$ml_impute_per_cluster,
-                        trim_ctrl = input$ml_trim_ctrl)
+                      dict_data=dict_ml,
+                      trim_by_label=input$ml_trim_by_label, 
+                      trim_vec=as.numeric(input$ml_trim_vec),  
+                      num_labels=input$ml_num_labels, 
+                      y_label=input$ml_y_label, 
+                      cluster_label=input$ml_cluster_label,
+                      num_adjust_label=input$ml_num_adjust_label, 
+                      method=input$ml_method, 
+                      imputation=input$ml_imputation,
+                      winsorizing=input$ml_winsorizing,
+                      aggregation = input$ml_aggregation,
+                      time_unit=input$ml_trim_time_unit,
+                      impute_per_cluster=input$ml_impute_per_cluster,
+                      trim_ctrl = input$ml_trim_ctrl,
+                      y_map_func = input$ml_uni_y_map_func,
+                      y_map_max = input$ml_uni_y_max
+    )
   })
   XselectReports <- eventReactive(input$ml_select_go, {
     front_X_select(

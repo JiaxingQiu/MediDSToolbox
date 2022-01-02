@@ -13,7 +13,10 @@ front_uni_heatmap <- function(data=subset_df(data_ml,"40w"),
                               aggregation=FALSE,
                               time_unit=7,
                               impute_per_cluster=FALSE,
-                              trim_ctrl=TRUE){
+                              trim_ctrl=TRUE,
+                              y_map_func=c("fold_risk", "probability", "log_odds")[1],
+                              y_map_max=3
+){
   
   
   trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
@@ -73,12 +76,12 @@ front_uni_heatmap <- function(data=subset_df(data_ml,"40w"),
       theme(axis.title.y=element_blank()) + 
       scale_fill_gradientn(colours = terrain.colors(10))
   }else{
-    df_result_all <- uni_tag_nums(data, num_cols, y_col, cluster_col, num_adjust_col, method=method, pct=pct)
-    var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_prob=max(prob)) %>% arrange(max_prob) %>% as.data.frame()
+    df_result_all <- uni_tag_nums(data, num_cols, y_col, cluster_col, num_adjust_col, method=method, pct=pct, y_map_func=y_map_func, y_map_max=y_map_max)
+    var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_prob=max(yhat)) %>% arrange(max_prob) %>% as.data.frame()
     df_result_all_sort <- dplyr::left_join(var_order,df_result_all)
     plot_obj <- ggplot(df_result_all_sort, aes(x=pctl,y=var_name))+
-      geom_tile(aes(fill=prob)) +
-      labs(fill="Probability",x="Percentile") + 
+      geom_tile(aes(fill=yhat)) +
+      labs(fill=y_map_func,x="Percentile") + 
       theme(axis.title.y=element_blank()) + 
       scale_fill_gradientn(colours = rev(rainbow(7))) +
       scale_y_discrete(limits=var_order$var_name)

@@ -190,6 +190,12 @@ sidebar <- dashboardSidebar(
                                      "Method (smoother)",
                                      choices = c('Kernel Density Estimates', "logit_rcs", "loess", "bootstrap"),
                                      selected = "logit_rcs"),
+                         fluidRow(
+                           column(width=7, selectInput("ml_uni_y_map_func", 
+                                                       "Response type", 
+                                                       choices = c("fold_risk", "probability", "log_odds")  ) ),
+                           column(width=4, numericInput("ml_uni_y_max", "max", 3))
+                         ),
                          selectInput("ml_num_adjust_label",
                                      "Adjust for", 
                                      choices = in.ml_num_adjust_label),
