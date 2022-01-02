@@ -86,7 +86,7 @@ front_X_select <- function(
                            aggregation = aggregation)
     data <- bind_rows(data_cntrl, data_event)
   }
-  data_in <- assign.dict(data, dict_data)
+  data_in <- assign.dict(data, dict_data, overwrite = TRUE)
   
   x_select_mdls <- lss_x_select(data=data_in,
                                dict_data = dict_data,

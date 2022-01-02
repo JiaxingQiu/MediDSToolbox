@@ -63,7 +63,7 @@ front_uni_heatmap <- function(data=subset_df(data_ml,"40w"),
                            aggregation = aggregation)
     data <- bind_rows(data_cntrl, data_event)
   }
-  data <- assign.dict(data, dict_data)
+  data <- assign.dict(data, dict_data, overwrite = TRUE)
   
   num_adjust_col <- NULL
   if(num_adjust_label!="None") num_adjust_col <- rownames(dict_data[which(dict_data$label_front==num_adjust_label),])

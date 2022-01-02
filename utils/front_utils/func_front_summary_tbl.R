@@ -10,7 +10,7 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
   
   
   # ---- pre-processing ----
-  data <- assign.dict(data, dict_data)
+  data <- assign.dict(data, dict_data, overwrite = TRUE)
   dict_data <- get.dict(data)
   
   trim_by_col <- intersect(colnames(data),rownames(dict_data[which(dict_data$label_front==trim_by_label), ]))

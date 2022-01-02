@@ -37,7 +37,7 @@ front_multi_regression <- function(
   
   
   set.seed(seed = seed_value)
-  data <- assign.dict(data, dict_data)
+  data <- assign.dict(data, dict_data, overwrite = TRUE)
   dict_data <- get.dict(data)
   
   # --- group column names ---

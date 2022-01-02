@@ -76,7 +76,7 @@ get.dict <- function(data, attr_list=c() ){
 
 
 
-assign.dict <- function(data, dict_new, multi_assign=FALSE, overwrite=FALSE){
+assign.dict <- function(data, dict_new, multi_assign=FALSE, overwrite=TRUE){
   # ---- inputs ----
   # data: data frame object
   # dictionary data frame object
