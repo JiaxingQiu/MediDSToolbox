@@ -626,9 +626,6 @@ body <- dashboardBody(
                                  dataTableOutput("unml_df_cluster_info") ),
                         tabPanel("Abnormal",
                                  dataTableOutput("unml_df_minor_org_trace") )
-                        # ,
-                        # tabPanel('Labeled dict',
-                        #          dataTableOutput("unml_dict_df_org_clustered") )
             )
             
     )

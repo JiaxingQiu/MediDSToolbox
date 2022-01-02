@@ -9,14 +9,14 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
                               ){
   
   
-  data <- assign.dict(data, dict_data, overwrite = TRUE)
+  # ---- pre-processing ----
+  data <- assign.dict(data, dict_data)
   dict_data <- get.dict(data)
   
   trim_by_col <- intersect(colnames(data),rownames(dict_data[which(dict_data$label_front==trim_by_label), ]))
   num_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]) )
   fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit!="tag01"), ]) )
   tag_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit=="tag01"), ]) )
-  
   clu_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
   stratify_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==stratify_by),]) )
   y_col <- stratify_col
