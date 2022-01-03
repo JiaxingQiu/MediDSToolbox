@@ -21,15 +21,10 @@ engineer <- function(
     trim_min <- -Inf
     trim_max <- Inf
   }
-  if (length(trim_by_col)>0){
-    trim_min <- max(trim_min, min(data[,trim_by_col],na.rm=TRUE), na.rm=TRUE)
-    trim_max <- min(trim_max, max(data[,trim_by_col],na.rm=TRUE), na.rm=TRUE)
-  }
-  
   
   # ---- trim data by trim_by_col  ----
   if (length(trim_by_col)>0){
-    data <- data %>% filter(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max) %>% as.data.frame()
+    data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
   }
   # ---- impute num_cols ----
   if(!impute_per_cluster){
