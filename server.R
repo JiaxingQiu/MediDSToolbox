@@ -633,7 +633,7 @@ shinyServer(function(input, output, session) {
   # performance
   output$perform_download_df_hat <- downloadHandler(
     filename = function() {
-      paste0('df_y_hat_', Sys.Date(), ".csv")
+      paste0('y_hat_', Sys.Date(), ".csv")
     },
     content = function(file) {
       MLreports <- MLreports()
@@ -656,7 +656,7 @@ shinyServer(function(input, output, session) {
   )
   output$perform_download_scores_tbl <- downloadHandler(
     filename = function() {
-      paste0('df_x_rank_', Sys.Date(), ".csv")
+      paste0('x_rank_', Sys.Date(), ".csv")
     },
     content = function(file) {
       MLreports <- MLreports()
