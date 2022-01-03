@@ -3,7 +3,8 @@ lrm_perform <- function(
   df,
   y_map_func = "fold_risk",
   y_map_max = 3,
-  rel_time_col=NULL
+  rel_time_col=NULL,
+  x_cols=c() # list of predictors to see the performance 
 ){
   
   library(tidytext)
@@ -26,8 +27,19 @@ lrm_perform <- function(
   
   # find column name for response variable
   y_col <- as.character( mdl_obj$sformula )[2]
-  x_cols <- setdiff(mdl_obj$Design$name, y_col)
-  if (!is.null(rel_time_col) ){ x_cols <- union(x_cols, intersect(colnames(df), rel_time_col) ) }
+  if (length(intersect(x_cols, setdiff(colnames(df), y_col)))==0){
+    warning("none of the requested predictor names (x_cols) is in df, using all predictors instead")
+    x_cols <- setdiff(mdl_obj$Design$name, y_col)
+  }else{
+    x_cols <- intersect(x_cols, setdiff(colnames(df), y_col))
+  }
+  if (!is.null(rel_time_col) ){ 
+    # zoom in relative time column by the range of event group
+    rel_time_min <- min(df[which(df[,y_col]==1),rel_time_col],na.rm=TRUE)
+    rel_time_max <- max(df[which(df[,y_col]==1),rel_time_col],na.rm=TRUE)
+    df[which(df[,rel_time_col]>=rel_time_min & df[,rel_time_col]<rel_time_min),rel_time_col] <- NA
+    x_cols <- union(intersect(colnames(df), rel_time_col), x_cols) 
+  }
   # global mean of outcome
   base_mean <- mean(mdl_obj$y, na.rm=TRUE)#mean(df[,y_col],na.rm=TRUE)
   print(paste0("--- baseline responce mean --- ", base_mean))
@@ -74,7 +86,7 @@ lrm_perform <- function(
     if(nrow(df_plot_num)>0){
       i = i+1
       # fitted version of marginal effect plots
-      fit_eff_plot_list[[i]] <- ggplot(df_plot_num, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
+      fit_eff_plot_list[[i]] <- ggplot(df_plot_num, aes(x=predictor_value, y=y_pred, color=y_true)) +
         #stat_summary(geom = "point", fun = mean, size=0.3, alpha=0.7) +
         geom_smooth(method = "glm", formula = "y ~ poly(x, 5)")+
         facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
@@ -83,7 +95,7 @@ lrm_perform <- function(
         scale_color_discrete(name = y_col)+
         scale_color_manual(values=c( "blue", "orange"))+
         theme(legend.position="top") +
-        ylim(0, min(max(df$y_pred),y_map_max) )
+        ylim(min(df$y_pred), min(max(df$y_pred),y_map_max) )
     }
     if(nrow(df_plot_fct)>0){
       i = i+1
@@ -96,8 +108,8 @@ lrm_perform <- function(
         xlab("Predictor Value") +
         scale_color_discrete(name = y_col)+
         scale_color_manual(values=c( "blue", "orange"))+
-        theme(legend.position="top") +
-        ylim(0, min(max(df$y_pred),y_map_max) )
+        theme(legend.position="top") #+
+        #ylim(min(df$y_pred), min(max(df$y_pred),y_map_max) )
     }
     
     fit_eff_plot_list <- fit_eff_plot_list[!sapply(fit_eff_plot_list,is.null)]
@@ -112,7 +124,7 @@ lrm_perform <- function(
                              mdl_obj = mdl_obj)
     scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
     scores_all <- data.frame()
-    for (x_col in x_cols){
+    for (x_col in setdiff(x_cols,rel_time_col)){
       df_shuffled <- df
       # shuffle the predictor
       df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
