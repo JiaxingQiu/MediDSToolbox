@@ -61,6 +61,7 @@ front_X_clus <- function(
                            trim_by_col = trim_by_col,
                            trim_min=-Inf,
                            trim_max=Inf,
+                           trim_keepna = TRUE,
                            num_cols = num_cols,
                            fct_cols = fct_cols,
                            cluster_col = cluster_col,

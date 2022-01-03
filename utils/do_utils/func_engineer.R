@@ -3,6 +3,7 @@ engineer <- function(
   trim_by_col = NULL,
   trim_min = -Inf, # [from,
   trim_max = Inf, # to)
+  trim_keepna = FALSE,
   num_cols = c(),
   fct_cols = c(),
   cluster_col = NULL, 
@@ -24,7 +25,11 @@ engineer <- function(
   
   # ---- trim data by trim_by_col  ----
   if (length(trim_by_col)>0){
-    data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
+    if (trim_keepna){
+      data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
+    }else{
+      data <- data[which(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max),]
+    }
   }
   # ---- impute num_cols ----
   if(!impute_per_cluster){
