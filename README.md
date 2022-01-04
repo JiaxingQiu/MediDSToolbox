@@ -8,7 +8,7 @@ Thanks to Center of Advanced Medical Analytics (CAMA), School of Medicine, Unive
 ## Objectives
 The objectives of this toolbox include but not limited to --
 - facilitate medical data science research hypothesis generation
-- bridge communitations between clinitians and technicians interactively
+- bridge communitations between clinicians and technicians interactively
 - visualize biomedical research data and especially longitudinal datasets
 - provide baseline predictive models by supervised learning, such as logistic and linear regression
 - provide reliable model evaluation and rubost inference results that adjust for repeated measures commonly seen in biomedical research
