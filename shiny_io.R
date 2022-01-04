@@ -22,9 +22,7 @@ prj_link <- "https://github.com/JiaxingQiu/FAIRStream/wiki"
 in.eda_cluster_label <- dict_viz$label_front[which(dict_viz$type=="key")]
 in.eda_trim_by_label <- c("Post-menstrual Age", "Chronological Age")
 in.eda_trim_time_unit <- 7
-
 in.eda_pctcut_num_labels <- dict_viz$label_front[which(dict_viz$type=="num")]
-
 in.eda_filter_tag_labels <- dict_viz$label_front[which(dict_viz$unit=="tag01")]
 
 in.eda_y_label_stats1d <- dict_viz$label_front[which(dict_viz$type=="num" | (dict_viz$unit=="tag01") )]
@@ -44,7 +42,6 @@ in.eda_tag_label <- c("None", dict_viz$label_front[which(dict_viz$unit=="tag01")
 
 in.eda_y_label_allu <- dict_viz$label_front[which(dict_viz$type=="num")]
 in.eda_tag_labels_allu <- dict_viz$label_front[which(dict_viz$type=="fct"&dict_viz$unit=="tag01")]
-
 in.eda_time_label_allu <- c("Post-menstrual Age", "Chronological Age") 
 
 # ---- 2. supervised ml ----
@@ -55,10 +52,11 @@ in.ml_y_label <- c(y_tag_front_labels, y_num_front_labels, "Site (EN)___Miami")
 in.ml_trim_by_label <- c("Chronological Age", "Post-menstrual Age", "Gestational Age")
 in.ml_trim_ctrl <- TRUE
 in.ml_imputation.selected <-  "None"
-in.ml_num_adjust_label <- c("Gestational Age","None")
 
+in.ml_num_adjust_label <- c("Gestational Age","None")
 in.ml_num_labels.choices <- x_num_front_labels
 in.ml_num_labels.selected <- intersect(x_num_front_labels, dict_ml$label_front[which(dict_ml$source_file=="base")] )
+
 in.ml_nonlin_rcs5_labels.choices <- x_num_front_labels
 in.ml_nonlin_rcs5_labels.selected <- c("Maternal age")
 in.ml_nonlin_rcs4_labels.choices <- x_num_front_labels
@@ -69,7 +67,6 @@ in.ml_nonlin_rcs3_labels.selected <- c("APGAR score at 1 minute",
                                       "Doses of any medication today")
 in.ml_linear_num_labels.choices <- x_num_front_labels
 in.ml_linear_num_labels.selected <- c("Gestational Age")
-
 in.ml_fct_labels_mdl.choices <- x_fct_front_labels
 in.ml_fct_labels_mdl.selected <- c("Site (EN)")
 in.ml_tag_labels_mdl.choices <- x_tag_front_labels
