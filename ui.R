@@ -242,6 +242,7 @@ sidebar <- dashboardSidebar(
                          checkboxInput("ml_select_standardize", 
                                        "Standardize", 
                                        value = TRUE)
+                         
         )),
     div(id = 'sidebar_ml_clus',
         conditionalPanel("input.sidebar == 'ml_clus'",
@@ -538,14 +539,20 @@ body <- dashboardBody(
             fluidRow(column(1,actionButton("ml_uni_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_uniheat", height = "800px"))),
     tabItem(tabName = "ml_select",
-            h3("Machine Learning (supervised) -- LASSO Regression Feature Selection"),
+            h3("Machine Learning (supervised) -- LASSO Feature Selection"),
             fluidRow(column(1,actionButton("ml_select_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
-                        tabPanel("Reports",
-                                 plotOutput("ml_select_tuning_plot"),
-                                 plotOutput("ml_select_vip"),
-                                 tableOutput("ml_select_coef_df")
-                                 ))),
+                        tabPanel("Lasso",
+                                 plotOutput("ml_select_lasso_tuning_plot"),
+                                 plotOutput("ml_select_lasso_vip"),
+                                 tableOutput("ml_select_lasso_coef_df")
+                                 ),
+                        tabPanel("Group Lasso",
+                                 plotOutput("ml_select_group_lasso_tuning_plot", height = "800px"),
+                                 plotOutput("ml_select_group_lasso_vip"),
+                                 tableOutput("ml_select_group_lasso_coef_df")
+                        )
+                        )),
     
     tabItem(tabName = "ml_clus",
             h3("Machine Learning (supervised) -- Predictor clus"),

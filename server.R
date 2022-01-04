@@ -479,8 +479,10 @@ shinyServer(function(input, output, session) {
     uniHeatmap()
   })
   # Feature Selection ----
-  output$ml_select_tuning_plot <- renderPlot({
-    x_select_obj <- XselectReports()
+  output$ml_select_lasso_tuning_plot <- renderPlot({
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
+    
     lasso_cv <- x_select_obj$cv_mdls$lasso_cv
     ridge_cv <- x_select_obj$cv_mdls$ridge_cv
     lasso_trace <- x_select_obj$trace_mdls$lasso_trace
@@ -501,8 +503,10 @@ shinyServer(function(input, output, session) {
     
   })
   
-  output$ml_select_vip <- renderPlot({
-    x_select_obj <- XselectReports()
+  output$ml_select_lasso_vip <- renderPlot({
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
+    
     lasso_optimal <- x_select_obj$optimal_mdls$lasso_optimal
     ridge_optimal <- x_select_obj$optimal_mdls$ridge_optimal
     coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
@@ -525,17 +529,12 @@ shinyServer(function(input, output, session) {
       facet_grid(~ penalty) + 
       ylab(NULL) + 
       xlab(" | coefficients | ") 
-    #   # + geom_text(aes(label=gsub("0","0", gsub("-1","(-)",as.character(sign(coef))))), hjust = 1, vjust = 1.5, size = 10)
-    # ggpubr::ggarrange(vip::vip(lasso_optimal, horizontal = TRUE, geom = "point", include_type=TRUE),
-    #                   vip::vip(ridge_optimal, horizontal = TRUE, geom = "point", include_type=TRUE),
-    #                   nrow=1)
-    
-    
-    
   })
   
-  output$ml_select_coef_df <- renderTable({
-    x_select_obj <- XselectReports()
+  output$ml_select_lasso_coef_df <- renderTable({
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
+    
     lasso_optimal <- x_select_obj$optimal_mdls$lasso_optimal
     ridge_optimal <- x_select_obj$optimal_mdls$ridge_optimal
     coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
@@ -548,6 +547,48 @@ shinyServer(function(input, output, session) {
     coef_df$penalty <- "Ridge"
     coef_df$coef_abs <- abs(coef_df$coef)
     coef_df_all <- bind_rows(coef_df_all, coef_df)
+    coef_df_all
+  })
+  
+  output$ml_select_group_lasso_tuning_plot <- renderPlot({
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
+    
+    lasso_cv <- x_select_obj$lasso_cv
+    lasso_trace <- x_select_obj$lasso_trace
+    
+    # plot results
+    par(mfrow = c(2, 1))
+    plot(lasso_cv, main = "Lasso penalty\n\n")
+    plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n")
+    abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
+    abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
+    
+  })
+  
+  output$ml_select_group_lasso_vip <- renderPlot({
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls_grouped # raw lasso regression
+    lasso_optimal <- x_select_obj$lasso_optimal
+    coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
+    coef_df$vars <- as.character(rownames(lasso_optimal$beta))
+    coef_df$coef_abs <- abs(coef_df$coef)
+    coef_df_all <- coef_df
+    ggplot(data = coef_df_all, aes(x = abs(coef), y = vars) ) + 
+      geom_point() + 
+      ylab(NULL) + 
+      xlab(" | coefficients | ") +
+      xlim(0,max(abs(coef_df_all$coef))+1)
+  })
+  
+  output$ml_select_group_lasso_coef_df <- renderTable({
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls_grouped # raw lasso regression
+    lasso_optimal <- x_select_obj$lasso_optimal
+    coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
+    coef_df$vars <- as.character(rownames(lasso_optimal$beta))
+    coef_df$coef_abs <- abs(coef_df$coef)
+    coef_df_all <- coef_df
     coef_df_all
   })
   

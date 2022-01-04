@@ -19,7 +19,7 @@ front_X_select <- function(
   # local parameters
   standardize=TRUE, # always set to be true
   aggregation=TRUE, # always set to be true
-  trim_ctrl=TRUE 
+  trim_ctrl=TRUE
 ){
   
   x_select_mdls <- NULL
@@ -89,16 +89,39 @@ front_X_select <- function(
   }
   data_in <- assign.dict(data, dict_data, overwrite = TRUE)
   
-  x_select_mdls <- lss_x_select(data=data_in,
-                               dict_data = dict_data,
-                               y_col = y_col,
-                               x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
-                               x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
-                               x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
-                               x_cols_linear=x_cols_linear, 
-                               x_cols_fct=x_cols_fct,
-                               x_cols_tag=x_cols_tag,
-                               standardize=standardize)
+  if(length(y_col_tag)>0 ){
+    family <- "binomial"
+  } else if(length(y_col_num) > 0){
+    family <- "gaussian"
+  }
+
+  x_select_mdls <- lasso_x_select(data = data_in,
+                                  y_col = y_col,
+                                  family = family,
+                                  x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
+                                  x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
+                                  x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
+                                  x_cols_linear = x_cols_linear, 
+                                  x_cols_fct = x_cols_fct,
+                                  x_cols_tag = x_cols_tag,
+                                  standardize = standardize,
+                                  dict_data = dict_data)
+
+  x_select_mdls_grouped <- lasso_x_select_group(data = data_in,
+                                        y_col = y_col,
+                                        family = family,
+                                        x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
+                                        x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
+                                        x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
+                                        x_cols_linear = x_cols_linear, 
+                                        x_cols_fct = x_cols_fct,
+                                        x_cols_tag = x_cols_tag,
+                                        standardize = standardize,
+                                        dict_data = dict_data)
+
+
   
-  return(x_select_mdls)
+  return( list(x_select_mdls = x_select_mdls,
+               x_select_mdls_grouped = x_select_mdls_grouped
+               ))
 }

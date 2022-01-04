@@ -1,16 +1,18 @@
 library(glmnet)
 library(vip)
-lss_x_select <- function(
-  data=data, 
-  dict_data=dict_data, 
-  y_col = y_col,
-  x_cols_nonlin_rcs5=x_cols_nonlin_rcs5,
-  x_cols_nonlin_rcs4=x_cols_nonlin_rcs4,
-  x_cols_nonlin_rcs3=x_cols_nonlin_rcs3,
+
+lasso_x_select <- function(
+  data, 
+  y_col,
+  x_cols_nonlin_rcs5,
+  x_cols_nonlin_rcs4,
+  x_cols_nonlin_rcs3,
   x_cols_linear=x_cols_linear, 
   x_cols_fct=x_cols_fct,
   x_cols_tag=x_cols_tag,
-  standardize=TRUE
+  family = c("binomial", "multinomial", "gaussian")[1],
+  standardize = TRUE,
+  dict_data=NULL # dictionary table is optional
 ){
   
   # ---- Description ----
@@ -27,14 +29,20 @@ lss_x_select <- function(
   
   
   # linear > rcs3 > rcs4 > rcs5
+  # variable name population space
+  if(!is.null(dict_data)) {
+    input_cols_choices <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
+  } else {
+    input_cols_choices <- colnames(data)
+  }
   # organize model formula string
-  x_cols_linear <- intersect(x_cols_linear,rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"),]))
+  x_cols_linear <- intersect(x_cols_linear, input_cols_choices)
   x_cols_nonlin_rcs3 <- setdiff(x_cols_nonlin_rcs3, x_cols_linear) # remove linear from rcs3
-  x_cols_nonlin_rcs3 <- intersect(x_cols_nonlin_rcs3,rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"),]))# make sure rcs 3 all come from numeric columns 
+  x_cols_nonlin_rcs3 <- intersect(x_cols_nonlin_rcs3, input_cols_choices)# make sure rcs 3 all come from numeric columns 
   x_cols_nonlin_rcs4 <- setdiff(setdiff(x_cols_nonlin_rcs4, x_cols_linear),x_cols_nonlin_rcs3)
-  x_cols_nonlin_rcs4 <- intersect(x_cols_nonlin_rcs4,rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"),]))
+  x_cols_nonlin_rcs4 <- intersect(x_cols_nonlin_rcs4, input_cols_choices)
   x_cols_nonlin_rcs5 <- setdiff(setdiff(setdiff(x_cols_nonlin_rcs5, x_cols_linear),x_cols_nonlin_rcs3),x_cols_nonlin_rcs4)
-  x_cols_nonlin_rcs5 <- intersect(x_cols_nonlin_rcs5,rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"),])) # now we successfully split the rcs knots groups
+  x_cols_nonlin_rcs5 <- intersect(x_cols_nonlin_rcs5, input_cols_choices) # now we successfully split the rcs knots groups
   x_cols <- unique(c(x_cols_linear, x_cols_nonlin_rcs3, x_cols_nonlin_rcs4, x_cols_nonlin_rcs5,x_cols_tag))
   
   # additional columns
@@ -64,17 +72,9 @@ lss_x_select <- function(
     }
   }
   
-  
   x_cols <- intersect(x_cols, colnames(data))
   x <- data.matrix(data[complete.cases(data[,c(x_cols,y_col)]),x_cols])
   y <- data.matrix(data[complete.cases(data[,c(x_cols,y_col)]),y_col])
-  if (dict_data[y_col,"unit"]=="tag01") {
-    family <- "binomial"
-  } else if (dict_data[y_col,"type"]=="fct"&dict_data[y_col,"unit"]!="tag01") {
-    family <- "multinomial"
-  } else if (dict_data[y_col,"type"]=="linear") {
-    family <- "gaussian"
-  }
   
   # ---- cv lasso an ridge regression ---
   lasso_cv <- glmnet::cv.glmnet(x=x, y=y, family=family, nfolds = 10, nlambda=100, alpha = 1, standardize = standardize)
@@ -105,9 +105,7 @@ lss_x_select <- function(
   summary(lasso_optimal)
   return(list( cv_mdls = list(lasso_cv = lasso_cv, ridge_cv = ridge_cv),
                trace_mdls = list(lasso_trace = lasso_trace, ridge_trace = ridge_trace),
-               optimal_mdls = list(lasso_optimal=lasso_optimal, ridge_optimal=ridge_optimal)
-             )
-         )
+               optimal_mdls = list(lasso_optimal=lasso_optimal, ridge_optimal=ridge_optimal) ))
   
 }
 
