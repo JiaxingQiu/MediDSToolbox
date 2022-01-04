@@ -51,7 +51,7 @@ sidebar <- dashboardSidebar(
                            column(width=8, selectInput("eda_pctcut_num_labels",
                                                        label="Numeric cutoffs",
                                                        multiple = TRUE,
-                                                       choices = dict_viz$label_front[which(dict_viz$type=="num")],
+                                                       choices = in.eda_pctcut_num_labels,
                                                        selected = NULL) ),
                            column(width=4, checkboxInput("eda_coerce","coerce",value = FALSE))
                          ),
@@ -62,7 +62,7 @@ sidebar <- dashboardSidebar(
                          selectInput("eda_filter_tag_labels",
                                      label="Binary filter(s)",
                                      multiple = TRUE,
-                                     choices = dict_viz$label_front[which(dict_viz$unit=="tag01")],
+                                     choices = in.eda_filter_tag_labels,
                                      selected = NULL)
         )),
     div(id = 'sidebar_eda_1dstats',
@@ -164,13 +164,15 @@ sidebar <- dashboardSidebar(
                                      min = 0,  max = 100, step = 1, value = c(0, 99)),
                          checkboxInput("ml_trim_ctrl", 
                                        "Trim Control Group", 
-                                       value = TRUE),
+                                       value = in.ml_trim_ctrl),
                          fluidRow(
                            column(width=5,selectInput("ml_imputation",
                                                       "Imputation",
                                                       choices = c("Zero", "None", "Mean", "Median"),
-                                                      selected = "None") ),
-                           column(width=6,checkboxInput("ml_impute_per_cluster", "within cluster", value = FALSE))
+                                                      selected = in.ml_imputation.selected) ),
+                           column(width=6,checkboxInput("ml_impute_per_cluster", 
+                                                        "within cluster", 
+                                                        value = FALSE))
                          ),
                          fluidRow(
                            column(width=5,checkboxInput("ml_aggregation", 
@@ -207,11 +209,6 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_select',
         conditionalPanel("input.sidebar == 'ml_select'",
-                         # selectInput("ml_nonlin_num_labels",
-                         #             "Continous (non-linear)",
-                         #             multiple = TRUE,
-                         #             choices = in.ml_nonlin_num_labels.choices,
-                         #             selected = in.ml_nonlin_num_labels.selected ),
                          selectInput("ml_nonlin_rcs5_labels",
                                      "Restricted Cubic Spline (5 knots)",
                                      multiple = TRUE,
@@ -277,10 +274,10 @@ sidebar <- dashboardSidebar(
                                       inline = TRUE),
                          checkboxInput("ml_stratified_cv", 
                                        "Stratified CV", 
-                                       value = TRUE),
+                                       value = in.ml_stratified_cv),
                          checkboxInput("ml_fix_knots", 
                                        "Fix Knots X", 
-                                       value = TRUE),
+                                       value = in.ml_fix_knots),
                          fluidRow(
                            column(width=7, selectInput("ml_y_map_func", 
                                                        "Response type", 

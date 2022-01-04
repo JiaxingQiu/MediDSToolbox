@@ -1,7 +1,19 @@
+# -------------------------------------------------- global -------------------------------------------------- 
+if(!"label" %in% colnames(dict_viz)) dict_viz$label <- dict_viz$varname
+if(!"label" %in% colnames(dict_ml)) dict_ml$label <- dict_ml$varname
+if(!"label" %in% colnames(dict_unml)) dict_unml$label <- dict_unml$varname
+if(!"label_front" %in% colnames(dict_viz)) dict_viz$label_front <- dict_viz$label
+if(!"label_front" %in% colnames(dict_ml)) dict_ml$label_front <- dict_ml$label
+if(!"label_front" %in% colnames(dict_unml)) dict_unml$label_front <- dict_unml$label
+dict_viz <- get.dict(assign.dict(data_viz, dict_viz, overwrite = TRUE))
+dict_ml <- get.dict(assign.dict(data_ml, dict_ml, overwrite = TRUE))
+dict_unml <- get.dict(assign.dict(data_unml, dict_unml, overwrite = TRUE))
+
+
+
 # -------------------------------------------------- prj info -----------------------------------------------------
 prj_name <- "Pre-Vent"
 prj_link <- "https://github.com/JiaxingQiu/FAIRStream/wiki"
-
 
 
 # ---------------------------------------------------- ui.R -----------------------------------------------------------------
@@ -10,6 +22,10 @@ prj_link <- "https://github.com/JiaxingQiu/FAIRStream/wiki"
 in.eda_cluster_label <- dict_viz$label_front[which(dict_viz$type=="key")]
 in.eda_trim_by_label <- c("Post-menstrual Age", "Chronological Age")
 in.eda_trim_time_unit <- 7
+
+in.eda_pctcut_num_labels <- dict_viz$label_front[which(dict_viz$type=="num")]
+
+in.eda_filter_tag_labels <- dict_viz$label_front[which(dict_viz$unit=="tag01")]
 
 in.eda_y_label_stats1d <- dict_viz$label_front[which(dict_viz$type=="num" | (dict_viz$unit=="tag01") )]
 in.eda_x_label_stats1d <- c("Chronological Age", "Post-menstrual Age", setdiff(dict_viz$label_front[which(dict_viz$type!="")],c("Chronological Age", "Post-menstrual Age") ) )
@@ -37,6 +53,8 @@ in.ml_cluster_label <- cluster_front_labels
 in.ml_y_label.selected <- "Primary outcome (EN)___Unfavorable"
 in.ml_y_label <- c(y_tag_front_labels, y_num_front_labels, "Site (EN)___Miami")
 in.ml_trim_by_label <- c("Chronological Age", "Post-menstrual Age", "Gestational Age")
+in.ml_trim_ctrl <- TRUE
+in.ml_imputation.selected <-  "None"
 in.ml_num_adjust_label <- c("Gestational Age","None")
 
 in.ml_num_labels.choices <- x_num_front_labels
@@ -59,6 +77,8 @@ in.ml_tag_labels_mdl.selected <- c("Baby Gender (EN)___Female",
                                    "Resus at birth: CPAP (EN)___Yes",
                                    "Maternal race (EN)___Black_African_American",
                                    "Maternal ethnicity (EN)___Hispanic_or_Latino")
+in.ml_stratified_cv <- TRUE
+in.ml_fix_knots <- TRUE
 in.ml_joint_col2_label <- c("None","Gestational Age") 
 
 # ---- 3. unsupervised ml ----
@@ -80,6 +100,8 @@ in.unml_input_labels.selected <- dict_unml$label[which(dict_unml$varname%in%coln
 
 
 # -------------------------------------------------- server.R ------------------------------------------------------------------
+
+
 
 sv.offset_label = "Post-menstrual Age"
 sv.na_label = "Post-menstrual Age"
