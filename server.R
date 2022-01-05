@@ -524,7 +524,7 @@ shinyServer(function(input, output, session) {
     # coef_df$vars <- paste0(c(1:nrow(coef_df)),"__",coef_df$vars)
     coef_df_all <- bind_rows(coef_df_all, coef_df)
     
-    ggplot(data = coef_df_all, aes(x = abs(coef), y = vars) ) + 
+    ggplot(data = coef_df_all, aes(x = abs(coef), y = vars ) )+ 
       geom_point() + 
       facet_grid(~ penalty) + 
       ylab(NULL) + 
@@ -574,11 +574,11 @@ shinyServer(function(input, output, session) {
     coef_df$vars <- as.character(rownames(lasso_optimal$beta))
     coef_df$coef_abs <- abs(coef_df$coef)
     coef_df_all <- coef_df
-    ggplot(data = coef_df_all, aes(x = abs(coef), y = vars) ) + 
+    ggplot(data = coef_df_all, aes(x = abs(coef), y = reorder(vars, abs(coef)) )) + 
       geom_point() + 
       ylab(NULL) + 
       xlab(" | coefficients | ") +
-      xlim(0,max(abs(coef_df_all$coef))+1)
+      xlim(0,max(abs(coef_df_all$coef))+0.1)
   })
   
   output$ml_select_group_lasso_coef_df <- renderTable({
