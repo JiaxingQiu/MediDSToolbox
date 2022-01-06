@@ -596,6 +596,7 @@ body <- dashboardBody(
                                           downloadButton("perform_download_df_hat","Y hat (.csv)"),
                                           downloadButton("perform_download_scores_tbl","X rank (.csv)")
                                  ),
+                                 plotOutput("perform_cali_plot"),
                                  plotOutput("perform_scores_plot", height = "600px"),
                                  tableOutput("perform_scores_tbl"),
                                  plotOutput("perform_fitted_eff_plot", height = "600px")

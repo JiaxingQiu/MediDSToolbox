@@ -101,8 +101,8 @@ lasso_x_select <- function(
   # plot variable importance (coefficients) on final model obj
   vip::vip(lasso_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
   vip::vip(ridge_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
-  print(lasso_optimal)
-  summary(lasso_optimal)
+  #print(lasso_optimal)
+  #summary(lasso_optimal)
   return(list( cv_mdls = list(lasso_cv = lasso_cv, ridge_cv = ridge_cv),
                trace_mdls = list(lasso_trace = lasso_trace, ridge_trace = ridge_trace),
                optimal_mdls = list(lasso_optimal=lasso_optimal, ridge_optimal=ridge_optimal) ))

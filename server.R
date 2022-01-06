@@ -574,7 +574,7 @@ shinyServer(function(input, output, session) {
     coef_df$vars <- as.character(rownames(lasso_optimal$beta))
     coef_df$coef_abs <- abs(coef_df$coef)
     coef_df_all <- coef_df
-    ggplot(data = coef_df_all, aes(x = abs(coef), y = reorder(vars, abs(coef)) )) + 
+    ggplot(data = coef_df_all, aes(x = abs(coef), y = vars)) + # reorder(vars, abs(coef))
       geom_point() + 
       ylab(NULL) + 
       xlab(" | coefficients | ") +
@@ -718,6 +718,24 @@ shinyServer(function(input, output, session) {
       write.csv(scores_tbl, file, row.names = FALSE)
     }
   )
+  output$perform_cali_plot <- renderPlot({
+    MLreports <- MLreports()
+    cali_plot <- NULL
+    if(input$perform_from=="Internal"){
+      if(input$perform_dataset=="Engineered"){
+        cali_plot <- MLreports$perform_in_cali_plot
+      }else if(input$perform_dataset=="Original"){
+        cali_plot <- MLreports$perform_inorg_cali_plot
+      }
+    }else if(input$perform_from=="External"){
+      if(input$perform_dataset=="Engineered"){
+        cali_plot <- MLreports$perform_ex_cali_plot
+      }else if(input$perform_dataset=="Original"){
+        cali_plot <- MLreports$perform_exorg_cali_plot
+      }
+    }
+    cali_plot
+  })
   output$perform_fitted_eff_plot<- renderPlot({
     MLreports <- MLreports()
     fitted_eff_plot <- NULL

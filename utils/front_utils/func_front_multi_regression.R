@@ -260,6 +260,11 @@ front_multi_regression <- function(
   perform_ex_fitted_eff_plot <- results$perform_obj$external$fitted_eff_plot
   perform_exorg_fitted_eff_plot <- results$perform_obj$external_org$fitted_eff_plot
   
+  perform_in_cali_plot <- results$perform_obj$internal$cali_plot
+  perform_inorg_cali_plot <- results$perform_obj$internal_org$cali_plot
+  perform_ex_cali_plot <- results$perform_obj$external$cali_plot
+  perform_exorg_cali_plot <- results$perform_obj$external_org$cali_plot
+  
   perform_in_scores_plot <- results$perform_obj$internal$scores_plot
   perform_inorg_scores_plot <- results$perform_obj$internal_org$scores_plot
   perform_ex_scores_plot <- results$perform_obj$external$scores_plot
@@ -286,6 +291,10 @@ front_multi_regression <- function(
                perform_inorg_fitted_eff_plot = perform_inorg_fitted_eff_plot,
                perform_ex_fitted_eff_plot =perform_ex_fitted_eff_plot,
                perform_exorg_fitted_eff_plot = perform_exorg_fitted_eff_plot,
+               perform_in_cali_plot = perform_in_cali_plot,
+               perform_inorg_cali_plot = perform_inorg_cali_plot,
+               perform_ex_cali_plot =perform_ex_cali_plot,
+               perform_exorg_cali_plot = perform_exorg_cali_plot,
                perform_in_scores_plot = perform_in_scores_plot,
                perform_inorg_scores_plot = perform_inorg_scores_plot,
                perform_ex_scores_plot = perform_ex_scores_plot,

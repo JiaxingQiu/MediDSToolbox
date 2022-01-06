@@ -133,7 +133,7 @@ lrm_cv <- function(df, external_df=NULL, fml, penalty, cluster_col, nfold, strat
   scores$success_nfold <- success_nfold
   
   df_mdl$y_true_fct <- factor(df_mdl$y_true, levels=c(1,0))
-  cc <- caret::calibration(y_true_fct ~ y_prob, df_mdl, cuts=30)
+  cc <- caret::calibration(y_true_fct ~ y_prob, df_mdl, cuts=10)
   cali_plot <- ggplot(cc)+
     xlab("Predicted")+
     ylab("Observed") +

@@ -2,7 +2,7 @@ lrm_perform <- function(
   mdl_obj,
   df,
   y_map_func = "fold_risk",
-  y_map_max = 3,
+  y_map_max = 7,
   rel_time_col=NULL,
   x_cols=c() # list of predictors to see the performance 
 ){
@@ -15,16 +15,12 @@ lrm_perform <- function(
   scores_all_final <- NULL
   df_hat <- NULL
   
-  
-  
-  # --------- fitted marginal effects -------
   # define logit reversing function
   logit2prob <- function(logit){
     odds <- exp(logit)
     prob <- odds / (1 + odds)
     return(prob)
   }
-  
   # find column name for response variable
   y_col <- as.character( mdl_obj$sformula )[2]
   if (length(intersect(x_cols, setdiff(colnames(df), y_col)))==0){
@@ -41,21 +37,21 @@ lrm_perform <- function(
     x_cols <- union(intersect(colnames(df), rel_time_col), x_cols) 
   }
   # global mean of outcome
-  base_mean <- mean(mdl_obj$y, na.rm=TRUE)#mean(df[,y_col],na.rm=TRUE)
-  print(paste0("--- baseline responce mean --- ", base_mean))
+  base_mean_mdl <- mean(mdl_obj$y, na.rm=TRUE)#mean(df[,y_col],na.rm=TRUE)
   # define the right mapping function for y-axis
   if(y_map_func == "probability"){
-    ymap <- function(y_logodds){
+    ymap <- function(y_logodds, base_mean=NULL){
       y_prob <- ifelse(logit2prob(y_logodds) > y_map_max, y_map_max,logit2prob(y_logodds))
       return(y_prob)
     }
   }else if(y_map_func == "fold_risk"){
-    ymap <- function(y_logodds){
+    ymap <- function(y_logodds, base_mean=base_mean_mdl){
+      print(paste0("--- baseline responce mean for fold increase /relative risk --- ", base_mean))
       y_fold_risk <- ifelse(logit2prob(y_logodds)/base_mean > y_map_max, y_map_max, logit2prob(y_logodds)/base_mean)
       return(y_fold_risk)
     }
   }else{
-    ymap <- function(y_logodds){
+    ymap <- function(y_logodds, base_mean=NULL){
       y_logodds <- ifelse(y_logodds > y_map_max, y_map_max, y_logodds)
       return(y_logodds)
     }
@@ -66,6 +62,24 @@ lrm_perform <- function(
   df$y_true <- as.factor(df[,y_col])
   df_hat <- df
   
+  # ----- calibration plot -----
+  df_hat$y_cali_groups <- cut(est_pctl( df_hat$y_pred ), 10)
+  df_hat$y_true01 <- ifelse(as.numeric(as.character(df[,y_col]))==1, 1, 0)
+  base_mean_obs <- mean( df_hat$y_true01, na.rm=TRUE )
+  df_cali <- df_hat %>% 
+    group_by(y_cali_groups) %>%  
+    summarise(y_cali_observed = ymap(log(mean(y_true01, na.rm=TRUE)/(1-mean(y_true01, na.rm=TRUE))), base_mean=base_mean_obs),
+              y_cali_predicted = mean(y_pred, na.rm=TRUE)) %>% 
+    as.data.frame()
+  cali_plot <- ggplot(df_cali, aes(x=y_cali_predicted, y=y_cali_observed)) +
+    geom_point() +
+    geom_line(color="grey") +
+    geom_abline(intercept=0, slope = 1, size=0.3, linetype="dotted") + 
+    xlab(paste0("Predicted ", y_map_func))+
+    ylab(paste0("Observed ", y_map_func))
+    
+  
+  # --------- fitted marginal effects -------
   # reformat plot dataframes by group
   tryCatch({
     fit_eff_plot_list <- list()
@@ -159,11 +173,15 @@ lrm_perform <- function(
     
   },error=function(e){print(e)})
   
+  
+  
+  
   return(list(
     df_hat = df_hat,
     fitted_eff_plot = fitted_eff_plot,
     scores_plot = scores_plot,
-    scores_all_final = scores_all_final
+    scores_all_final = scores_all_final,
+    cali_plot = cali_plot
   ))
   
 }
