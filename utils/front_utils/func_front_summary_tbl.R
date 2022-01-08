@@ -1,13 +1,18 @@
-front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
-                              dict_data = dict_ml,
-                              trim_by_label="Post-menstrual Age",
-                              trim_vec = c(22, 24),
-                              time_unit = 7,
-                              stratify_by="Primary outcome (EN)___Unfavorable", 
-                              cluster_label=cluster_front_labels[1],
+front_summary_tbl <- function(data,
+                              dict_data,
+                              trim_by_label,
+                              trim_vec,
+                              time_unit,
+                              cluster_label,
+                              stratify_by=c("None")[1], 
                               trim_ctrl=TRUE # whether or not to trim control group the same way as event group
                               ){
   
+  res_df <- NULL
+  num_detail_df <- NULL
+  fct_detail_df <- NULL
+  rsps_df <- NULL
+  na_obj <- NULL
   
   # ---- pre-processing ----
   data <- assign.dict(data, dict_data, overwrite = TRUE)
@@ -30,32 +35,43 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
                      fct_cols = fct_cols,
                      cluster_col = cluster_col)
   }else{
-    data_event <- engineer(data = data[which(data[,stratify_col]==1),],
-                           trim_by_col = trim_by_col,
-                           trim_min=trim_vec[1]*time_unit,
-                           trim_max=trim_vec[2]*time_unit,
-                           num_cols = num_cols,
-                           fct_cols = fct_cols,
-                           cluster_col = cluster_col)
-    data_cntrl <- engineer(data = data[which(data[,stratify_col]==0),],
-                           trim_by_col = trim_by_col,
-                           trim_min=-Inf,
-                           trim_max=Inf,
-                           trim_keepna = TRUE,
-                           num_cols = num_cols,
-                           fct_cols = fct_cols,
-                           cluster_col = cluster_col)
-    data <- bind_rows(data_cntrl, data_event)
+    tryCatch({
+      stopifnot(length(stratify_col)>0)
+      data_event <- engineer(data = data[which(data[,stratify_col]==1),],
+                             trim_by_col = trim_by_col,
+                             trim_min=trim_vec[1]*time_unit,
+                             trim_max=trim_vec[2]*time_unit,
+                             num_cols = num_cols,
+                             fct_cols = fct_cols,
+                             cluster_col = cluster_col)
+      data_cntrl <- engineer(data = data[which(data[,stratify_col]==0),],
+                             trim_by_col = trim_by_col,
+                             trim_min=-Inf,
+                             trim_max=Inf,
+                             trim_keepna = TRUE,
+                             num_cols = num_cols,
+                             fct_cols = fct_cols,
+                             cluster_col = cluster_col)
+      data <- bind_rows(data_cntrl, data_event)
+    },error=function(e){
+      print("--- error engineer data with trim_ctrl == FALSE ---")
+      print(e)
+      print("--- use data with trim_ctrl == TRUE instead --- ")
+      data <- engineer(data = data,
+                       trim_by_col = trim_by_col,
+                       trim_min=trim_vec[1]*time_unit,
+                       trim_max=trim_vec[2]*time_unit,
+                       num_cols = num_cols,
+                       fct_cols = fct_cols,
+                       cluster_col = cluster_col)
+    })
   }
   data_in <- assign.dict(data, dict_data)
   data <- data_in
   
   # --- summary table ---
   data$key <- data[,cluster_col]
-  res_df <- NULL
-  num_detail_df <- NULL
-  fct_detail_df <- NULL
-  rsps_df <- NULL
+  
   tryCatch({
     # convert numeric stratify_col to discrete IQR groups
     df_agg <- data.frame(key=unique(data$key),stringsAsFactors=FALSE)
@@ -73,7 +89,7 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
       colnames(df)<-c('key',fct_cols)
       df_agg <- merge(df_agg, df, by='key',all.x=TRUE)
     }
-    if(!is.null(stratify_col)){
+    if(length(stratify_col)>0){
       if (dict_data[stratify_col,"type"]=="num"){
         # aggregate by mean
         df <- data %>% group_by(key) %>% 
@@ -104,6 +120,10 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
     
     for (var in colnames(df_agg)){
       label(df_agg[,var]) <- dict_data[var,"label"]
+      # fix infinite values by NA
+      if(var %in% num_cols){
+        df_agg[which(!is.finite(df_agg[,var])),var] <- NA
+      }
     }
     
     # summary table stratefied by response
@@ -121,27 +141,75 @@ front_summary_tbl <- function(data = subset_df(data_ml,"40w"),
     fct_detail_df <- tbl_obj$fct_detail_df
     
     # factor response details
-    if(dict_data$type[which(dict_data$varname==stratify_col)]=="fct"){
-      data$y <- data[, stratify_col]
-      data$cluster_col <- data[,cluster_col]
-      data$trim_by_col <- data[,trim_by_col]
-      rsps_df <- data %>% group_by(y) %>% summarise(
-        n_cluster = n_distinct(cluster_col),
-        n_episode = sum( diff(trim_by_col[!is.na(trim_by_col)])<0 ), # number of episodes counted by jump in relative time 
-        n_row = n()
-      ) %>% as.data.frame()
+    if(length(stratify_col)>0){
+      if(dict_data$type[which(dict_data$varname==stratify_col)]=="fct"){
+        data$y <- data[, stratify_col]
+        data$cluster_col <- data[,cluster_col]
+        data$trim_by_col <- data[,trim_by_col]
+        rsps_df <- data %>% group_by(y) %>% summarise(
+          n_cluster = n_distinct(cluster_col),
+          n_episode = sum( diff(trim_by_col[!is.na(trim_by_col)])<0 ), # number of episodes counted by jump in relative time 
+          n_row = n()
+        ) %>% as.data.frame()
+      }
     }
-    
-    
   },error=function(e){
     print(e)
   })
+  
+  # --- reformat num_detail_df ---
+  tryCatch({
+    df <- num_detail_df 
+    df$N <- df$n-df$miss
+    df$mean_sd <- paste0(round(df$mean,2), " (", round(df$sd,2), ")")
+    df$range <- paste0(round(df$median,2), " [",round(df$p25,2),", ",round(df$p75,2),"] (",round(df$min,2),", ",round(df$max,2),")")
+    df$summ_string <- paste(paste0("N = ", df$N), df$mean_sd, df$range, sep =" \n ")
+    for (att in c("label", "unit", "source_file", "unique_per_sbj")){
+      if (!att %in% colnames(dict_data)) next
+      df[,att] <- ""
+      for(varname in df$varname){
+        df[which(df$varname==varname),att] <- dict_data[which(dict_data$varname==varname), att]
+      }
+    }
+    num_detail_df <- df[,c("group", "label", "unit", "source_file", "summ_string", "N", "mean_sd", "range", "varname", "unique_per_sbj")]
+  },error=function(e){
+    print("--- Error in num_detail_df --- ")
+    print(e)
+  })
+  
+  
+  # --- reformat fct_detail_df ---
+  tryCatch({
+    df <- fct_detail_df
+    df$varname <- gsub(".{2}$", "", df$varname)
+    for (att in c("label", "unit", "source_file", "unique_per_sbj")){
+      if (!att %in% colnames(dict_data)) next
+      df[,att] <- ""
+      for(varname in df$varname){
+        df[which(df$varname==varname),att] <- dict_data[which(dict_data$varname==varname), att]
+      }
+    }
+    df$N <- df$n-df$miss
+    df$n_freq <- as.numeric(as.character(df$freq))
+    df$p <- as.numeric(as.character(df$freq))/df$N
+    df$summ_string <- paste0(round(df$p,2), " (", df$n_freq, "/",df$N,")")
+    fct_detail_df <- df[,c("group", "label", "unit", "source_file", "level","summ_string", "N", "n_freq", "p","varname", "unique_per_sbj")]
+  },error=function(e){
+    print("--- Error in fct_detail_df --- ")
+    print(e)
+  })
+  
   
   # --- NA plot ---
   for (fct_col in fct_cols){
     data[which(data[,fct_col]=="None_level"), fct_col] <- NA
   }
-  na_obj <-  Hmisc::naclus(data[,c(num_cols,fct_cols)])
+  tryCatch({
+    na_obj <- Hmisc::naclus(data[,c(num_cols,fct_cols)])
+  },error=function(e){
+    print("--- Error in na_plot --- ")
+    print(e)
+  })
   
   return(list("summ_df" = res_df, 
               "num_detail_df" = num_detail_df,

@@ -145,7 +145,7 @@ shinyServer(function(input, output, session) {
       trim_by_label=input$ml_trim_by_label, 
       trim_vec=as.numeric(input$ml_trim_vec), 
       time_unit=input$ml_trim_time_unit,
-      stratify_by=input$ml_y_label, 
+      stratify_by=input$ml_stratify_by_label, 
       cluster_label=input$ml_cluster_label,
       trim_ctrl = input$ml_trim_ctrl
     )
@@ -413,7 +413,11 @@ shinyServer(function(input, output, session) {
   })
   output$eda_1d_df_summ <- renderDataTable({
     eda_1d_obj <- stats1dViz()
-    eda_1d_obj$df_summ
+    head(eda_1d_obj$df_summ,10)
+  })
+  output$eda_1d_p_1stat_set <- renderPlot({
+    eda_1d_obj <- stats1dViz()
+    eda_1d_obj$p_1stat_set
   })
   output$download_eda_1d_df_summ <- downloadHandler(
     filename = function() {
@@ -458,21 +462,50 @@ shinyServer(function(input, output, session) {
     summ_obj <- summReport()
     summ_obj$summ_df
   })
+  output$download_summary_table <- downloadHandler(
+    filename = function() {
+      paste0('summ_', Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      summ_obj <- summReport()
+      write.csv(summ_obj$summ_df, file, row.names = FALSE)
+    }
+  )
   output$num_detail_table <- renderDataTable({
     summ_obj <- summReport()
     summ_obj$num_detail_df
   })
+  output$download_num_detail_table <- downloadHandler(
+    filename = function() {
+      paste0('summ_num_', Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      summ_obj <- summReport()
+      write.csv(summ_obj$num_detail_df, file, row.names = FALSE)
+    }
+  )
   output$fct_detail_table <- renderDataTable({
     summ_obj <- summReport()
     summ_obj$fct_detail_df
   })
+  output$download_fct_detail_table <- downloadHandler(
+    filename = function() {
+      paste0('summ_fct_', Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      summ_obj <- summReport()
+      write.csv(summ_obj$fct_detail_df, file, row.names = FALSE)
+    }
+  )
   output$rsps_table <- renderDataTable({
     summ_obj <- summReport()
     summ_obj$rsps_df
   })
   output$na_plot <- renderPlot({
     summ_obj <- summReport()
-    plot(summ_obj$na_obj) 
+    if(!is.null(summ_obj$na_obj)){
+      plot(summ_obj$na_obj)
+    } 
   })
   # Univariate Heatmap ----
   output$plot_uniheat <- renderPlot({

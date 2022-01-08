@@ -12,7 +12,11 @@ summ_tbl <- function(data,
                      )  {
   
   # ---- remove duplicates if any ----
-  data = dplyr::distinct(data[, c(keys, y, num_vars, fct_vars)]) # if y is not in data, or more than 1, error will arise
+  if (length(y)>0){
+    data = dplyr::distinct(data[, c(keys, y, num_vars, fct_vars)]) # if y is not in data, or more than 1, error will arise
+  } else {
+    data = dplyr::distinct(data[, c(keys, num_vars, fct_vars)]) # if y is not in data, or more than 1, error will arise
+  }
   
   # ---- check variable name lists not empty ----
   if (is.null(num_vars) & is.null(fct_vars)) {
@@ -134,13 +138,23 @@ summ_tbl <- function(data,
   
   # ---- create Tableone objects ----
   # note tbl obj has 3 elements 
-  tbl <- tableone::CreateTableOne(vars, # numeric and factor vars are automatically seperated
-                                  strata=c(y), # if y is not in data, or more than 1, error will arise
-                                  data=data,
-                                  includeNA=includeNA, # Only effective for categorical variables.
-                                  test=test,
-                                  addOverall=overall
-  )
+  if(length(y)>0){
+    tbl <- tableone::CreateTableOne(vars, # numeric and factor vars are automatically seperated
+                                    strata=c(y), # if y is not in data, or more than 1, error will arise
+                                    data=data,
+                                    includeNA=includeNA, # Only effective for categorical variables.
+                                    test=test,
+                                    addOverall=overall
+    )
+  } else {
+    tbl <- tableone::CreateTableOne(vars, # numeric and factor vars are automatically seperated
+                                    data=data,
+                                    includeNA=includeNA, # Only effective for categorical variables.
+                                    test=test,
+                                    addOverall=overall
+    )
+  }
+  
   #print(tbl_obj$tbl, varLabels = TRUE)
   
   ## To further examine the variables, use the summary.ContTable method, which will show more details.

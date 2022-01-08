@@ -184,7 +184,10 @@ sidebar <- dashboardSidebar(
                          )
         )),
     div(id = 'sidebar_ml_summ',
-        conditionalPanel("input.sidebar == 'ml_summ'"
+        conditionalPanel("input.sidebar == 'ml_summ'", 
+                         selectInput("ml_stratify_by_label",
+                                     "Stratify by",
+                                     choices = union("None",in.ml_y_label) )
         )),
     div(id = 'sidebar_ml_uni',
         conditionalPanel("input.sidebar == 'ml_uni'",
@@ -457,7 +460,7 @@ body <- dashboardBody(
             tabsetPanel(type = "tabs",
                         tabPanel("Mean", 
                                  plotOutput("eda_1d_p_mean",
-                                            height = "400px",
+                                            height = "600px",
                                             dblclick = "eda_1d_p_mean_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_mean_brush",
@@ -465,7 +468,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Percentiles", 
                                  plotOutput("eda_1d_p_pct",
-                                            height = "400px",
+                                            height = "600px",
                                             dblclick = "eda_1d_p_pct_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_pct_brush",
@@ -473,7 +476,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Denomenator", 
                                  plotOutput("eda_1d_p_denom",
-                                            height = "400px",
+                                            height = "600px",
                                             dblclick = "eda_1d_p_denom_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_denom_brush",
@@ -481,7 +484,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Violin Box", 
                                  plotOutput("eda_1d_p_violin",
-                                            height = "400px",
+                                            height = "600px",
                                             dblclick = "eda_1d_p_violin_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_violin_brush",
@@ -489,6 +492,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Plot Table",
                                  downloadButton("download_eda_1d_df_summ","csv"),
+                                 plotOutput("eda_1d_p_1stat_set",height = "800px"),
                                  dataTableOutput("eda_1d_df_summ")
                         )
             )
@@ -520,13 +524,16 @@ body <- dashboardBody(
             fluidRow(column(1,actionButton("ml_summ_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Summary",
+                                 downloadButton("download_summary_table","csv"),
                                  plotOutput("na_plot", width ="2000px"),
                                  dataTableOutput("summary_table")
                         ),
                         tabPanel("Numeric",
+                                 downloadButton("download_num_detail_table","csv"),
                                  dataTableOutput("num_detail_table")
                         ),
                         tabPanel("Factor",
+                                 downloadButton("download_fct_detail_table","csv"),
                                  dataTableOutput("fct_detail_table")
                         ),
                         tabPanel("Response",

@@ -59,7 +59,7 @@ viz_1d_stats <- function(
   p_mean <- NULL
   p_pct <- NULL
   p_denom <- NULL
-  
+  p_1stat_set <- NULL
   
   data_all <- data
   data_all$group <- "All"
@@ -99,7 +99,7 @@ viz_1d_stats <- function(
   }
   
   # --- percentile ---
-  intervals <- c(0.5, 0.25, 0.75, 0.90, 0.95)
+  intervals <- c(0.5, 0.25, 0.75, 0.90)#, 0.95
   df_all <- data %>% 
     group_by(x) %>% 
     summarise(n_sbj = n_distinct(cluster), # how many babies have the data
@@ -147,6 +147,7 @@ viz_1d_stats <- function(
                                             labels = x_labels)
     }
   }
+  
   # --- denominator ---
   df_all_denom <- data %>% 
     group_by(x) %>% 
@@ -189,7 +190,7 @@ viz_1d_stats <- function(
                 q50 = quantile(y, probs = 0.50, na.rm=TRUE), # quantiles
                 q75 = quantile(y, probs = 0.75, na.rm=TRUE), # quantiles
                 q90 = quantile(y, probs = 0.90, na.rm=TRUE), # quantiles
-                q90 = quantile(y, probs = 0.95, na.rm=TRUE), # quantiles
+                q95 = quantile(y, probs = 0.95, na.rm=TRUE), # quantiles
                 avg = mean(y, na.rm=TRUE)) %>%  
       as.data.frame()
     df_summ_all$group <- 'Overall' 
@@ -202,20 +203,50 @@ viz_1d_stats <- function(
                 q50 = quantile(y, probs = 0.50, na.rm=TRUE), # quantiles
                 q75 = quantile(y, probs = 0.75, na.rm=TRUE), # quantiles
                 q90 = quantile(y, probs = 0.90, na.rm=TRUE), # quantiles
-                q90 = quantile(y, probs = 0.95, na.rm=TRUE), # quantiles
+                q95 = quantile(y, probs = 0.95, na.rm=TRUE), # quantiles
                 avg = mean(y, na.rm=TRUE)) %>% 
       as.data.frame()
     df_summ <- dplyr::distinct( dplyr::bind_rows(df_summ_all, df_summ_grouped) )
-    colnames(df_summ) <- c(x_col,paste0(y_col,"__", c("n_sbj", "n_sbj_avail", "q25" ,  "q50",   "q75",   "q90",   "avg")), ifelse(length(group_by_col)==0, "Group", group_by_col) )
+    colnames(df_summ) <- c(x_col,paste0(y_col,"__", c("n_sbj", "n_sbj_avail", "q25" ,  "q50",   "q75",   "q90", "q95",  "avg")), ifelse(length(group_by_col)==0, "Group", group_by_col) )
     df_summ <- df_summ[,union(c(x_col,ifelse(length(group_by_col)==0, "Group", group_by_col)),colnames(df_summ))]# change column sequence
   }, silent = FALSE)
   if(is.null(df_summ)){print("df_summ is null")}else{print(head(df_summ,10))}
+  
+  df_summ_grouped_plot_all <- data.frame()
+  for (stt in c("n_sbj", "n_sbj_avail", "q25" ,  "q50", "q75", "avg")){
+    df_summ_grouped_plot <- df_summ_grouped[,c("group", "x", stt)]
+    colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value")
+    df_summ_grouped_plot$stt_name <- stt
+    df_summ_grouped_plot_all <- bind_rows(df_summ_grouped_plot_all, df_summ_grouped_plot)
+  }
+  
+  
+  y_lab_string <- y_col
+  try({y_lab_string <- dict_data[y_col, "label"] },TRUE)
+  x_lab_string <- x_col
+  try({x_lab_string <- dict_data[x_col, "label"] },TRUE)
+  group_by_string <- group_by_col
+  try({group_by_string <- dict_data[group_by_col, "label"] },TRUE)
+  p_1stat_set <- ggplot(df_summ_grouped_plot_all, aes(x=x, y=stt_value, color=group))+
+    geom_smooth(se = FALSE) +
+    facet_wrap(~stt_name, ncol=2, scales="free")+
+    theme_bw() +
+    ylab(y_lab_string) +
+    xlab(x_lab_string) +
+    scale_color_discrete(name=group_by_string) 
+  if(n_distinct(df_summ_grouped$group)<=2){
+    p_1stat_set <- p_1stat_set +  theme(legend.position = "top", legend.direction = "horizontal")
+  }
+    
+  
+  
   
   return(list(
     "p_denom" = p_denom,
     "p_violin" = p_violin,
     "p_pct" = p_pct,
     "p_mean" = p_mean,
-    "df_summ" = df_summ
+    "df_summ" = df_summ,
+    "p_1stat_set" = p_1stat_set
   ))
 }
