@@ -572,8 +572,8 @@ body <- dashboardBody(
                                  textOutput("x_corre_out")),
                         tabPanel("Redundancy", verbatimTextOutput("x_redun_obj")),
                         tabPanel("Missingness",
-                                 plotOutput("ml_na_plot", width ="500px"),
-                                 dataTableOutput("ml_summary_table")),
+                                 dataTableOutput("ml_summary_table"),
+                                 plotOutput("ml_na_plot", width ="400px")),
                         tabPanel("Spearman2 dof",
                                  plotOutput("dof_plot")))),
     tabItem(tabName = "ml_multi",
@@ -588,10 +588,10 @@ body <- dashboardBody(
                         ),
                         tabPanel("Inference", 
                                  downloadButton("devel_download_mdl","Model (.rda)"),
-                                 plotOutput("infer_effect_plot_1d", height = "600px"),
+                                 plotOutput("infer_effect_plot_1d",height = "1000px"),
                                  plotOutput("infer_anova_plot"),
                                  verbatimTextOutput("infer_model_prt"),
-                                 plotOutput("infer_effect_plot_2d", height = "600px")
+                                 plotOutput("infer_effect_plot_2d",height = "1000px")
                         ),
                         tabPanel("Performance",
                                  fluidRow(column(3,selectInput("perform_from",
@@ -604,9 +604,9 @@ body <- dashboardBody(
                                           downloadButton("perform_download_scores_tbl","X rank (.csv)")
                                  ),
                                  plotOutput("perform_cali_plot"),
-                                 plotOutput("perform_scores_plot", height = "600px"),
+                                 plotOutput("perform_scores_plot"),
                                  tableOutput("perform_scores_tbl"),
-                                 plotOutput("perform_fitted_eff_plot", height = "600px")
+                                 plotOutput("perform_fitted_eff_plot",height = "1000px")
                         )
             )
     ),

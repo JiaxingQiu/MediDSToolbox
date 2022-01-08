@@ -5,6 +5,10 @@ front_summary_tbl <- function(data,
                               time_unit,
                               cluster_label,
                               stratify_by=c("None")[1], 
+                              imputation=c("None","Mean", "Median", "Zero")[1],
+                              impute_per_cluster=FALSE,
+                              winsorizing=TRUE,
+                              aggregation=FALSE,
                               trim_ctrl=TRUE # whether or not to trim control group the same way as event group
                               ){
   
@@ -23,6 +27,7 @@ front_summary_tbl <- function(data,
   fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"), ]) )
   cluster_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
   stratify_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==stratify_by),]) )
+  fct_cols <- union(fct_cols, stratify_col)
   
   # ---- prepare engineered training and validation dataset (internal data) ----
   if(trim_ctrl){
@@ -32,7 +37,11 @@ front_summary_tbl <- function(data,
                      trim_max=trim_vec[2]*time_unit,
                      num_cols = num_cols,
                      fct_cols = fct_cols,
-                     cluster_col = cluster_col)
+                     cluster_col = cluster_col,
+                     imputation = imputation,
+                     impute_per_cluster = impute_per_cluster,
+                     winsorizing = winsorizing,
+                     aggregation = aggregation)
   }else{
     tryCatch({
       stopifnot(length(stratify_col)>0)
@@ -42,7 +51,11 @@ front_summary_tbl <- function(data,
                              trim_max=trim_vec[2]*time_unit,
                              num_cols = num_cols,
                              fct_cols = fct_cols,
-                             cluster_col = cluster_col)
+                             cluster_col = cluster_col,
+                             imputation = imputation,
+                             impute_per_cluster = impute_per_cluster,
+                             winsorizing = winsorizing,
+                             aggregation = aggregation)
       data_cntrl <- engineer(data = data[which(data[,stratify_col]==0),],
                              trim_by_col = trim_by_col,
                              trim_min=-Inf,
@@ -50,7 +63,11 @@ front_summary_tbl <- function(data,
                              trim_keepna = TRUE,
                              num_cols = num_cols,
                              fct_cols = fct_cols,
-                             cluster_col = cluster_col)
+                             cluster_col = cluster_col,
+                             imputation = imputation,
+                             impute_per_cluster = impute_per_cluster,
+                             winsorizing = winsorizing,
+                             aggregation = aggregation)
       data <- bind_rows(data_cntrl, data_event)
     },error=function(e){
       print("--- error engineer data with trim_ctrl == FALSE ---")
@@ -62,7 +79,11 @@ front_summary_tbl <- function(data,
                        trim_max=trim_vec[2]*time_unit,
                        num_cols = num_cols,
                        fct_cols = fct_cols,
-                       cluster_col = cluster_col)
+                       cluster_col = cluster_col,
+                       imputation = imputation,
+                       impute_per_cluster = impute_per_cluster,
+                       winsorizing = winsorizing,
+                       aggregation = aggregation)
     })
   }
   data_in <- assign.dict(data, dict_data)
@@ -79,14 +100,14 @@ front_summary_tbl <- function(data,
         summarise_at(num_cols, list(mean = ~mean(., na.rm=TRUE))) %>% 
         as.data.frame()
       colnames(df)<-c('key',num_cols)
-      df_agg <- merge(df_agg, df, by='key',all.x=TRUE)
+      df_agg <- merge(df_agg, df, all.x=TRUE)
     }
     if(!is.null(fct_cols)){
       df <- data %>% group_by(key) %>% 
         summarise_at(fct_cols, list(ever = ~factor(ifelse(max(., na.rm=TRUE)>0,"Yes","No"), levels = c('No','Yes')))) %>% 
         as.data.frame()
       colnames(df)<-c('key',fct_cols)
-      df_agg <- merge(df_agg, df, by='key',all.x=TRUE)
+      df_agg <- merge(df_agg, df, all.x=TRUE)
     }
     if(length(stratify_col)>0){
       if (dict_data[stratify_col,"type"]=="num"){
@@ -112,7 +133,7 @@ front_summary_tbl <- function(data,
           summarise_at(stratify_col, list(ever = ~factor(ifelse(max(., na.rm=TRUE)>0,"Yes","No"), levels = c('No','Yes')))) %>% 
           as.data.frame()
         colnames(df)<-c('key',stratify_col)
-        df_agg <- merge(df_agg, df, by='key',all.x=TRUE)
+        df_agg <- merge(df_agg, df, all.x=TRUE)
       }
       
     }
@@ -126,7 +147,13 @@ front_summary_tbl <- function(data,
     }
     
     # summary table stratefied by response
-    tbl_obj <- summ_tbl(data=df_agg, num_vars = num_cols, fct_vars = fct_cols, num_denom = "avail", fct_denom = "known", keys=c('key'),y=c(stratify_col) )
+    tbl_obj <- summ_tbl(data=df_agg, 
+                        num_vars = num_cols, 
+                        fct_vars = fct_cols, 
+                        num_denom = "avail", 
+                        fct_denom = "known", 
+                        keys=c('key'),
+                        y=c(stratify_col) )
     tbl_st <- print(tbl_obj$tbl, varLabels = TRUE)
     res_df <- as.data.frame(tbl_st)%>%tibble::rownames_to_column()
     res_df <- res_df[which(res_df$rowname!="n.1"),]
@@ -204,6 +231,7 @@ front_summary_tbl <- function(data,
     data[which(data[,fct_col]=="None_level"), fct_col] <- NA
   }
   tryCatch({
+    stopifnot(length(c(num_cols,fct_cols))<100) 
     na_obj <- Hmisc::naclus(data[,c(num_cols,fct_cols)])
   },error=function(e){
     print("--- Error in na_plot --- ")

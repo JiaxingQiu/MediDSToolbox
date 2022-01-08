@@ -139,14 +139,21 @@ shinyServer(function(input, output, session) {
                       value = c(min_value, max_value) )
   })  
   summReport <- eventReactive(input$ml_summ_go, {
+    stratify_by_string <- ifelse(input$ml_summ_stratify_by, as.character(input$ml_y_label), "None")
+    print("--- stratify by ---")
+    print(stratify_by_string)
     front_summary_tbl(
       data=data_ml,
       dict_data=dict_ml,
       trim_by_label=input$ml_trim_by_label, 
       trim_vec=as.numeric(input$ml_trim_vec), 
       time_unit=input$ml_trim_time_unit,
-      stratify_by=ifelse(input$ml_summ_stratify_by, input$ml_y_label, "None"), 
+      stratify_by=stratify_by_string, 
       cluster_label=input$ml_cluster_label,
+      imputation=input$ml_imputation,
+      impute_per_cluster=input$ml_impute_per_cluster,
+      winsorizing=input$ml_winsorizing,
+      aggregation = input$ml_aggregation,
       trim_ctrl = input$ml_trim_ctrl
     )
   })
