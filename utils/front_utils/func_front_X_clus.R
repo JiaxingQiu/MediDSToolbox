@@ -104,6 +104,7 @@ front_X_clus <- function(
                                    dict_data = results$dict_final,
                                    trim_by_label=trim_by_label,
                                    trim_vec = trim_vec,
+                                   time_unit = time_unit,
                                    stratify_by=y_label,
                                    cluster_label=cluster_label,
                                    trim_ctrl = trim_ctrl)
