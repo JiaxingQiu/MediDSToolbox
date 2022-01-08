@@ -145,7 +145,7 @@ shinyServer(function(input, output, session) {
       trim_by_label=input$ml_trim_by_label, 
       trim_vec=as.numeric(input$ml_trim_vec), 
       time_unit=input$ml_trim_time_unit,
-      stratify_by=input$ml_stratify_by_label, 
+      stratify_by=ifelse(input$ml_summ_stratify_by, input$ml_y_label, "None"), 
       cluster_label=input$ml_cluster_label,
       trim_ctrl = input$ml_trim_ctrl
     )

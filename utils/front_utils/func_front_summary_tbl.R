@@ -20,8 +20,7 @@ front_summary_tbl <- function(data,
   
   trim_by_col <- intersect(colnames(data),rownames(dict_data[which(dict_data$label_front==trim_by_label), ]))
   num_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]) )
-  fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit!="tag01"), ]) )
-  tag_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit=="tag01"), ]) )
+  fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"), ]) )
   cluster_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
   stratify_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==stratify_by),]) )
   

@@ -185,9 +185,9 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_summ',
         conditionalPanel("input.sidebar == 'ml_summ'", 
-                         selectInput("ml_stratify_by_label",
-                                     "Stratify by",
-                                     choices = union("None",in.ml_y_label) )
+                         checkboxInput("ml_summ_stratify_by", 
+                                       "Stratified by response", 
+                                       value = TRUE) 
         )),
     div(id = 'sidebar_ml_uni',
         conditionalPanel("input.sidebar == 'ml_uni'",
