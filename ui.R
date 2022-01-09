@@ -490,9 +490,12 @@ body <- dashboardBody(
                                               id = "eda_1d_p_violin_brush",
                                               resetOnNew = TRUE))
                         ),
-                        tabPanel("Plot Table",
+                        tabPanel("Statistics Table",
+                                 selectInput("eda_1d_p_1stat_sttname",
+                                             label=NULL,
+                                             choices = c("avg", "q25" , "q50", "q75", "q90", "q95")),
+                                 plotOutput("eda_1d_p_1stat_stt",height = "400px"),
                                  downloadButton("download_eda_1d_df_summ","csv"),
-                                 plotOutput("eda_1d_p_1stat_set",height = "800px"),
                                  dataTableOutput("eda_1d_df_summ")
                         )
             )

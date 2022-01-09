@@ -420,11 +420,11 @@ shinyServer(function(input, output, session) {
   })
   output$eda_1d_df_summ <- renderDataTable({
     eda_1d_obj <- stats1dViz()
-    head(eda_1d_obj$df_summ,10)
+    eda_1d_obj$df_summ
   })
-  output$eda_1d_p_1stat_set <- renderPlot({
+  output$eda_1d_p_1stat_stt <- renderPlot({
     eda_1d_obj <- stats1dViz()
-    eda_1d_obj$p_1stat_set
+    eda_1d_obj$p_1stat_set[[as.character( input$eda_1d_p_1stat_sttname )]]
   })
   output$download_eda_1d_df_summ <- downloadHandler(
     filename = function() {

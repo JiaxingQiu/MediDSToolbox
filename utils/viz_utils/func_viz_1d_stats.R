@@ -212,32 +212,34 @@ viz_1d_stats <- function(
   }, silent = FALSE)
   if(is.null(df_summ)){print("df_summ is null")}else{print(head(df_summ,10))}
   
-  df_summ_grouped_plot_all <- data.frame()
-  for (stt in c("n_sbj", "n_sbj_avail", "q25" ,  "q50", "q75", "avg")){
-    df_summ_grouped_plot <- df_summ_grouped[,c("group", "x", stt)]
-    colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value")
-    df_summ_grouped_plot$stt_name <- stt
-    df_summ_grouped_plot_all <- bind_rows(df_summ_grouped_plot_all, df_summ_grouped_plot)
-  }
-  
-  
+  # statistics
+  p_1stat_set <- list()
   y_lab_string <- y_col
   try({y_lab_string <- dict_data[y_col, "label"] },TRUE)
   x_lab_string <- x_col
   try({x_lab_string <- dict_data[x_col, "label"] },TRUE)
   group_by_string <- group_by_col
-  try({group_by_string <- dict_data[group_by_col, "label"] },TRUE)
-  p_1stat_set <- ggplot(df_summ_grouped_plot_all, aes(x=x, y=stt_value, color=group))+
-    geom_smooth(se = FALSE) +
-    facet_wrap(~stt_name, ncol=2, scales="free")+
-    theme_bw() +
-    ylab(y_lab_string) +
-    xlab(x_lab_string) +
-    scale_color_discrete(name=group_by_string) 
-  if(n_distinct(df_summ_grouped$group)<=2){
-    p_1stat_set <- p_1stat_set +  theme(legend.position = "top", legend.direction = "horizontal")
-  }
+  i=0
+  for (stt in c( "avg", "q25" , "q50", "q75", "q90", "q95")){
+    i=i+1
+    df_summ_grouped_plot <- df_summ_grouped[,c("group", "x", stt, "n_sbj_avail")]
+    colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value", "n_sbj_avail")
+    p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value, color=group))+
+      geom_smooth(se = FALSE) +
+      theme_bw() +
+      ylab(y_lab_string) +
+      xlab(x_lab_string) +
+      scale_color_discrete(name=group_by_string) 
+    p_1stat_denom <- ggplot(df_summ_grouped_plot, aes(x=x, y=n_sbj_avail, fill=group))+
+      geom_bar(stat="identity", position="stack") +
+      theme_bw() +
+      ylab("# sbj with data") +
+      xlab(x_lab_string) +
+      scale_fill_discrete(name=group_by_string) 
+    p_1stat_set[[i]] <- ggpubr::ggarrange(p_1stat, p_1stat_denom, nrow=1, common.legend = TRUE, legend = "top")
     
+  }
+  names(p_1stat_set) <- c( "avg", "q25" , "q50", "q75", "q90", "q95")
   
   
   
