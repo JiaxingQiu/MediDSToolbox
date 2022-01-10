@@ -70,15 +70,15 @@ viz_1d_stats <- function(
     p_mean <- ggplot(data_mean, aes(x=x, y=y)) +
       stat_summary(geom = "line", fun = mean) +
       stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3)+
-      xlab(paste0(dict_data[x_col,"label_front"], "    ", dict_data[x_col,"unit"]))+
-      ylab(paste0(dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+      xlab(paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]))+
+      ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       #ylim(min(data$y,na.rm=TRUE)*0.9, max(as.numeric(quantile(data$y, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Mean") +
       facet_wrap(~ group, ncol = 3) 
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
       x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
-      p_mean <- p_mean + scale_x_continuous(name=paste0(dict_data[x_col,"label_front"], "    (week)"),
+      p_mean <- p_mean + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                             breaks = x_breaks,
                                             labels = x_labels)
     }
@@ -90,8 +90,8 @@ viz_1d_stats <- function(
     p_violin <- ggplot(data_mean, aes(x=x, y=y, fill=group)) +
       geom_boxplot(color = "black", width = 0.2, position = position_dodge(width=0.25), size=0.1, alpha = 0.4) +
       geom_split_violin(trim=FALSE, size=0.3, alpha=0.5)+ 
-      xlab(paste0(dict_data[x_col,"label_front"], "    ", dict_data[x_col,"unit"]))+
-      ylab(paste0(dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+      xlab(paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]))+
+      ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       ylim(min(data$y,na.rm=TRUE)*0.9, max(as.numeric(quantile(data$y, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Violin + Box")+
       facet_wrap(~ group, ncol = 3)
@@ -133,8 +133,8 @@ viz_1d_stats <- function(
       geom_smooth(aes(linetype=percentile, color=percentile),size=0.5, method = smooth_method, formula = smooth_formula) +
       scale_color_manual(values = c("black","red","black","black","black")) +
       scale_linetype_manual(values=c(5,1,2,3,4)) +
-      xlab(paste0(dict_data[x_col,"label_front"], "    ", dict_data[x_col,"unit"]))+
-      ylab(paste0(dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+      xlab(paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]))+
+      ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       ylim(min(df$q_val,na.rm=TRUE)*0.9, max(as.numeric(quantile(df$q_val, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Percentile") +
       facet_wrap(~ group, ncol = 3) 
@@ -142,7 +142,7 @@ viz_1d_stats <- function(
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
       x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
-      p_pct <- p_pct + scale_x_continuous(name=paste0(dict_data[x_col,"label_front"], "    (week)"),
+      p_pct <- p_pct + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                             breaks = x_breaks,
                                             labels = x_labels)
     }
@@ -165,14 +165,14 @@ viz_1d_stats <- function(
     p_denom <- ggplot(df_denom[!is.na(df_denom$group),], aes(x=x, y=n_sbj)) +
       geom_bar(stat="identity") + 
       facet_wrap(~ group, ncol = 3) +
-      xlab(paste0(dict_data[x_col,"label_front"], "     ", dict_data[x_col,"unit"]))+
+      xlab(paste0(dict_data[x_col,"label"], "     ", dict_data[x_col,"unit"]))+
       ylab('# sbj w/ available data') +
       ggtitle("Denominator")
     
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
       x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
-      p_denom <- p_denom + scale_x_continuous(name=paste0(dict_data[x_col,"label_front"], "    (week)"),
+      p_denom <- p_denom + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                               breaks = x_breaks,
                                               labels = x_labels)
     }
@@ -215,9 +215,9 @@ viz_1d_stats <- function(
   # statistics
   p_1stat_set <- list()
   y_lab_string <- y_col
-  try({y_lab_string <- dict_data[y_col, "label"] },TRUE)
+  try({y_lab_string <- paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]) },TRUE)
   x_lab_string <- x_col
-  try({x_lab_string <- dict_data[x_col, "label"] },TRUE)
+  try({x_lab_string <- paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]) },TRUE)
   group_by_string <- group_by_col
   i=0
   for (stt in c( "avg", "q25" , "q50", "q75", "q90", "q95")){

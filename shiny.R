@@ -302,3 +302,8 @@ data_unml <- data_ml
 dict_unml <- dict_ml
 
 
+dict_ml$label <- dict_ml$label_front
+dict_viz$label <- dict_viz$label_front
+dict_unml$label <- dict_unml$label_front
+
+

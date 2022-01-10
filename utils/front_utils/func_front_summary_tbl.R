@@ -1,16 +1,23 @@
-front_summary_tbl <- function(data,
-                              dict_data,
-                              trim_by_label,
-                              trim_vec,
-                              time_unit,
-                              cluster_label,
-                              stratify_by=c("None")[1], 
-                              imputation=c("None","Mean", "Median", "Zero")[1],
-                              impute_per_cluster=FALSE,
-                              winsorizing=TRUE,
-                              aggregation=FALSE,
-                              trim_ctrl=TRUE # whether or not to trim control group the same way as event group
-                              ){
+front_summary_tbl <- function(
+  data,
+  dict_data,
+  cluster_label,
+  # --- engineer ---
+  trim_by_label,
+  trim_vec=c(-Inf, Inf),
+  time_unit=1,
+  pctcut_num_labels=c(),
+  pctcut_num_vec=c(0.1, 99.9),
+  pctcut_num_coerce = TRUE,
+  filter_tag_labels=c(),
+  imputation=c("None","Mean", "Median", "Zero")[1],
+  impute_per_cluster=FALSE,
+  winsorizing=FALSE,
+  aggregation=FALSE,
+  # --- local ---
+  trim_ctrl=TRUE,
+  stratify_by=c("None")[1]
+){
   
   res_df <- NULL
   num_detail_df <- NULL
@@ -18,26 +25,43 @@ front_summary_tbl <- function(data,
   rsps_df <- NULL
   na_obj <- NULL
   
-  # ---- pre-processing ----
-  data <- assign.dict(data, dict_data, overwrite = TRUE)
-  dict_data <- get.dict(data)
+  tryCatch({
+    data <- assign.dict(data, dict_data, overwrite = TRUE)
+    dict_data <- get.dict(data)
+  },error=function(e){
+    print("--- Skip refine dictionary from data ---")
+    print(e)
+  })
   
-  trim_by_col <- intersect(colnames(data),rownames(dict_data[which(dict_data$label_front==trim_by_label), ]))
-  num_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]) )
-  fct_cols <- intersect(colnames(data), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="fct"), ]) )
-  cluster_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==cluster_label),]) )
-  stratify_col <- intersect(colnames(data), rownames(dict_data[which(dict_data$label_front==stratify_by),]) )
-  fct_cols <- union(fct_cols, stratify_col)
-  
+  # ---- translate front end labels to column names ----
+  trim_by_col <- intersect(colnames(data),dict_data$varname[which(dict_data$label==trim_by_label)])
+  num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")] )
+  fct_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="fct")] )
+  cluster_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==cluster_label)] )
+  stratify_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==stratify_by)] )
+  if(length(stratify_col)>0){
+    if (dict_data[stratify_col,"type"]=="num"){
+      num_cols <- union(num_cols, stratify_col)
+    }else if (dict_data[stratify_col,"type"]=="fct"){
+      fct_cols <- union(fct_cols, stratify_col)
+    }
+  }
+  pctcut_num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% pctcut_num_labels)] )
+  filter_tag_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% filter_tag_labels)] )
+    
   # ---- prepare engineered training and validation dataset (internal data) ----
   if(trim_ctrl){
     data <- engineer(data = data,
-                     trim_by_col = trim_by_col,
-                     trim_min=trim_vec[1]*time_unit,
-                     trim_max=trim_vec[2]*time_unit,
                      num_cols = num_cols,
                      fct_cols = fct_cols,
                      cluster_col = cluster_col,
+                     trim_by_col = trim_by_col,
+                     trim_min = trim_vec[1]*time_unit,
+                     trim_max = trim_vec[2]*time_unit,
+                     pctcut_num_cols = pctcut_num_cols,
+                     pctcut_num_vec = pctcut_num_vec,
+                     pctcut_num_coerce = pctcut_num_coerce,
+                     filter_tag_cols = filter_tag_cols,
                      imputation = imputation,
                      impute_per_cluster = impute_per_cluster,
                      winsorizing = winsorizing,
@@ -45,49 +69,62 @@ front_summary_tbl <- function(data,
   }else{
     tryCatch({
       stopifnot(length(stratify_col)>0)
+      if (all(unique(as.character(data[,stratify_col])) %in% c(1,0,NA))){
       data_event <- engineer(data = data[which(data[,stratify_col]==1),],
-                             trim_by_col = trim_by_col,
-                             trim_min=trim_vec[1]*time_unit,
-                             trim_max=trim_vec[2]*time_unit,
                              num_cols = num_cols,
                              fct_cols = fct_cols,
                              cluster_col = cluster_col,
+                             trim_by_col = trim_by_col,
+                             trim_min=trim_vec[1]*time_unit,
+                             trim_max=trim_vec[2]*time_unit,
+                             pctcut_num_cols = pctcut_num_cols,
+                             pctcut_num_vec = pctcut_num_vec,
+                             pctcut_num_coerce = pctcut_num_coerce,
+                             filter_tag_cols = filter_tag_cols,
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
                              aggregation = aggregation)
       data_cntrl <- engineer(data = data[which(data[,stratify_col]==0),],
+                             num_cols = num_cols,
+                             fct_cols = fct_cols,
+                             cluster_col = cluster_col,
                              trim_by_col = trim_by_col,
                              trim_min=-Inf,
                              trim_max=Inf,
                              trim_keepna = TRUE,
-                             num_cols = num_cols,
-                             fct_cols = fct_cols,
-                             cluster_col = cluster_col,
+                             pctcut_num_cols = pctcut_num_cols,
+                             pctcut_num_vec = pctcut_num_vec,
+                             pctcut_num_coerce = pctcut_num_coerce,
+                             filter_tag_cols = filter_tag_cols,
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
                              aggregation = aggregation)
       data <- bind_rows(data_cntrl, data_event)
+      }
     },error=function(e){
       print("--- error engineer data with trim_ctrl == FALSE ---")
       print(e)
-      print("--- use data with trim_ctrl == TRUE instead --- ")
+      print("--- set trim_ctrl = TRUE instead --- ")
       data <- engineer(data = data,
-                       trim_by_col = trim_by_col,
-                       trim_min=trim_vec[1]*time_unit,
-                       trim_max=trim_vec[2]*time_unit,
                        num_cols = num_cols,
                        fct_cols = fct_cols,
                        cluster_col = cluster_col,
+                       trim_by_col = trim_by_col,
+                       trim_min = trim_vec[1]*time_unit,
+                       trim_max = trim_vec[2]*time_unit,
+                       pctcut_num_cols = pctcut_num_cols,
+                       pctcut_num_vec = pctcut_num_vec,
+                       pctcut_num_coerce = pctcut_num_coerce,
+                       filter_tag_cols = filter_tag_cols,
                        imputation = imputation,
                        impute_per_cluster = impute_per_cluster,
                        winsorizing = winsorizing,
                        aggregation = aggregation)
     })
   }
-  data_in <- assign.dict(data, dict_data)
-  data <- data_in
+  data <- assign.dict(data, dict_data)
   
   # --- summary table ---
   data$key <- data[,cluster_col]
@@ -231,8 +268,12 @@ front_summary_tbl <- function(data,
     data[which(data[,fct_col]=="None_level"), fct_col] <- NA
   }
   tryCatch({
-    stopifnot(length(c(num_cols,fct_cols))<100) 
-    na_obj <- Hmisc::naclus(data[,c(num_cols,fct_cols)])
+    if(length(c(num_cols,fct_cols))<100) {
+      na_plot_cols <- c(num_cols,fct_cols)
+    }else{
+      na_plot_cols <- sample(c(num_cols,fct_cols), size=100)
+    }
+    na_obj <- Hmisc::naclus(data[,na_plot_cols])
   },error=function(e){
     print("--- Error in na_plot --- ")
     print(e)
@@ -245,3 +286,29 @@ front_summary_tbl <- function(data,
               "na_obj"=na_obj))
   
 }
+
+
+
+
+
+
+
+# ############################# not run #############################
+# data = data_ml
+# dict_data = dict_ml
+# cluster_label = "PreVent study ID"
+# stratify_by=c("None")[1] 
+# # --- engineer ---
+# trim_by_label = "Post-menstrual Age"  # reltive time info
+# trim_vec = c(-Inf, Inf) # trim relative time [from, to)
+# time_unit = 7 # the increment scale of relative time
+# trim_ctrl = TRUE
+# pctcut_num_labels = c("PeriodicBreathing_v3 duration per day", "ABD_v3 number of events per day")
+# pctcut_num_vec = c(0.1, 99.9)
+# pctcut_num_coerce=TRUE
+# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# imputation=c("None","Mean", "Median", "Zero")[1]
+# impute_per_cluster=FALSE
+# winsorizing=TRUE
+# aggregation=TRUE
+

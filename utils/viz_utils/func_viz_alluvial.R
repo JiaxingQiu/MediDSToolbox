@@ -23,6 +23,14 @@ viz_alluvial <- function(
     # additional tags
     # time_breaks=c(28,36,40)
     time_breaks = as.numeric(time_breaks)
+    # refine time breaks 
+    if(length(time_breaks)>0){
+      time_breaks <- time_breaks[which(time_breaks*time_unit>=min(data[,time_col],na.rm=TRUE) & time_breaks*time_unit<=max(data[,time_col],na.rm=TRUE))]
+    }
+    if(length(time_breaks)==0){
+      time_breaks <- floor(as.numeric(quantile(data[,time_col], seq(0,1,0.1)))/time_unit)
+    }
+    
     df_all <- data.frame()
     if (time_quantity == "1st record"){
       time_snapshots_start <- time_breaks*time_unit

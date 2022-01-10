@@ -1,79 +1,112 @@
 front_X_clus <- function(
-  data = data_ml,
-  dict_data=dict_ml,
-  trim_by_label="Post-menstrual Age",
-  trim_vec = c(22, 40),
-  time_unit=7,
-  x_labels=c(c("Gestational Age", "PeriodicBreathing_v2 log(duration proportion) per day", "Birth weight"),"baby_insurance", "Mode of respiratory support (Positive Airway Pressure) without endotracheal tube (EN)___Nasal Cannula with flow"), 
-  y_label="Primary outcome (EN)___Unfavorable", 
-  cluster_label="PreVent study ID",
-  r2=0.9,
-  rcs5_low="70%",
-  rcs4_low="50%",
+  data,
+  dict_data,
+  x_labels, 
+  y_label, 
+  cluster_label,
+  # --- engineer ---
+  trim_by_label,
+  trim_vec = c(-Inf, Inf), # trim relative time [from, to)
+  time_unit = 1, # the increment scale of relative time
+  pctcut_num_labels = c(),
+  pctcut_num_vec = c(0.1, 99.9),
+  pctcut_num_coerce=TRUE,
+  filter_tag_labels=c(),
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregation=FALSE,
+  # --- local ---
+  r2=0.9,
+  rcs5_low="70%",
+  rcs4_low="50%",
   r_abs=0.8, 
   type=c("pearson","spearman")[1],
   rank=TRUE,
-  trim_ctrl=TRUE 
+  trim_ctrl = TRUE
 ){
   
   # ---- pre-processing ----
-  data <- assign.dict(data, dict_data)
-  dict_data <- get.dict(data)
+  tryCatch({
+    data <- assign.dict(data, dict_data, overwrite = TRUE)
+    dict_data <- get.dict(data)
+  },error=function(e){
+    print("--- Skip refine dictionary from data ---")
+    print(e)
+  })
   
   # --- find corresponding column names ---
-  x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
-  y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
-  num_cols <- intersect(union(x_cols,y_col), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]))
+  x_cols <- dict_data$varname[which(dict_data$label_front%in%x_labels)]
+  y_col <- dict_data$varname[which(dict_data$label_front==y_label)]
+  num_cols <- intersect(union(x_cols,y_col), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
   fct_cols <- setdiff(union(x_cols,y_col), num_cols)
-  cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
-  trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
+  cluster_col <- dict_data$varname[which(dict_data$label_front==cluster_label)]
+  trim_by_col <- dict_data$varname[which(dict_data$label_front==trim_by_label)]
+  pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
+  filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   
-  # ---- prepare engineered training and validation dataset (internal data) ----
-  if(trim_ctrl){
-    data <- engineer(data = data,
-                     trim_by_col = trim_by_col,
-                     trim_min=trim_vec[1]*time_unit,
-                     trim_max=trim_vec[2]*time_unit,
-                     num_cols = num_cols,
-                     fct_cols = fct_cols,
-                     cluster_col = cluster_col,
-                     imputation = imputation,
-                     impute_per_cluster = impute_per_cluster,
-                     winsorizing = winsorizing,
-                     aggregation = aggregation)
-  }else{
-    data_event <- engineer(data = data[which(data[,y_col]==1),],
-                           trim_by_col = trim_by_col,
-                           trim_min=trim_vec[1]*time_unit,
-                           trim_max=trim_vec[2]*time_unit,
-                           num_cols = num_cols,
-                           fct_cols = fct_cols,
-                           cluster_col = cluster_col,
-                           imputation = imputation,
-                           impute_per_cluster = impute_per_cluster,
-                           winsorizing = winsorizing,
-                           aggregation = aggregation)
-    data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
-                           trim_by_col = trim_by_col,
-                           trim_min=-Inf,
-                           trim_max=Inf,
-                           trim_keepna = TRUE,
-                           num_cols = num_cols,
-                           fct_cols = fct_cols,
-                           cluster_col = cluster_col,
-                           imputation = imputation,
-                           impute_per_cluster = impute_per_cluster,
-                           winsorizing = winsorizing,
-                           aggregation = aggregation)
-    data <- bind_rows(data_cntrl, data_event)
-  }
-  data_in <- assign.dict(data, dict_data)
+  print("---- prepare engineered train and validation dataset (internal) ----")
+  tryCatch({
+    if(trim_ctrl){
+      data_in <- engineer(data = data,
+                          num_cols = num_cols,
+                          fct_cols = fct_cols,
+                          cluster_col = cluster_col,
+                          trim_by_col = trim_by_col,
+                          trim_min = trim_vec[1]*time_unit,
+                          trim_max = trim_vec[2]*time_unit,
+                          pctcut_num_cols = pctcut_num_cols,
+                          pctcut_num_vec = pctcut_num_vec,
+                          pctcut_num_coerce = pctcut_num_coerce,
+                          filter_tag_cols = filter_tag_cols,
+                          imputation = imputation,
+                          impute_per_cluster = impute_per_cluster,
+                          winsorizing = winsorizing,
+                          aggregation = aggregation)
+    }else{
+      if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
+        data_event <- engineer(data = data[which(data[,y_col]==1),],
+                               num_cols = num_cols,
+                               fct_cols = fct_cols,
+                               cluster_col = cluster_col,
+                               trim_by_col = trim_by_col,
+                               trim_min=trim_vec[1]*time_unit,
+                               trim_max=trim_vec[2]*time_unit,
+                               pctcut_num_cols = pctcut_num_cols,
+                               pctcut_num_vec = pctcut_num_vec,
+                               pctcut_num_coerce = pctcut_num_coerce,
+                               filter_tag_cols = filter_tag_cols,
+                               imputation = imputation,
+                               impute_per_cluster = impute_per_cluster,
+                               winsorizing = winsorizing,
+                               aggregation = aggregation)
+        data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
+                               num_cols = num_cols,
+                               fct_cols = fct_cols,
+                               cluster_col = cluster_col,
+                               trim_by_col = trim_by_col,
+                               trim_min=-Inf,
+                               trim_max=Inf,
+                               trim_keepna = TRUE,
+                               pctcut_num_cols = pctcut_num_cols,
+                               pctcut_num_vec = pctcut_num_vec,
+                               pctcut_num_coerce = pctcut_num_coerce,
+                               filter_tag_cols = filter_tag_cols,
+                               imputation = imputation,
+                               impute_per_cluster = impute_per_cluster,
+                               winsorizing = winsorizing,
+                               aggregation = aggregation)
+        data_in <- bind_rows(data_cntrl, data_event)
+      }
+    }
+    data_in <- assign.dict(data_in, dict_data)
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   
   # ---- redundancy clus ----
+  print("---- do_x_redun ----")
   results <- do_x_redun(df=data_in, 
                         dict_df=dict_data, 
                         x_cols=x_cols, 
@@ -111,6 +144,7 @@ front_X_clus <- function(
   
   
   # ---- spearman2 clus for degree of freedom plot at front ----
+  print("---- spearman2 clus for degree of freedom plot ----")
   dof_obj <- NULL
   if (length(num_cols)>0){
     fml <- formula(paste(y_col," ~ ", paste(num_cols,collapse = "+")))
@@ -119,7 +153,6 @@ front_X_clus <- function(
     rho_df$cols <- rownames(rho)
     rho_df <- rho_df[order(rho_df$adj_rho, decreasing = TRUE),]
     scaler <- data.frame(q=quantile(rho_df$adj_rho, probs = seq(0, 1, 0.05) , na.rm = TRUE))
-    print(scaler)
     rcs5_cut <- scaler[rcs5_low,"q"]
     rcs4_cut <- scaler[rcs4_low,"q"]
     dof_obj <- list("rho" = rho,

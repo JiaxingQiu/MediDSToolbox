@@ -1,28 +1,35 @@
 front_multi_regression_timely <- function(
-  data = subset_df(data_ml, "40w"),
-  dict_data=dict_ml,
-  trim_by_label="Post-menstrual Age",
-  trim_vec = c(24, 38), # trim vec controls the beginning and the end of models
-  time_unit=7,
-  x_labels_linear=c("Gestational Age", "pH associated with highest CO2 on blood gas"),
-  x_labels_nonlin_rcs5=c("Maternal age"),
-  x_labels_nonlin_rcs4=c("Gestational Age"),
-  x_labels_nonlin_rcs3=c("Birth weight"),
-  x_labels_fct = c("Site (EN)"),
-  x_labels_tag = c("Baby Gender (EN)___Female"),
-  x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
-  y_label="Primary outcome (EN)___Unfavorable", 
-  cluster_label="PreVent study ID",
-  r2=0.9,
-  rcs5_low="0%",
-  rcs4_low="0%",
-  cv_nfold=5, 
-  na_frac_max=1, 
-  test_data=NULL, 
-  imputation="Zero",
+  data,
+  dict_data,
+  y_label,
+  cluster_label,
+  x_labels_linear = c(),
+  x_labels_nonlin_rcs5 = c(), 
+  x_labels_nonlin_rcs4 = c(),
+  x_labels_nonlin_rcs3 = c(),
+  x_labels_fct = c(), 
+  x_labels_tag = c(), 
+  x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
+  # --- engineer ---
+  trim_by_label,
+  trim_vec = c(-Inf, Inf), # trim vec controls the beginning and the end of models
+  time_unit = 1,
+  pctcut_num_labels = c(),
+  pctcut_num_vec = c(0.1, 99.9),
+  pctcut_num_coerce=TRUE,
+  filter_tag_labels=c(),
+  imputation="None",
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregation=FALSE,
+  # --- local ---
+  trim_ctrl = TRUE,
+  r2=0.9,
+  rcs5_low="100%",
+  rcs4_low="100%",
+  cv_nfold=5, 
+  na_frac_max=1, 
+  test_data=NULL, 
   stratified_cv=FALSE,
   r_abs=0.8, 
   type=c("pearson","spearman")[1],
@@ -32,33 +39,33 @@ front_multi_regression_timely <- function(
   step_size=2, # each beginning of the window increase by step_size
   test_size = 1,
   lag_size = 1,
-  fix_knots=FALSE,
-  trim_ctrl = TRUE
+  fix_knots=FALSE
 ){
   
   # find the trim by column
-  trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
+  trim_by_col <- rownames(dict_data[which(dict_data$label==trim_by_label), ])
   
   # prepare start window points for each model trim_vec
-  min_trim_start <- max(floor( min(data[,dict_ml$varname[which(dict_ml$label_front==trim_by_label)]]/time_unit, na.rm=TRUE) ), trim_vec[1], na.rm = TRUE)
-  max_trim_start <- min(floor( max(data[,dict_ml$varname[which(dict_ml$label_front==trim_by_label)]]/time_unit, na.rm=TRUE) ), trim_vec[2], na.rm = TRUE)
+  min_trim_start <- max(floor( min(data[,dict_ml$varname[which(dict_ml$label==trim_by_label)]]/time_unit, na.rm=TRUE) ), trim_vec[1], na.rm = TRUE)
+  max_trim_start <- min(floor( max(data[,dict_ml$varname[which(dict_ml$label==trim_by_label)]]/time_unit, na.rm=TRUE) ), trim_vec[2], na.rm = TRUE)
   trim_start_list <- seq(from=min_trim_start, to=max_trim_start, by=step_size)
   
-  # observation frequency table 
-  freq_tbl_all <- c()
-  # model scores table
-  score_tbl_all <- c()
-  # predictor importance table
-  anova_tbl_all <- c()
-  # external test result table
-  test_tbl_all <- c()
+  # initiate return object
+  freq_tbl_all <- c() # observation frequency table 
+  freq_plot <- NULL
+  score_tbl_all <- c() # model scores table
+  score_plot <- NULL
+  anova_tbl_all <- c() # predictor importance table
+  infer_plot <- NULL
+  test_tbl_all <- c() # external test result table
+  test_plot <- NULL
   
   # loop through all start points for trim_vec
   for (trim_start in trim_start_list){
-    try({
-      # trim_vec for current model
-      trim_vec = c(trim_start, trim_start+window_size)
-      
+    # trim_vec for current model
+    trim_vec = c(trim_start, trim_start+window_size)
+    print(paste0("--- model data from ",trim_vec[1]," to ", trim_vec[2], " ---"))
+    tryCatch({
       # prepare test data
       if(any(c(test_size,lag_size)<=0)){
         test_data<- NULL
@@ -68,13 +75,11 @@ front_multi_regression_timely <- function(
           filter(data[,trim_by_col]>=test_trim_vec[1]*time_unit & data[,trim_by_col]<test_trim_vec[2]*time_unit ) %>% 
           as.data.frame()
       }
-      
       # model report object
       MLreports <- front_multi_regression(data = data,
                                           dict_data = dict_data,
-                                          trim_by_label=trim_by_label, 
-                                          trim_vec=as.numeric(trim_vec), 
-                                          time_unit=time_unit,
+                                          y_label=y_label, 
+                                          cluster_label=cluster_label,
                                           x_labels_linear=x_labels_linear,
                                           x_labels_nonlin_rcs5=x_labels_nonlin_rcs5,
                                           x_labels_nonlin_rcs4=x_labels_nonlin_rcs4,
@@ -82,29 +87,35 @@ front_multi_regression_timely <- function(
                                           x_labels_fct = x_labels_fct,
                                           x_labels_tag = x_labels_tag,
                                           x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
-                                          y_label=y_label, 
-                                          cluster_label=cluster_label,
+                                          # --- engineer ---
+                                          trim_by_label=trim_by_label, 
+                                          trim_vec=as.numeric(trim_vec), 
+                                          time_unit=time_unit,
+                                          trim_ctrl = trim_ctrl,
+                                          pctcut_num_labels = pctcut_num_labels,
+                                          pctcut_num_vec = pctcut_num_vec,
+                                          pctcut_num_coerce = pctcut_num_coerce,
+                                          filter_tag_labels = filter_tag_labels,
+                                          imputation = imputation,
+                                          impute_per_cluster = impute_per_cluster,
+                                          winsorizing = winsorizing,
+                                          aggregation = aggregation,
+                                          # --- local ---
                                           r2=r2,
                                           rcs5_low=rcs5_low,
                                           rcs4_low=rcs4_low,
                                           cv_nfold = as.numeric(cv_nfold),
                                           na_frac_max=na_frac_max, 
-                                          joint_col2_label= "None",
                                           test_data=test_data, 
-                                          imputation = imputation,
-                                          impute_per_cluster = impute_per_cluster,
-                                          winsorizing = winsorizing,
-                                          aggregation = aggregation,
+                                          joint_col2_label= "None",
                                           stratified_cv = stratified_cv,
                                           r_abs=r_abs, 
                                           type=type,
                                           rank=rank,
                                           seed_value=seed_value,
                                           fix_knots = fix_knots,
-                                          trim_ctrl = trim_ctrl,
                                           y_map_func ="probability",
-                                          y_map_max = 1
-                                          ) 
+                                          y_map_max = 1) 
       
       
       # observation frequency
@@ -143,7 +154,10 @@ front_multi_regression_timely <- function(
           print(e)
         })
       }
-    },TRUE)
+    },error=function(e){
+      print("Error")
+      print(e)
+    })
     
   }
   
@@ -229,3 +243,53 @@ front_multi_regression_timely <- function(
               ))
   
 }
+
+
+
+
+
+
+# ################################## not run ######################################
+# data = subset_df(data_ml, "40w")
+# dict_data = dict_ml
+# y_label="Primary outcome (EN)___Unfavorable"
+# cluster_label="PreVent study ID"
+# x_labels_linear=c("Gestational Age", "pH associated with highest CO2 on blood gas")
+# x_labels_nonlin_rcs5=c("Maternal age")
+# x_labels_nonlin_rcs4=c("Gestational Age")
+# x_labels_nonlin_rcs3=c("Birth weight")
+# x_labels_fct = c("Site (EN)")
+# x_labels_tag = c("Baby Gender (EN)___Female")
+# x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag))
+# # --- engineer ---
+# trim_by_label="Post-menstrual Age"
+# trim_vec = c(-Inf, Inf) # trim vec controls the beginning and the end of models
+# time_unit = 7
+# trim_ctrl = TRUE
+# pctcut_num_labels = c("PeriodicBreathing_v3 duration per day", "ABD_v3 number of events per day")
+# pctcut_num_vec = c(0.1, 99.9)
+# pctcut_num_coerce=TRUE
+# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# imputation=c("None","Mean", "Median", "Zero")[1]
+# impute_per_cluster=FALSE
+# winsorizing=FALSE
+# aggregation=FALSE
+# # --- local ---
+# r2=0.9
+# rcs5_low="100%"
+# rcs4_low="100%"
+# cv_nfold=5
+# na_frac_max=1 
+# test_data=data[sample(c(1:nrow(data)), 0.5*nrow(data)),] 
+# stratified_cv=FALSE
+# r_abs=0.8 
+# type=c("pearson","spearman")[1]
+# rank=TRUE
+# seed_value=333
+# window_size=6 # the length of each window
+# step_size=6 # each beginning of the window increase by step_size
+# test_size = 1
+# lag_size = 1
+# fix_knots=FALSE
+
+

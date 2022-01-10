@@ -1,12 +1,18 @@
 engineer <- function(
   data, # dataframe object to engineer
-  trim_by_col = NULL,
+  num_cols = c(), # vector of numeric columns
+  fct_cols = c(), # vector of factor columns
+  cluster_col, # cluster column
+  trim_by_col=NULL,
+  #--- trim data ---
   trim_min = -Inf, # [from,
   trim_max = Inf, # to)
-  trim_keepna = FALSE,
-  num_cols = c(),
-  fct_cols = c(),
-  cluster_col = NULL, 
+  trim_keepna = FALSE, # whether or not to keep NA in relative time variable
+  pctcut_num_cols=c(),
+  pctcut_num_vec=c(0.1, 99.9),
+  pctcut_num_coerce = TRUE,
+  filter_tag_cols=c(),
+  #--- decorate data ---
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
@@ -14,21 +20,59 @@ engineer <- function(
 ){
   
   # ---- validate inputs ----
-  trim_by_col <- intersect(colnames(data), trim_by_col)
-  num_cols <- intersect(colnames(data), num_cols)
-  fct_cols <- intersect(colnames(data), fct_cols)
-  cluster_col <- intersect(colnames(data), cluster_col)
   if (trim_max<=trim_min){
     trim_min <- -Inf
     trim_max <- Inf
   }
+  trim_by_col <- intersect(colnames(data), trim_by_col)
+  num_cols <- intersect(colnames(data), num_cols)
+  num_cols <- union(num_cols, trim_by_col)
+  num_cols <- union(num_cols, pctcut_num_cols)
+  fct_cols <- intersect(colnames(data), fct_cols)
+  fct_cols <- union(fct_cols, filter_tag_cols)
+  cluster_col <- intersect(colnames(data), cluster_col)
   
-  # ---- trim data by trim_by_col  ----
+  # ---- initiate dataframe to return "data_engineered" ----
+  # in the returned dataframe, only trim_by_col, num_cols, fct_cols, cluster_cols will be in the columns
+  data_engineered <- data
+  
+  print("---- Engineering ----")
+  # ---- trim data by trim_by_col(relative time indicator)  ----
   if (length(trim_by_col)>0){
     if (trim_keepna){
       data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
     }else{
       data <- data[which(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max),]
+    }
+  }
+  # ---- cutoff numeric variables by percentiles ----
+  for(pctcut_num_col in pctcut_num_cols){
+    tryCatch({
+      quantiles <- quantile( data[,pctcut_num_col], c(as.numeric(pctcut_num_vec[1])/100, as.numeric(pctcut_num_vec[2])/100 ), na.rm =TRUE)
+      if(pctcut_num_coerce){
+        # if coerce extremum
+        data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] < quantiles[1], quantiles[1], data[,pctcut_num_col])
+        data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], quantiles[2], data[,pctcut_num_col])
+      }else{
+        # otherwise remove extremum
+        data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] < quantiles[1], NA, data[,pctcut_num_col])
+        data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], NA, data[,pctcut_num_col])
+      }
+    },error=function(e){
+      print(paste0("--- Skip percentile cutoff for num variable ",pctcut_num_col," ---"))
+      print(e)
+    })
+  }
+  
+  # ---- subset / filter dataset when all given tag columns == 1 ----
+  if(length(filter_tag_cols)>0){
+    for(col in filter_tag_cols){
+      tryCatch({
+        data <- data[which(data[,col]==1),]
+      },error=function(e){
+        print(paste0("--- Skip one-hot filter for tag varibale", col, " ---"))
+        print(e)
+      })
     }
   }
   # ---- impute num_cols ----
@@ -37,14 +81,13 @@ engineer <- function(
     if(imputation=="Mean") data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
     if(imputation=="Median") data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
     if(imputation=="Zero") data <- data %>% mutate_at(vars(num_cols), ~tidyr::replace_na(., 0)) %>% as.data.frame()
-    
   }else{
     # cluster-wise imputation
     if(imputation=="Mean") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(num_cols),  ~tidyr::replace_na(., mean(.,na.rm = TRUE)) ) %>% as.data.frame()
     if(imputation=="Median") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(num_cols),  ~tidyr::replace_na(., median(.,na.rm = TRUE)) ) %>% as.data.frame()
     if(imputation=="Zero")  data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(num_cols),  ~tidyr::replace_na(., 0)) %>% as.data.frame()
   }
-  # winsorize numeric columns
+  # winsorize numeric columns 
   if(winsorizing){
     data[,num_cols] <- winsorize(data[,num_cols])
   }
@@ -76,5 +119,10 @@ engineer <- function(
       data <- merge(data, df_num)
     }
   }
-  return(data)
+  data_engineered <- data[,c(cluster_col, trim_by_col, num_cols,fct_cols)]
+  
+  
+  
+  # ---- return final engineered dataset ----
+  return(data_engineered)
 }

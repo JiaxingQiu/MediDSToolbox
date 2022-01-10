@@ -1,191 +1,239 @@
 front_multi_regression <- function(
-  data = data_ml,
-  dict_data=dict_ml,
-  trim_by_label="Post-menstrual Age",
-  trim_vec = c(22, 40),
-  time_unit=7, # each row in the dataset is in the increment of which number
-  x_labels_linear=c("Gestational Age", "pH associated with highest CO2 on blood gas"),
-  x_labels_nonlin_rcs5=c("Maternal age"),
-  x_labels_nonlin_rcs4=c("Gestational Age"),
-  x_labels_nonlin_rcs3=c("Birth weight"),
-  x_labels_fct = c("Site (EN)"),
-  x_labels_tag = c("Baby Gender (EN)___Female"),
-  x_labels=unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
-  y_label="Primary outcome (EN)___Unfavorable", 
-  cluster_label="PreVent study ID",
+  data,
+  dict_data,
+  y_label, 
+  cluster_label,
+  x_labels_linear = c(),
+  x_labels_nonlin_rcs5 = c(), 
+  x_labels_nonlin_rcs4 = c(),
+  x_labels_nonlin_rcs3 = c(),
+  x_labels_fct = c(), 
+  x_labels_tag = c(), 
+  x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
+  # --- engineer ---
+  trim_by_label, # reltive time info
+  trim_vec = c(-Inf, Inf), # trim relative time [from, to)
+  time_unit = 1, # the increment scale of relative time
+  pctcut_num_labels = c(),
+  pctcut_num_vec = c(0.1, 99.9),
+  pctcut_num_coerce=TRUE,
+  filter_tag_labels=c(),
+  imputation=c("None","Mean", "Median", "Zero")[1],
+  impute_per_cluster=FALSE,
+  winsorizing=TRUE,
+  aggregation=FALSE,
+  # --- local ---
+  trim_ctrl = TRUE,
   r2=0.9,
   rcs5_low="70%",
   rcs4_low="50%",
   cv_nfold=5, 
   na_frac_max=0.3, 
   test_data=NULL, 
-  joint_col2_label=c("None","Gestational Age")[1],
-  imputation=c("None","Mean", "Median", "Zero")[1],
-  impute_per_cluster=TRUE,
-  winsorizing=TRUE,
-  aggregation=TRUE,
+  joint_col2_label=c("None")[1],
   stratified_cv=TRUE,
   r_abs=0.8, 
   type=c("pearson","spearman")[1],
   rank=TRUE,
   seed_value=333,
   fix_knots = TRUE,
-  trim_ctrl=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3
 ){
   
   
   set.seed(seed = seed_value)
-  data <- assign.dict(data, dict_data, overwrite = TRUE)
-  dict_data <- get.dict(data)
-  
-  # --- group column names ---
-  x_cols <- rownames(dict_data[which(dict_data$label_front%in%x_labels), ])
-  x_cols_linear <- rownames(dict_data[which(dict_data$label_front%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num"), ]) # linear numeric columns
-  x_cols_nonlin_rcs5 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs5&dict_data$mlrole=="input"&dict_data$type=="num"), ])
-  x_cols_nonlin_rcs4 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs4&dict_data$mlrole=="input"&dict_data$type=="num"), ])
-  x_cols_nonlin_rcs3 <- rownames(dict_data[which(dict_data$label_front%in%x_labels_nonlin_rcs3&dict_data$mlrole=="input"&dict_data$type=="num"), ])
-  x_cols_fct <- rownames(dict_data[which(dict_data$label_front%in%x_labels_fct & dict_data$type=="fct" & dict_data$unit!="tag01" & dict_data$mlrole=="input"), ])
-  x_cols_tag <- rownames(dict_data[which(dict_data$label_front%in%x_labels_tag & dict_data$type=="fct" & dict_data$unit=="tag01" & dict_data$mlrole=="input"), ])
-  y_col_tag <- rownames(dict_data[which(dict_data$label_front==y_label & dict_data$type=="fct" & dict_data$unit=="tag01" ),])
-  y_col_num <- rownames(dict_data[which(dict_data$label_front==y_label & dict_data$type=="num" ),])
+  tryCatch({
+    data <- assign.dict(data, dict_data, overwrite = TRUE)
+    dict_data <- get.dict(data)
+  },error=function(e){
+    print("--- Skip refine dictionary from data ---")
+    print(e)
+  })
+   
+  # ---- translate front end labels to column names ----
+  x_cols <- dict_data$varname[which(dict_data$label%in%x_labels)]
+  x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num")] # linear numeric columns
+  x_cols_nonlin_rcs5 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs5&dict_data$mlrole=="input"&dict_data$type=="num")]
+  x_cols_nonlin_rcs4 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs4&dict_data$mlrole=="input"&dict_data$type=="num")]
+  x_cols_nonlin_rcs3 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs3&dict_data$mlrole=="input"&dict_data$type=="num")]
+  x_cols_fct <- dict_data$varname[which(dict_data$label%in%x_labels_fct & dict_data$type=="fct" & dict_data$unit!="tag01" & dict_data$mlrole=="input")]
+  x_cols_tag <- dict_data$varname[which(dict_data$label%in%x_labels_tag & dict_data$type=="fct" & dict_data$unit=="tag01" & dict_data$mlrole=="input")]
+  y_col_tag <- dict_data$varname[which(dict_data$label==y_label & dict_data$type=="fct" & dict_data$unit=="tag01" )]
+  y_col_num <- dict_data$varname[which(dict_data$label==y_label & dict_data$type=="num" )]
   y_col <- union(y_col_tag, y_col_num)
-  cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
-  rel_time_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label),])
-  trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
-  joint_col2 <- rownames(dict_data[which(dict_data$label_front==joint_col2_label),])
+  cluster_col <- dict_data$varname[which(dict_data$label==cluster_label)]
+  rel_time_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
+  trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
+  joint_col2 <- dict_data$varname[which(dict_data$label==joint_col2_label)]
   if(length(joint_col2)==0) joint_col2 <- NULL
-  num_cols <- intersect(union(y_col_num,x_cols), rownames(dict_data[which(dict_data$mlrole=="input"&dict_data$type=="num"), ]))
+  num_cols <- intersect(union(y_col_num,x_cols), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
   fct_cols <- setdiff(union(y_col_tag, x_cols), num_cols)
+  pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
+  filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   
-  # --- preprocessing ---
+  # ---- engineering ----
   data_in <- NULL
   data_inorg <- NULL
   data_ex <- NULL
   data_exorg <- NULL
-  # ---- prepare original / no-engineering training and validation dataset (internal data)  ----
-  if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
-    data_org <- engineer(data = data,
-                           trim_by_col = trim_by_col,
-                           trim_min=-Inf,
-                           trim_max=Inf,
+  # ---- prepare original / no-engineering train and validation dataset (internal)  ----
+  print("---- prepare original / no-engineering train and validation dataset (internal)  ----")
+  tryCatch({
+    data_inorg <- engineer(data = data,
                            num_cols = num_cols,
                            fct_cols = fct_cols,
-                           cluster_col = cluster_col,
-                           imputation = "None",
-                           impute_per_cluster = FALSE,
-                           winsorizing = FALSE,
-                           aggregation = FALSE)
-  }
-  data_inorg <- assign.dict(data_org, dict_data)
-  # ---- prepare engineered training and validation dataset (internal data) ----
-  if(trim_ctrl){
-    data <- engineer(data = data,
-                     trim_by_col = trim_by_col,
-                     trim_min=trim_vec[1]*time_unit,
-                     trim_max=trim_vec[2]*time_unit,
-                     num_cols = num_cols,
-                     fct_cols = fct_cols,
-                     cluster_col = cluster_col,
-                     imputation = imputation,
-                     impute_per_cluster = impute_per_cluster,
-                     winsorizing = winsorizing,
-                     aggregation = aggregation)
-  }else{
-    data_event <- engineer(data = data[which(data[,y_col]==1),],
-                     trim_by_col = trim_by_col,
-                     trim_min=trim_vec[1]*time_unit,
-                     trim_max=trim_vec[2]*time_unit,
-                     num_cols = num_cols,
-                     fct_cols = fct_cols,
-                     cluster_col = cluster_col,
-                     imputation = imputation,
-                     impute_per_cluster = impute_per_cluster,
-                     winsorizing = winsorizing,
-                     aggregation = aggregation)
-    data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
-                           trim_by_col = trim_by_col,
-                           trim_min=-Inf,
-                           trim_max=Inf,
-                           trim_keepna = TRUE,
-                           num_cols = num_cols,
-                           fct_cols = fct_cols,
-                           cluster_col = cluster_col,
-                           imputation = imputation,
-                           impute_per_cluster = impute_per_cluster,
-                           winsorizing = winsorizing,
-                           aggregation = aggregation)
-    data <- bind_rows(data_cntrl, data_event)
-  }
-  data_in <- assign.dict(data, dict_data)
+                           cluster_col = cluster_col) # minimum data engineering = using default settings
+    data_inorg <- assign.dict(data_inorg, dict_data)
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   
-  # ---- prepare original / no-engineering test dataset (external data)  ----
-  if (!is.null(test_data)){# if test_data given
-   data <- test_data
-   if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
-     data_org <- engineer(data = data,
-                          trim_by_col = trim_by_col,
-                          trim_min=-Inf,
-                          trim_max=Inf,
+  # ---- prepare engineered training and validation dataset (internal) ----
+  print("---- prepare engineered train and validation dataset (internal) ----")
+  tryCatch({
+    if(trim_ctrl){
+      data_in <- engineer(data = data,
                           num_cols = num_cols,
                           fct_cols = fct_cols,
                           cluster_col = cluster_col,
-                          imputation = "None",
-                          impute_per_cluster = FALSE,
-                          winsorizing = FALSE,
-                          aggregation = FALSE)
-   }
-   data_exorg <- assign.dict(data_org, dict_data)
-  }
-  # ---- prepare engineered test dataset (external data)  ----
-  if (!is.null(test_data)){
-    data <- test_data
-    if(trim_ctrl){
-      data <- engineer(data = data,
-                       trim_by_col = trim_by_col,
-                       trim_min=trim_vec[1]*time_unit,
-                       trim_max=trim_vec[2]*time_unit,
-                       num_cols = num_cols,
-                       fct_cols = fct_cols,
-                       cluster_col = cluster_col,
-                       imputation = imputation,
-                       impute_per_cluster = impute_per_cluster,
-                       winsorizing = winsorizing,
-                       aggregation = aggregation)
+                          trim_by_col = trim_by_col,
+                          trim_min = trim_vec[1]*time_unit,
+                          trim_max = trim_vec[2]*time_unit,
+                          pctcut_num_cols = pctcut_num_cols,
+                          pctcut_num_vec = pctcut_num_vec,
+                          pctcut_num_coerce = pctcut_num_coerce,
+                          filter_tag_cols = filter_tag_cols,
+                          imputation = imputation,
+                          impute_per_cluster = impute_per_cluster,
+                          winsorizing = winsorizing,
+                          aggregation = aggregation)
     }else{
-      data_event <- engineer(data = data[which(data[,y_col]==1),],
-                             trim_by_col = trim_by_col,
-                             trim_min=trim_vec[1]*time_unit,
-                             trim_max=trim_vec[2]*time_unit,
-                             num_cols = num_cols,
-                             fct_cols = fct_cols,
-                             cluster_col = cluster_col,
-                             imputation = imputation,
-                             impute_per_cluster = impute_per_cluster,
-                             winsorizing = winsorizing,
-                             aggregation = aggregation)
-      data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
-                             trim_by_col = trim_by_col,
-                             trim_min=-Inf,
-                             trim_max=Inf,
-                             trim_keepna = TRUE,
-                             num_cols = num_cols,
-                             fct_cols = fct_cols,
-                             cluster_col = cluster_col,
-                             imputation = imputation,
-                             impute_per_cluster = impute_per_cluster,
-                             winsorizing = winsorizing,
-                             aggregation = aggregation)
-      data <- bind_rows(data_cntrl, data_event)
+      if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
+        data_event <- engineer(data = data[which(data[,y_col]==1),],
+                               num_cols = num_cols,
+                               fct_cols = fct_cols,
+                               cluster_col = cluster_col,
+                               trim_by_col = trim_by_col,
+                               trim_min=trim_vec[1]*time_unit,
+                               trim_max=trim_vec[2]*time_unit,
+                               pctcut_num_cols = pctcut_num_cols,
+                               pctcut_num_vec = pctcut_num_vec,
+                               pctcut_num_coerce = pctcut_num_coerce,
+                               filter_tag_cols = filter_tag_cols,
+                               imputation = imputation,
+                               impute_per_cluster = impute_per_cluster,
+                               winsorizing = winsorizing,
+                               aggregation = aggregation)
+        data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
+                               num_cols = num_cols,
+                               fct_cols = fct_cols,
+                               cluster_col = cluster_col,
+                               trim_by_col = trim_by_col,
+                               trim_min=-Inf,
+                               trim_max=Inf,
+                               trim_keepna = TRUE,
+                               pctcut_num_cols = pctcut_num_cols,
+                               pctcut_num_vec = pctcut_num_vec,
+                               pctcut_num_coerce = pctcut_num_coerce,
+                               filter_tag_cols = filter_tag_cols,
+                               imputation = imputation,
+                               impute_per_cluster = impute_per_cluster,
+                               winsorizing = winsorizing,
+                               aggregation = aggregation)
+        data_in <- bind_rows(data_cntrl, data_event)
+      }
     }
-    data_ex <- assign.dict(data, dict_data)
-  }
+    data_in <- assign.dict(data_in, dict_data)
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
+  
+  # ---- prepare original / no-engineering test dataset (external)  ----
+  print("---- prepare original / no-engineering test dataset (external)  ----")
+  tryCatch({
+    if (!is.null(test_data)){# if test_data given
+      data_exorg <- engineer(data = test_data,
+                             num_cols = num_cols,
+                             fct_cols = fct_cols,
+                             cluster_col = cluster_col)
+      data_exorg <- assign.dict(data_exorg, dict_data)
+    }
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
+  
+  # ---- prepare engineered test dataset (external)  ----
+  print("---- prepare engineered test dataset (external)  ----")
+  tryCatch({
+    if (!is.null(test_data)){
+      if(trim_ctrl){
+        data_ex <- engineer(data = test_data,
+                            num_cols = num_cols,
+                            fct_cols = fct_cols,
+                            cluster_col = cluster_col,
+                            trim_by_col = trim_by_col,
+                            trim_min=trim_vec[1]*time_unit,
+                            trim_max=trim_vec[2]*time_unit,
+                            pctcut_num_cols = pctcut_num_cols,
+                            pctcut_num_vec = pctcut_num_vec,
+                            pctcut_num_coerce = pctcut_num_coerce,
+                            filter_tag_cols = filter_tag_cols,
+                            imputation = imputation,
+                            impute_per_cluster = impute_per_cluster,
+                            winsorizing = winsorizing,
+                            aggregation = aggregation)
+      }else{
+        if (all(unique(as.character(test_data[,y_col])) %in% c(1,0,NA))){
+          data_event <- engineer(data = test_data[which(test_data[,y_col]==1),],
+                                 num_cols = num_cols,
+                                 fct_cols = fct_cols,
+                                 cluster_col = cluster_col,
+                                 trim_by_col = trim_by_col,
+                                 trim_min=trim_vec[1]*time_unit,
+                                 trim_max=trim_vec[2]*time_unit,
+                                 pctcut_num_cols = pctcut_num_cols,
+                                 pctcut_num_vec = pctcut_num_vec,
+                                 pctcut_num_coerce = pctcut_num_coerce,
+                                 filter_tag_cols = filter_tag_cols,
+                                 imputation = imputation,
+                                 impute_per_cluster = impute_per_cluster,
+                                 winsorizing = winsorizing,
+                                 aggregation = aggregation)
+          data_cntrl <- engineer(data = test_data[which(test_data[,y_col]==0),],
+                                 num_cols = num_cols,
+                                 fct_cols = fct_cols,
+                                 cluster_col = cluster_col,
+                                 trim_by_col = trim_by_col,
+                                 trim_min=-Inf,
+                                 trim_max=Inf,
+                                 trim_keepna = TRUE,
+                                 pctcut_num_cols = pctcut_num_cols,
+                                 pctcut_num_vec = pctcut_num_vec,
+                                 pctcut_num_coerce = pctcut_num_coerce,
+                                 filter_tag_cols = filter_tag_cols,
+                                 imputation = imputation,
+                                 impute_per_cluster = impute_per_cluster,
+                                 winsorizing = winsorizing,
+                                 aggregation = aggregation)
+          data_ex <- bind_rows(data_cntrl, data_event)
+        }
+      }
+      data_ex <- assign.dict(data_ex, dict_data)
+    }
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   
   
-  
-  #  ---- modeling ---- 
+  # ---- modeling ---- 
+  print("---- modeling ----")
   if(dict_data[y_col, "type"]=="fct"){
+    print("--- do_lrm_pip ---")
     results <- do_lrm_pip(data=data_in, 
                           dict_data=dict_data,
                           x_cols_linear=x_cols_linear,
@@ -216,6 +264,7 @@ front_multi_regression <- function(
                           trim_by_col = trim_by_col)
     
   }else if(dict_data[y_col, "type"]=="num"){
+    print("--- do_ols_pip ---")
     # results <- do_ols_pip(data=data, 
     #                       dict_data=dict_data,
     #                       x_cols=x_cols, 
@@ -303,6 +352,51 @@ front_multi_regression <- function(
                perform_inorg_scores_tbl = perform_inorg_scores_tbl,
                perform_ex_scores_tbl = perform_ex_scores_tbl,
                perform_exorg_scores_tbl = perform_exorg_scores_tbl))
-  
-  
+
 }
+
+
+
+# ############################################# not run #############################################
+# data = data_ml
+# dict_data = dict_ml
+# y_label = "Primary outcome (EN)___Unfavorable"
+# cluster_label = "PreVent study ID"
+# x_labels_linear = c("Gestational Age", "pH associated with highest CO2 on blood gas")
+# x_labels_nonlin_rcs5 = c("Maternal age")
+# x_labels_nonlin_rcs4 = c("Gestational Age")
+# x_labels_nonlin_rcs3 = c("Birth weight")
+# x_labels_fct = c("Site (EN)")
+# x_labels_tag = c("Baby Gender (EN)___Female")
+# x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag))
+# # --- engineer ---
+# trim_by_label = "Post-menstrual Age"  # reltive time info
+# trim_vec = c(-Inf, Inf) # trim relative time [from, to)
+# time_unit = 7 # the increment scale of relative time
+# trim_ctrl = TRUE
+# pctcut_num_labels = c("PeriodicBreathing_v3 duration per day", "ABD_v3 number of events per day")
+# pctcut_num_vec = c(0.1, 99.9)
+# pctcut_num_coerce=TRUE
+# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# imputation=c("None","Mean", "Median", "Zero")[1]
+# impute_per_cluster=FALSE
+# winsorizing=TRUE
+# aggregation=FALSE
+# # --- local ---
+# r2=0.9
+# rcs5_low="70%"
+# rcs4_low="50%"
+# cv_nfold=5
+# na_frac_max=0.3
+# test_data=NULL
+# joint_col2_label="Gestational Age"
+# stratified_cv=TRUE
+# r_abs=0.8
+# type=c("pearson","spearman")[1]
+# rank=TRUE
+# seed_value=333
+# fix_knots = TRUE
+# y_map_func=c("fold_risk", "probability", "log_odds")[1]
+# y_map_max=3
+
+

@@ -77,7 +77,7 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adju
   df_mdl$num_col <- df_mdl[, num_col]
   df_mdl$tag_col <- df_mdl[, tag_col]
   df_result <- NULL
-  if (is.null(num_adjust_col)){
+  if (length(num_adjust_col)==0){
     try({
       fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")"))
       dd <- rms::datadist(df_mdl)

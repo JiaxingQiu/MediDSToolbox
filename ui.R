@@ -23,48 +23,31 @@ sidebar <- dashboardSidebar(
     # ---- 0. project info ----
     menuItem("Project Info", tabName = "prj_info"),
     
-    # ---- 1. eda ----
-    menuItem("Explore Data", tabName = "eda", startExpanded = FALSE,
-             menuSubItem('Set up', tabName = 'eda_setup'),
+    # ---- 1. setup ----
+    menuItem("Data Engineering", tabName = "setup", startExpanded = FALSE,
+             menuSubItem('Set up', tabName = 'setup_engineer'),
+             menuSubItem('Summary', tabName = 'setup_summ')),
+    useShinyjs(),
+    div(id = 'sidebar_setup_engineer',
+        conditionalPanel("input.sidebar == 'setup_engineer'"
+        )),
+    div(id = 'sidebar_setup_summ',
+        conditionalPanel("input.sidebar == 'setup_summ'", 
+                         selectInput("setup_strat_by",
+                                     "Stratified by",
+                                     choices = c("None",in.setup_strat_by)),
+                         checkboxInput("setup_trim_ctrl",
+                                       "Trim Control Group",
+                                       TRUE)
+        )),
+    # ---- 2. eda ----
+    menuItem("Data Exploration", tabName = "eda", startExpanded = FALSE,
              menuSubItem('1D Stats', tabName = 'eda_1dstats'),
              menuSubItem('2D Stats', tabName = 'eda_2dstats'),
              menuSubItem('Death Star', tabName = 'eda_star'),
              menuSubItem('Alluvial Flow', tabName = 'eda_allu')),
     ## Show panel only when sidebar is selected
     useShinyjs(),
-    div(id = 'sidebar_eda_setup',
-        conditionalPanel("input.sidebar == 'eda_setup'",
-                         selectInput("eda_cluster_label",
-                                     label="Cluster",
-                                     choices = in.eda_cluster_label ),
-                         
-                         fluidRow(
-                           column(width=8,selectInput("eda_trim_by_label",
-                                                      label="Trim",
-                                                      choices = in.eda_trim_by_label) ),
-                           column(width=4,numericInput("eda_trim_time_unit", "/", in.eda_trim_time_unit))
-                         ),
-                         sliderInput("eda_trim_vec",
-                                     label="[ from, to )",
-                                     min = 0,  max = 100, step = 1, value = c(0, 99)),
-                         fluidRow(
-                           column(width=8, selectInput("eda_pctcut_num_labels",
-                                                       label="Numeric cutoffs",
-                                                       multiple = TRUE,
-                                                       choices = in.eda_pctcut_num_labels,
-                                                       selected = NULL) ),
-                           column(width=4, checkboxInput("eda_coerce","coerce",value = FALSE))
-                         ),
-                         sliderInput("eda_pctcut_num_vec",
-                                     label="percentile [ from (th), to (th) ]",
-                                     min = 0,  max = 100, step = 0.1, value = c(0.1, 99.9)),
-                         
-                         selectInput("eda_filter_tag_labels",
-                                     label="Binary filter(s)",
-                                     multiple = TRUE,
-                                     choices = in.eda_filter_tag_labels,
-                                     selected = NULL)
-        )),
     div(id = 'sidebar_eda_1dstats',
         conditionalPanel("input.sidebar == 'eda_1dstats'",
                          selectInput("eda_y_label_stats1d",
@@ -132,12 +115,11 @@ sidebar <- dashboardSidebar(
                                             inline = TRUE)
         )),
     
-    # ---- 2. supervised ml ----
+    # ---- 3. supervised ml ----
     menuItem("ML (supervised)", tabName = "ml", startExpanded = FALSE,
-             menuSubItem('Set up', tabName = 'ml_setup'),
-             menuSubItem('Summary', tabName = 'ml_summ'),
+             menuSubItem('Response', tabName = 'ml_setup'),
              menuSubItem('Univariate Effect', tabName = 'ml_uni'), # univariable regression
-             menuSubItem('Feature Selection', tabName = 'ml_select'),
+             menuSubItem('Predictor Selection', tabName = 'ml_select'),
              menuSubItem('Predictor Clus', tabName = 'ml_clus'),
              menuSubItem('Regression', tabName = 'ml_multi'), # multivariable regression
              menuSubItem('Regression over Time', tabName = 'ml_timely')),
@@ -145,49 +127,13 @@ sidebar <- dashboardSidebar(
     useShinyjs(),
     div(id = 'sidebar_ml_setup',
         conditionalPanel("input.sidebar == 'ml_setup'",
-                         selectInput("ml_cluster_label",
-                                     "Cluster",
-                                     choices = in.ml_cluster_label),
                          selectInput("ml_y_label",
                                      "Response",
                                      choices = in.ml_y_label,
                                      selected = in.ml_y_label.selected),
-                         #helpText("For continuous response ('num'), Linear Regression will be used. For binary response ('tag'), Logistic Regression will be used."),
-                         fluidRow(
-                           column(width=8,selectInput("ml_trim_by_label",
-                                                      label="Trim",
-                                                      choices = in.ml_trim_by_label) ),
-                           column(width=4, numericInput("ml_trim_time_unit", "/", in.ml_trim_time_unit) )
-                         ),
-                         sliderInput("ml_trim_vec",
-                                     label="[ from, to )",
-                                     min = 0,  max = 100, step = 1, value = c(0, 99)),
                          checkboxInput("ml_trim_ctrl", 
                                        "Trim Control Group", 
-                                       value = in.ml_trim_ctrl),
-                         fluidRow(
-                           column(width=5,selectInput("ml_imputation",
-                                                      "Imputation",
-                                                      choices = c("Zero", "None", "Mean", "Median"),
-                                                      selected = in.ml_imputation.selected) ),
-                           column(width=6,checkboxInput("ml_impute_per_cluster", 
-                                                        "within cluster", 
-                                                        value = FALSE))
-                         ),
-                         fluidRow(
-                           column(width=5,checkboxInput("ml_aggregation", 
-                                                        "Aggregation", 
-                                                        value = FALSE) ),
-                           column(width=5,checkboxInput("ml_winsorizing",
-                                                        "Winsorizing",
-                                                        value = FALSE))
-                         )
-        )),
-    div(id = 'sidebar_ml_summ',
-        conditionalPanel("input.sidebar == 'ml_summ'", 
-                         checkboxInput("ml_summ_stratify_by", 
-                                       "Stratified by response", 
-                                       value = TRUE) 
+                                       value = in.ml_trim_ctrl)
         )),
     div(id = 'sidebar_ml_uni',
         conditionalPanel("input.sidebar == 'ml_uni'",
@@ -289,7 +235,7 @@ sidebar <- dashboardSidebar(
                            column(width=4, numericInput("ml_y_max", "max", 3))
                          ),
                          
-                         # Input: Select a file ----
+                         # Input: Select a file ---
                          fileInput("ex_test_csv", "External CSV",
                                    multiple = FALSE,
                                    accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
@@ -312,9 +258,9 @@ sidebar <- dashboardSidebar(
                          
         )),
     
-    # ---- 3. unsupervised ml (unml) ----
+    # ---- 4. unsupervised ml (unml) ----
     menuItem("ML (unsupervised)", tabName = "unml", startExpanded = FALSE,
-             menuSubItem('Set up', tabName = 'unml_setup'),
+             menuSubItem('Data Engineering', tabName = 'unml_setup'),
              menuSubItem('Kmeans Clustering', tabName = 'unml_cluster')
     ),
     ## Show panel only when sidebar is selected
@@ -448,12 +394,97 @@ body <- dashboardBody(
             tags$h1(prj_name),
             tags$p("Click ",
                    tags$a(href = prj_link, "here"),
-                   " for more information.")),
-    
-    # ---- 1. eda ----
-    tabItem(tabName = "eda_setup",
-            h3("Exploratory Data Analysis -- Set up"),
-            fluidRow(dataTableOutput("dictionary_table_eda"))),
+                   " for more information.")
+    ),
+    # ---- 1. setup ----
+    tabItem(tabName = "setup_engineer",
+            h3("Data Engineering -- Set Up"),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Engineer",
+                                 tags$h4("------------ Step 1 ------------"),
+                                 fluidRow(
+                                   column(4, 
+                                          selectInput("setup_trim_by_label",
+                                                      label="Trim",
+                                                      choices = in.setup_trim_by_label),
+                                          numericInput("setup_trim_time_unit", "/", in.setup_trim_time_unit),
+                                          sliderInput("setup_trim_vec",
+                                                      label="[ from, to )",
+                                                      min = 0,  max = 100, step = 1, value = c(0, 99))
+                                   ),
+                                   column(4, 
+                                          selectInput("setup_pctcut_num_labels",
+                                                      label="Numeric cutoffs",
+                                                      multiple = TRUE,
+                                                      choices = in.setup_pctcut_num_labels,
+                                                      selected = NULL),
+                                          sliderInput("setup_pctcut_num_vec",
+                                                      label="percentile [ from (th), to (th) ]",
+                                                      min = 0,  max = 100, step = 0.1, value = c(0.1, 99.9)),
+                                          checkboxInput("setup_pctcut_num_coerce",
+                                                        "Coerce Outliers",
+                                                        value = FALSE)
+                                   ),
+                                   column(4, 
+                                          selectInput("setup_filter_tag_labels",
+                                                      label="Binary filter(s)",
+                                                      multiple = TRUE,
+                                                      choices = in.setup_filter_tag_labels,
+                                                      selected = NULL) 
+                                   )
+                                 ),
+                                 tags$h4("------------ Step 2 -------------"),
+                                 fluidRow(
+                                   column(4, 
+                                          selectInput("setup_cluster_label",
+                                                      label="Cluster",
+                                                      choices = in.setup_cluster_label ),
+                                          checkboxInput("setup_aggregation", 
+                                                        "Aggregate", 
+                                                        value = FALSE),
+                                          checkboxInput("setup_winsorizing",
+                                                        "Winsorize",
+                                                        value = FALSE)
+                                   ),
+                                   column(4,
+                                          selectInput("setup_imputation",
+                                                      "Imputation",
+                                                      choices = c("Zero", "None", "Mean", "Median"),
+                                                      selected = in.setup_imputation.selected),
+                                          checkboxInput("setup_impute_per_cluster", 
+                                                        "Impute within clusters", 
+                                                        value = FALSE)
+                                   )
+                                 )
+                        ),
+                        tabPanel("Dictionary",
+                                 dataTableOutput("dictionary_setup")
+                        )
+            )
+    ),
+    tabItem(tabName = "setup_summ",
+            h3("Data Engineering -- Summary Table"),
+            fluidRow(column(1,actionButton("setup_summ_go", "Go",icon=icon("play-circle")))),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Summary",
+                                 downloadButton("download_summary_table","csv"),
+                                 plotOutput("na_plot", width ="2000px", height = "500px"),
+                                 dataTableOutput("summary_table")
+                        ),
+                        tabPanel("Numeric",
+                                 downloadButton("download_num_detail_table","csv"),
+                                 dataTableOutput("num_detail_table")
+                        ),
+                        tabPanel("Factor",
+                                 downloadButton("download_fct_detail_table","csv"),
+                                 dataTableOutput("fct_detail_table")
+                        ),
+                        tabPanel("StratifyBy",
+                                 dataTableOutput("rsps_table")
+                        )
+            )
+    ),
+    # ---- 2. eda ----
     tabItem(tabName = "eda_1dstats",
             h3("Exploratory Data Analysis -- 1D Statistics"),
             fluidRow(column(1,actionButton("eda_stats1d_go", "Go",icon=icon("play-circle")))),
@@ -491,11 +522,12 @@ body <- dashboardBody(
                                               resetOnNew = TRUE))
                         ),
                         tabPanel("Statistics Table",
-                                 selectInput("eda_1d_p_1stat_sttname",
-                                             label=NULL,
-                                             choices = c("avg", "q25" , "q50", "q75", "q90", "q95")),
+                                 fluidRow(column(4, selectInput("eda_1d_p_1stat_sttname",
+                                                                label=NULL,
+                                                                choices = c("avg", "q25" , "q50", "q75", "q90", "q95"))),
+                                          column(3, downloadButton("download_eda_1d_df_summ","csv"))
+                                 ),
                                  plotOutput("eda_1d_p_1stat_stt",height = "400px"),
-                                 downloadButton("download_eda_1d_df_summ","csv"),
                                  dataTableOutput("eda_1d_df_summ")
                         )
             )
@@ -518,32 +550,11 @@ body <- dashboardBody(
             fluidRow(column(1,actionButton("eda_allu_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_alluvial", height = "800px"))),
     
-    # ---- 2. ml (supervised) ----
+    # ---- 3. ml (supervised) ----
     tabItem(tabName = "ml_setup",
             h3("Machine Learning (supervised)"),
             fluidRow(dataTableOutput("dictionary_table_ml"))),
-    tabItem(tabName = "ml_summ",
-            h3("Machine Learning (supervised) -- Summary Table"),
-            fluidRow(column(1,actionButton("ml_summ_go", "Go",icon=icon("play-circle")))),
-            tabsetPanel(type = "tabs",
-                        tabPanel("Summary",
-                                 downloadButton("download_summary_table","csv"),
-                                 plotOutput("na_plot", width ="2000px"),
-                                 dataTableOutput("summary_table")
-                        ),
-                        tabPanel("Numeric",
-                                 downloadButton("download_num_detail_table","csv"),
-                                 dataTableOutput("num_detail_table")
-                        ),
-                        tabPanel("Factor",
-                                 downloadButton("download_fct_detail_table","csv"),
-                                 dataTableOutput("fct_detail_table")
-                        ),
-                        tabPanel("Response",
-                                 dataTableOutput("rsps_table")
-                        )
-                        )
-            ),
+    
     tabItem(tabName = "ml_uni",
             h3("Machine Learning (supervised) -- Univariable Percentile Heatmap"),
             fluidRow(column(1,actionButton("ml_uni_go", "Go",icon=icon("play-circle")))),
@@ -575,8 +586,8 @@ body <- dashboardBody(
                                  textOutput("x_corre_out")),
                         tabPanel("Redundancy", verbatimTextOutput("x_redun_obj")),
                         tabPanel("Missingness",
-                                 dataTableOutput("ml_summary_table"),
-                                 plotOutput("ml_na_plot", width ="400px")),
+                                 plotOutput("ml_na_plot", width ="400px"),
+                                 dataTableOutput("ml_summary_table")),
                         tabPanel("Spearman2 dof",
                                  plotOutput("dof_plot")))),
     tabItem(tabName = "ml_multi",
@@ -631,7 +642,7 @@ body <- dashboardBody(
                                  tableOutput("timely_infer_table") )
             )
     ),
-    # ---- 3. unml (unsupervised) ----
+    # ---- 4. unml (unsupervised) ----
     tabItem(tabName = "unml_setup",
             h3("Machine Learning (unsupervised)"),
             fluidRow(dataTableOutput("dictionary_table_unml")) 
@@ -651,7 +662,7 @@ body <- dashboardBody(
             
     )
     
-   # ----- 4. other businesses ---- 
+    # ---- 5. other businesses ---- 
   )
 )
 
