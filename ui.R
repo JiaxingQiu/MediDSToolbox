@@ -524,7 +524,7 @@ body <- dashboardBody(
                         tabPanel("Statistics Table",
                                  fluidRow(column(4, selectInput("eda_1d_p_1stat_sttname",
                                                                 label=NULL,
-                                                                choices = c("avg", "q25" , "q50", "q75", "q90", "q95"))),
+                                                                choices = c("q50", "avg", "q25" , "q75", "q90", "q95"))),
                                           column(3, downloadButton("download_eda_1d_df_summ","csv"))
                                  ),
                                  plotOutput("eda_1d_p_1stat_stt",height = "400px"),

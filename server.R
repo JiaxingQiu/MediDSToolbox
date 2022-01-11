@@ -507,7 +507,15 @@ shinyServer(function(input, output, session) {
   })
   output$download_eda_1d_df_summ <- downloadHandler(
     filename = function() {
-      paste0('plot_summary_', Sys.Date(), ".csv")
+      paste0("plot_summary_y_",
+        as.character(input$eda_y_label_stats1d),
+        "_x_",
+        as.character(input$eda_x_label_stats1d),
+        "_group_",
+        as.character(input$eda_group_by_label_stats1d),
+        "_",
+        Sys.Date(), 
+        ".csv")
     },
     content = function(file) {
       eda_1d_obj <- stats1dViz()

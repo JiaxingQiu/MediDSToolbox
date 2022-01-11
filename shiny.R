@@ -65,7 +65,7 @@ sapply(c(paste(path,flst,sep="/")), source, .GlobalEnv)
 
 dict_org <- read.csv("./data/dict_deid_data_final_with_ih.csv", stringsAsFactors = FALSE)
 data_org <- read.csv("./data/deid_data_final_with_ih.csv", stringsAsFactors = FALSE)  # for test speed
-
+dict_org$label <- gsub("_v[0-9]", "", dict_org$label)
 
 # key / cluster name and labels
 key_var_name <- as.character(dict_org$varname[which(dict_org$type=="key")])

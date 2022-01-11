@@ -215,12 +215,22 @@ viz_1d_stats <- function(
   # statistics
   p_1stat_set <- list()
   y_lab_string <- y_col
-  try({y_lab_string <- paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]) },TRUE)
+  try({y_lab_string <- paste0(dict_data[y_col,"label"], "    (", dict_data[y_col,"unit"], ")") },TRUE)
   x_lab_string <- x_col
-  try({x_lab_string <- paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]) },TRUE)
+  try({x_lab_string <- paste0(dict_data[x_col,"label"], "    (", dict_data[x_col,"unit"], ")") },TRUE)
   group_by_string <- group_by_col
   i=0
   for (stt in c( "avg", "q25" , "q50", "q75", "q90", "q95")){
+    # format title string for the plot from statistic name
+    title_string <- NULL
+    if ( stt %in% c("q25", "q75", "q90", "q95")){
+      title_string <- gsub("q","",stt)
+      title_string <- paste0(title_string, "% percentile")
+    } else if(stt %in% c("avg")) {
+      title_string <- "Mean"
+    } else if (stt %in% c("q50")) {
+      title_string <- "Median (50% percentile)"
+    }
     i=i+1
     df_summ_grouped_plot <- df_summ_grouped[,c("group", "x", stt, "n_sbj_avail")]
     colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value", "n_sbj_avail")
@@ -229,14 +239,31 @@ viz_1d_stats <- function(
       theme_bw() +
       ylab(y_lab_string) +
       xlab(x_lab_string) +
-      scale_color_discrete(name=group_by_string) 
+      scale_color_discrete(name=group_by_string) +
+      ggtitle(title_string)
     p_1stat_denom <- ggplot(df_summ_grouped_plot, aes(x=x, y=n_sbj_avail, fill=group))+
       geom_bar(stat="identity", position="stack") +
       theme_bw() +
-      ylab("# sbj with data") +
+      ylab("Number of enrolled subjects") +
       xlab(x_lab_string) +
-      scale_fill_discrete(name=group_by_string) 
-    p_1stat_set[[i]] <- ggpubr::ggarrange(p_1stat, p_1stat_denom, nrow=1, common.legend = TRUE, legend = "top")
+      scale_fill_discrete(name=group_by_string) + 
+      ggtitle("Data Availability")
+    
+    if(grepl("_days",x_col)){
+      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
+      x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
+      p_1stat <- p_1stat + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
+                                          breaks = x_breaks,
+                                          labels = x_labels)
+      p_1stat_denom <- p_1stat_denom + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
+                                              breaks = x_breaks,
+                                              labels = x_labels)
+    }
+    p_1stat_set[[i]] <- ggpubr::ggarrange(p_1stat, 
+                                          p_1stat_denom, 
+                                          nrow=1, 
+                                          common.legend = TRUE, 
+                                          legend = "top")
     
   }
   names(p_1stat_set) <- c( "avg", "q25" , "q50", "q75", "q90", "q95")
