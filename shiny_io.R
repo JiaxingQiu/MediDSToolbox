@@ -1,14 +1,6 @@
 # -------------------------------------------------- global -------------------------------------------------- 
-if(!"label" %in% colnames(dict_viz)) dict_viz$label <- dict_viz$varname
 if(!"label" %in% colnames(dict_ml)) dict_ml$label <- dict_ml$varname
-if(!"label" %in% colnames(dict_unml)) dict_unml$label <- dict_unml$varname
-if(!"label" %in% colnames(dict_viz)) dict_viz$label <- dict_viz$label
-if(!"label" %in% colnames(dict_ml)) dict_ml$label <- dict_ml$label
-if(!"label" %in% colnames(dict_unml)) dict_unml$label <- dict_unml$label
-dict_viz <- get.dict(assign.dict(data_viz, dict_viz, overwrite = TRUE))
 dict_ml <- get.dict(assign.dict(data_ml, dict_ml, overwrite = TRUE))
-dict_unml <- get.dict(assign.dict(data_unml, dict_unml, overwrite = TRUE))
-
 
 
 # -------------------------------------------------- prj info -----------------------------------------------------
@@ -18,31 +10,31 @@ prj_link <- "https://github.com/JiaxingQiu/FAIRStream/wiki"
 
 # ---------------------------------------------------- ui.R -----------------------------------------------------------------
 # ---- 1. setup ----
-in.setup_cluster_label <- dict_viz$label[which(dict_viz$type=="key")]
+in.setup_cluster_label <- dict_ml$label[which(dict_ml$type=="key")]
 in.setup_trim_by_label <- c("Post-menstrual Age", "Chronological Age")
 in.setup_trim_time_unit <- 7
-in.setup_pctcut_num_labels <- dict_viz$label[which(dict_viz$type=="num")]
-in.setup_filter_tag_labels <- dict_viz$label[which(dict_viz$unit=="tag01")]
+in.setup_pctcut_num_labels <- dict_ml$label[which(dict_ml$type=="num")]
+in.setup_filter_tag_labels <- dict_ml$label[which(dict_ml$unit=="tag01")]
 in.setup_imputation.selected <-  "None"
 in.setup_strat_by <- dict_ml$label[which(dict_ml$type=="fct")]
 # ---- 2. eda ----
-in.eda_y_label_stats1d <- dict_viz$label[which(dict_viz$type=="num" | (dict_viz$unit=="tag01") )]
-in.eda_x_label_stats1d <- c("Chronological Age", "Post-menstrual Age", setdiff(dict_viz$label[which(dict_viz$type!="")],c("Chronological Age", "Post-menstrual Age") ) )
-in.eda_group_by_label_stats1d <- c("None", "Primary outcome (EN)","GA weeks binned","Site (EN)", setdiff(dict_viz$label[which(dict_viz$type=="fct")],c("Primary outcome (EN)","Site (EN)")) )
+in.eda_y_label_stats1d <- dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )]
+in.eda_x_label_stats1d <- c("Chronological Age", "Post-menstrual Age", setdiff(dict_ml$label[which(dict_ml$type!="")],c("Chronological Age", "Post-menstrual Age") ) )
+in.eda_group_by_label_stats1d <- c("None", "Primary outcome (EN)","GA weeks binned","Site (EN)", setdiff(dict_ml$label[which(dict_ml$type=="fct")],c("Primary outcome (EN)","Site (EN)")) )
 
-in.eda_y_label_stats2d <- dict_viz$label[which(dict_viz$type=="num" | (dict_viz$unit=="tag01") )]
-in.eda_x_label1_stats2d <- c("Post-menstrual Age", "Chronological Age", setdiff(dict_viz$label[which(dict_viz$type=="num")],c("Chronological Age", "Post-menstrual Age") ) )
-in.eda_x_label2_stats2d <- c("Gestational Age", "Post-menstrual Age", setdiff(dict_viz$label[which(dict_viz$type=="num")],c("Gestational Age", "Post-menstrual Age") ) )
+in.eda_y_label_stats2d <- dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )]
+in.eda_x_label1_stats2d <- c("Post-menstrual Age", "Chronological Age", setdiff(dict_ml$label[which(dict_ml$type=="num")],c("Chronological Age", "Post-menstrual Age") ) )
+in.eda_x_label2_stats2d <- c("Gestational Age", "Post-menstrual Age", setdiff(dict_ml$label[which(dict_ml$type=="num")],c("Gestational Age", "Post-menstrual Age") ) )
 
-in.eda_y_label_star <- dict_viz$label[which(dict_viz$type=="num" | (dict_viz$unit=="tag01") )]
+in.eda_y_label_star <- dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )]
 in.eda_sort_by_label <- c("Post-menstrual Age", "Chronological Age", "Gestational Age")
 in.eda_align_by_label <- c("Post-menstrual Age","Chronological Age") 
-in.eda_group_by_label_star <- c("None", "Primary outcome (EN)","GA weeks binned","Site (EN)", setdiff(dict_viz$label[which(dict_viz$type=="fct")],c("Primary outcome (EN)","Site (EN)")) )
-in.eda_tag_label <- c("None", dict_viz$label[which(dict_viz$unit=="tag01")])
+in.eda_group_by_label_star <- c("None", "Primary outcome (EN)","GA weeks binned","Site (EN)", setdiff(dict_ml$label[which(dict_ml$type=="fct")],c("Primary outcome (EN)","Site (EN)")) )
+in.eda_tag_label <- c("None", dict_ml$label[which(dict_ml$unit=="tag01")])
 
 
-in.eda_y_label_allu <- dict_viz$label[which(dict_viz$type=="num")]
-in.eda_tag_labels_allu <- dict_viz$label[which(dict_viz$type=="fct"&dict_viz$unit=="tag01")]
+in.eda_y_label_allu <- dict_ml$label[which(dict_ml$type=="num")]
+in.eda_tag_labels_allu <- dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")]
 
 # ---- 2. supervised ml ----
 in.ml_y_label <- c(y_tag_front_labels, y_num_front_labels, "Site (EN)___Miami")
@@ -76,8 +68,8 @@ in.ml_joint_col2_label <- c("None","Gestational Age")
 in.unml_cluster_label <- "PreVent study ID"
 in.unml_trim_by_label <- c("Chronological Age", "Post-menstrual Age", "Gestational Age")
 in.unml_trim_time_unit <- 7
-in.unml_input_labels.choices <- dict_unml$label[which(dict_unml$type=="num"|dict_unml$unit=="tag01")]
-in.unml_input_labels.selected <- dict_unml$label[which(dict_unml$varname%in%colnames(data_unml%>%select(starts_with("cpd_"))) )]
+in.unml_input_labels.choices <- dict_ml$label[which(dict_ml$type=="num"|dict_ml$unit=="tag01")]
+in.unml_input_labels.selected <- dict_ml$label[which(dict_ml$varname%in%colnames(data_ml%>%select(starts_with("cpd_"))) )]
 
 
 

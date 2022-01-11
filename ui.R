@@ -24,7 +24,7 @@ sidebar <- dashboardSidebar(
     menuItem("Project Info", tabName = "prj_info"),
     
     # ---- 1. setup ----
-    menuItem("Data Engineering", tabName = "setup", startExpanded = FALSE,
+    menuItem("Engineering", tabName = "setup", startExpanded = FALSE,
              menuSubItem('Set up', tabName = 'setup_engineer'),
              menuSubItem('Summary', tabName = 'setup_summ')),
     useShinyjs(),
@@ -41,7 +41,7 @@ sidebar <- dashboardSidebar(
                                        TRUE)
         )),
     # ---- 2. eda ----
-    menuItem("Data Exploration", tabName = "eda", startExpanded = FALSE,
+    menuItem("Exploration", tabName = "eda", startExpanded = FALSE,
              menuSubItem('1D Stats', tabName = 'eda_1dstats'),
              menuSubItem('2D Stats', tabName = 'eda_2dstats'),
              menuSubItem('Death Star', tabName = 'eda_star'),
@@ -260,7 +260,7 @@ sidebar <- dashboardSidebar(
     
     # ---- 4. unsupervised ml (unml) ----
     menuItem("ML (unsupervised)", tabName = "unml", startExpanded = FALSE,
-             menuSubItem('Data Engineering', tabName = 'unml_setup'),
+             menuSubItem('Engineering', tabName = 'unml_setup'),
              menuSubItem('Kmeans Clustering', tabName = 'unml_cluster')
     ),
     ## Show panel only when sidebar is selected
@@ -398,10 +398,10 @@ body <- dashboardBody(
     ),
     # ---- 1. setup ----
     tabItem(tabName = "setup_engineer",
-            h3("Data Engineering -- Set Up"),
+            h3("Engineering -- Set Up"),
             tabsetPanel(type = "tabs",
                         tabPanel("Engineer",
-                                 tags$h4("------------ Step 1 ------------"),
+                                 tags$h4("--------------- Step 1 ----------------"),
                                  fluidRow(
                                    column(4, 
                                           selectInput("setup_trim_by_label",
@@ -433,7 +433,7 @@ body <- dashboardBody(
                                                       selected = NULL) 
                                    )
                                  ),
-                                 tags$h4("------------ Step 2 -------------"),
+                                 tags$h4("--------------- Step 2 ----------------"),
                                  fluidRow(
                                    column(4, 
                                           selectInput("setup_cluster_label",
@@ -463,7 +463,7 @@ body <- dashboardBody(
             )
     ),
     tabItem(tabName = "setup_summ",
-            h3("Data Engineering -- Summary Table"),
+            h3("Engineering -- Summary Table"),
             fluidRow(column(1,actionButton("setup_summ_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Summary",

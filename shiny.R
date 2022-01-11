@@ -94,14 +94,14 @@ fct_var_name <- as.character(dict_org$varname[which(dict_org$type=="fct"&dict_or
 fct_var_label <- as.character(dict_org$label[which(dict_org$type=="fct"&dict_org$unit!="tag01"&grepl("_factor",dict_org$varname))])
 
 # final data for viz tool
-data_viz <- dummy_cols(data_org, select_columns = fct_var_name, ignore_na=TRUE) %>% 
+data_ml <- dummy_cols(data_org, select_columns = fct_var_name, ignore_na=TRUE) %>% 
   select(-c(contains("_Un",ignore.case=FALSE)&!contains("primary_outcome_factor_Unfavorable",ignore.case=FALSE),
             contains("_No",ignore.case=FALSE)&!contains("_North",ignore.case = FALSE) )) %>% 
   as.data.frame()
-colnames(data_viz) <- gsub("[^[:alnum:]]","_",colnames(data_viz))
+colnames(data_ml) <- gsub("[^[:alnum:]]","_",colnames(data_ml))
 
 # derive new tag variable name list dummied by fct columns
-fct2tag_var_name <- sort(setdiff(colnames(data_viz), colnames(data_org)))
+fct2tag_var_name <- sort(setdiff(colnames(data_ml), colnames(data_org)))
 fct2tag_var_label <- c()
 fct2tag_var_unique <- c()
 fct2tag_var_source_file <- c()
@@ -117,9 +117,9 @@ for (var in fct2tag_var_name){
 }
 
 # final dictionary for viz tool
-dict_viz <- data.frame()
+dict_ml <- data.frame()
 if(length(key_var_name)>0){
-  dict_viz <- bind_rows(dict_viz, data.frame(varname=key_var_name,
+  dict_ml <- bind_rows(dict_ml, data.frame(varname=key_var_name,
                                              label=key_var_label,
                                              type="key",
                                              unit=dict_org$unit[which(dict_org$varname%in%key_var_name)],
@@ -128,7 +128,7 @@ if(length(key_var_name)>0){
                                              stringsAsFactors = FALSE))
 }
 if(length(num_var_name)>0){
-  dict_viz <- bind_rows(dict_viz, data.frame(varname=num_var_name,
+  dict_ml <- bind_rows(dict_ml, data.frame(varname=num_var_name,
                                              label=num_var_label,
                                              type="num",
                                              unit=dict_org$unit[which(dict_org$varname%in%num_var_name)],
@@ -137,7 +137,7 @@ if(length(num_var_name)>0){
                                              stringsAsFactors = FALSE))
 }
 if(length(tag_var_name)>0){
-  dict_viz <- bind_rows(dict_viz, data.frame(varname=tag_var_name,
+  dict_ml <- bind_rows(dict_ml, data.frame(varname=tag_var_name,
                                              label=tag_var_label,
                                              type="fct",
                                              unit="tag01", 
@@ -147,7 +147,7 @@ if(length(tag_var_name)>0){
 }
 
 if(length(fct_var_name)>0){
-  dict_viz <- bind_rows(dict_viz, data.frame(varname=fct_var_name,
+  dict_ml <- bind_rows(dict_ml, data.frame(varname=fct_var_name,
                                              label=fct_var_label,
                                              type="fct",
                                              unit=dict_org$unit[which(dict_org$varname%in%fct_var_name)],
@@ -157,7 +157,7 @@ if(length(fct_var_name)>0){
 }
 
 if(length(fct2tag_var_name)>0){
-  dict_viz <- bind_rows(dict_viz,  data.frame(varname=fct2tag_var_name,
+  dict_ml <- bind_rows(dict_ml,  data.frame(varname=fct2tag_var_name,
                                               label=fct2tag_var_label,
                                               type="fct",
                                               unit="tag01", 
@@ -166,10 +166,10 @@ if(length(fct2tag_var_name)>0){
                                               stringsAsFactors = FALSE))
 }
 
-data_viz$GA_bins <- floor(data_viz$ga_days/7)
-data_viz$GA_bins[which(data_viz$GA_bins <=23)] <- 23
-data_viz$GA_bins <- as.factor(as.character(data_viz$GA_bins))
-dict_viz <- bind_rows(dict_viz,
+data_ml$GA_bins <- floor(data_ml$ga_days/7)
+data_ml$GA_bins[which(data_ml$GA_bins <=23)] <- 23
+data_ml$GA_bins <- as.factor(as.character(data_ml$GA_bins))
+dict_ml <- bind_rows(dict_ml,
                       data.frame(varname="GA_bins", 
                                  label="GA weeks binned", 
                                  type="fct", 
@@ -178,16 +178,16 @@ dict_viz <- bind_rows(dict_viz,
                                  source_file="base",
                                  stringsAsFactors = FALSE))
 
-data_viz <- assign.dict(data_viz, dict_viz)
-dict_viz <- get.dict(data_viz)
-dict_viz$label_front <- dict_viz$label
-data_viz <- subset_df(data_viz, "40w")
+data_ml <- assign.dict(data_ml, dict_ml)
+dict_ml <- get.dict(data_ml)
+dict_ml$label_front <- dict_ml$label
+data_ml <- subset_df(data_ml, "40w")
 
 # ----- for ml tool ----
 tag_var_name <- union(tag_var_name, fct2tag_var_name)
 
-data_ml <-  data_viz
-dict_ml <- dict_viz
+data_ml <-  data_ml
+dict_ml <- dict_ml
 
 # refine / select variables for ml
 output_varname_list <- c("primary_outcome_factor_Unfavorable", 
@@ -296,14 +296,5 @@ y_num_front_labels <- dict_ml[y_num_cols, "label_front"]
 cluster_front_labels <- dict_ml[cluster_cols, "label_front"]
 
 
-
-# ----- unml roles -----
-data_unml <- data_ml
-dict_unml <- dict_ml
-
-
-dict_ml$label <- dict_ml$label_front
-dict_viz$label <- dict_viz$label_front
-dict_unml$label <- dict_unml$label_front
 
 

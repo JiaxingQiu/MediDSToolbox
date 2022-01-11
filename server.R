@@ -328,9 +328,9 @@ shinyServer(function(input, output, session) {
   
   # ---- 4. unsupervised ml ----
   observeEvent(input$unml_trim_by_label, {
-    trim_by_col <- dict_unml$varname[which(dict_unml$label==input$unml_trim_by_label)]
-    min_value = min(data_unml[,trim_by_col],na.rm=TRUE)
-    max_value = max(data_unml[,trim_by_col],na.rm=TRUE)
+    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$unml_trim_by_label)]
+    min_value = min(data_ml[,trim_by_col],na.rm=TRUE)
+    max_value = max(data_ml[,trim_by_col],na.rm=TRUE)
     updateSliderInput(inputId = "unml_trim_vec",
                       min = min_value,
                       max = max_value,
@@ -339,9 +339,9 @@ shinyServer(function(input, output, session) {
                        value = 1)
   })
   observeEvent(input$unml_trim_time_unit, {
-    trim_by_col <- dict_unml$varname[which(dict_unml$label==input$unml_trim_by_label)]
-    min_value = floor(min(data_unml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
-    max_value = floor(max(data_unml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
+    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$unml_trim_by_label)]
+    min_value = floor(min(data_ml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
+    max_value = floor(max(data_ml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
     updateSliderInput(inputId = "unml_trim_vec",
                       min = min_value,
                       max = max_value,
@@ -350,8 +350,8 @@ shinyServer(function(input, output, session) {
   MLuns_cluster <- eventReactive(input$umml_cluster_go, {
     front_front_uns_cluster(
       # global parameters (unsupervised setup page)
-      data = data_unml,
-      dict_data = dict_unml,
+      data = data_ml,
+      dict_data = dict_ml,
       cluster_label = input$unml_cluster_label,
       trim_by_label = input$unml_trim_by_label,
       trim_vec = input$unml_trim_vec,
@@ -376,7 +376,7 @@ shinyServer(function(input, output, session) {
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 1. setup ----
   output$dictionary_setup <- renderDataTable(
-    dict_ml[which(dict_ml$type!=""),c("varname", "label", "unit", "type")]
+    dict_ml[which(dict_ml$type!=""),c("source_file","varname","label","type","unit","mlrole")]
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({
@@ -904,7 +904,7 @@ shinyServer(function(input, output, session) {
   
   # ---- 4. unsupervised ml ----
   # setup ----
-  output$dictionary_table_unml <- renderDataTable(dict_unml[which(dict_unml$source_file!=""),c("source_file","varname","label","type","unit","mlrole")])
+  output$dictionary_table_unml <- renderDataTable(dict_ml[which(dict_ml$source_file!=""),c("source_file","varname","label","type","unit","mlrole")])
   
   # kmeans clustering ---
   output$unml_wss_plot <- renderPlot({
