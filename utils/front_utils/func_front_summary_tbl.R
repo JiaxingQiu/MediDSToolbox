@@ -1,10 +1,10 @@
 front_summary_tbl <- function(
-  data,
-  dict_data,
-  cluster_label,
+  data, # original dataset
+  dict_data, # dictionary of dataset
+  cluster_label, # key / cluster column label
   # --- engineer ---
-  trim_by_label,
-  trim_vec=c(-Inf, Inf),
+  trim_by_label, # relative time trimming column label
+  trim_vec=c(-Inf, Inf), 
   time_unit=1,
   pctcut_num_labels=c(),
   pctcut_num_vec=c(0.1, 99.9),
@@ -13,7 +13,7 @@ front_summary_tbl <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=FALSE,
+  aggregation=TRUE,
   # --- local ---
   trim_ctrl=TRUE,
   stratify_by=c("None")[1]
@@ -36,7 +36,8 @@ front_summary_tbl <- function(
   # ---- translate front end labels to column names ----
   trim_by_col <- intersect(colnames(data),dict_data$varname[which(dict_data$label==trim_by_label)])
   num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")] )
-  fct_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="fct")] )
+  fct_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit!="tag01")] )
+  tag_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit=="tag01")] )
   cluster_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==cluster_label)] )
   stratify_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==stratify_by)] )
   if(length(stratify_col)>0){
@@ -124,80 +125,43 @@ front_summary_tbl <- function(
                        aggregation = aggregation)
     })
   }
-  data <- assign.dict(data, dict_data)
+  data_engineered <- assign.dict(data, dict_data)
   
+  data <- data_engineered
   # --- summary table ---
-  data$key <- data[,cluster_col]
-  
+  # engineer stratify_col
+  if(length(stratify_col)>0){
+    if (dict_data$type[which(dict_data$varname==stratify_col)]=="num"){
+      # if stratify col is numeric, break it by percentiles
+      data[,stratify_col] <- cut(est_pctl(data[,stratify_col] ), breaks = seq(0,1,0.25), labels = c("(0th,25th]", "(25th,50th]", "(50th,75th]", "(75th,100th]") )
+    }
+  }
+  for (var in colnames(data)){
+    label(data[,var]) <- dict_data[var,"label"]
+    # fix infinite values by NA
+    if(var %in% num_cols){
+      data[which(!is.finite(data[,var])),var] <- NA
+    }
+  }
   tryCatch({
-    # convert numeric stratify_col to discrete IQR groups
-    df_agg <- data.frame(key=unique(data$key),stringsAsFactors=FALSE)
-    if(!is.null(num_cols)){
-      df <- data %>% group_by(key) %>% 
-        summarise_at(num_cols, list(mean = ~mean(., na.rm=TRUE))) %>% 
-        as.data.frame()
-      colnames(df)<-c('key',num_cols)
-      df_agg <- merge(df_agg, df, all.x=TRUE)
-    }
-    if(!is.null(fct_cols)){
-      df <- data %>% group_by(key) %>% 
-        summarise_at(fct_cols, list(ever = ~factor(ifelse(max(., na.rm=TRUE)>0,"Yes","No"), levels = c('No','Yes')))) %>% 
-        as.data.frame()
-      colnames(df)<-c('key',fct_cols)
-      df_agg <- merge(df_agg, df, all.x=TRUE)
-    }
-    if(length(stratify_col)>0){
-      if (dict_data[stratify_col,"type"]=="num"){
-        # aggregate by mean
-        df <- data %>% group_by(key) %>% 
-          summarise_at(stratify_col, list(mean = ~mean(., na.rm=TRUE))) %>% 
-          as.data.frame()
-        colnames(df)<-c('key',stratify_col)
-        # cut by quantiles
-        df[,paste0(stratify_col,"_IQR")] <- NA
-        dict_data[paste0(stratify_col,"_IQR"),] <- ""
-        df[which(df[,stratify_col]<quantile(df[,stratify_col],0.25,na.rm = TRUE)),paste0(stratify_col,"_IQR")] <- "[0th,25th)"
-        df[which(df[,stratify_col]>=quantile(df[,stratify_col],0.25,na.rm = TRUE) & df[,stratify_col]<quantile(df[,stratify_col],0.5,na.rm = TRUE)),paste0(stratify_col,"_IQR")] <- "[25th,50th)"
-        df[which(df[,stratify_col]>=quantile(df[,stratify_col],0.50,na.rm = TRUE) & df[,stratify_col]<quantile(df[,stratify_col],0.75,na.rm = TRUE)),paste0(stratify_col,"_IQR")] <- "[50th,75th)"
-        df[which(df[,stratify_col]>=quantile(df[,stratify_col],0.75,na.rm = TRUE)),paste0(stratify_col,"_IQR")] <- "[75th,100th]"
-        dict_data[paste0(stratify_col,"_IQR"),"label"] <- as.character( paste0("IQR of ",dict_data[stratify_col,"label"]) )
-        stratify_col <- paste0(stratify_col,"_IQR")
-        df_agg <- merge(df_agg, df[, c('key',stratify_col)], by='key',all.x=TRUE)
-      }
-      
-      else if (dict_data[stratify_col,"type"]=="fct"){
-        df <- data %>% group_by(key) %>% 
-          summarise_at(stratify_col, list(ever = ~factor(ifelse(max(., na.rm=TRUE)>0,"Yes","No"), levels = c('No','Yes')))) %>% 
-          as.data.frame()
-        colnames(df)<-c('key',stratify_col)
-        df_agg <- merge(df_agg, df, all.x=TRUE)
-      }
-      
-    }
-    
-    for (var in colnames(df_agg)){
-      label(df_agg[,var]) <- dict_data[var,"label"]
-      # fix infinite values by NA
-      if(var %in% num_cols){
-        df_agg[which(!is.finite(df_agg[,var])),var] <- NA
-      }
-    }
     
     # summary table stratefied by response
-    tbl_obj <- summ_tbl(data=df_agg, 
+    tbl_obj <- do_summ_tbl(data=data, 
+                        dict_data=get.dict(data),
                         num_vars = num_cols, 
                         fct_vars = fct_cols, 
                         num_denom = "avail", 
                         fct_denom = "known", 
-                        keys=c('key'),
+                        keys=c(cluster_col),
                         y=c(stratify_col) )
     tbl_st <- print(tbl_obj$tbl, varLabels = TRUE)
-    res_df <- as.data.frame(tbl_st)%>%tibble::rownames_to_column()
+    res_df <- as.data.frame(tbl_st) %>% tibble::rownames_to_column()
     res_df <- res_df[which(res_df$rowname!="n.1"),]
     res_df$rowname  <- gsub("..median..IQR..", " median[IQR]", res_df$rowname )
     res_df$rowname  <- gsub("..mean..SD..", " mean(SD)", res_df$rowname )
     res_df$rowname  <- gsub("..Yes....", " = Yes", res_df$rowname )
-    colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))] <- paste0(stratify_col," = ",colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))]) 
+    stratify_label <- ifelse( dict_data[which(dict_data$varname==stratify_col),"label"] == "", stratify_col, dict_data[which(dict_data$varname==stratify_col),"label"]) 
+    colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))] <- paste0(stratify_label," = ",colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))]) 
     
     # numeric and factor predictor details
     num_detail_df <- tbl_obj$num_detail_df
@@ -226,7 +190,7 @@ front_summary_tbl <- function(
     df$N <- df$n-df$miss
     df$mean_sd <- paste0(round(df$mean,2), " (", round(df$sd,2), ")")
     df$range <- paste0(round(df$median,2), " [",round(df$p25,2),", ",round(df$p75,2),"] (",round(df$min,2),", ",round(df$max,2),")")
-    df$summ_string <- paste(paste0("N = ", df$N), df$mean_sd, df$range, sep =" \n ")
+    df$summary_string <- paste(paste0("N = ", df$N), df$mean_sd, df$range, sep =" \n ")
     for (att in c("label", "unit", "source_file", "unique_per_sbj")){
       if (!att %in% colnames(dict_data)) next
       df[,att] <- ""
@@ -234,7 +198,7 @@ front_summary_tbl <- function(
         df[which(df$varname==varname),att] <- dict_data[which(dict_data$varname==varname), att]
       }
     }
-    num_detail_df <- df[,c("group", "label", "unit", "source_file", "summ_string", "N", "mean_sd", "range", "varname", "unique_per_sbj")]
+    num_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "N", "mean_sd", "range", "varname", "unique_per_sbj")]
   },error=function(e){
     print("--- Error in num_detail_df --- ")
     print(e)
@@ -244,19 +208,24 @@ front_summary_tbl <- function(
   # --- reformat fct_detail_df ---
   tryCatch({
     df <- fct_detail_df
-    df$varname <- gsub(".{2}$", "", df$varname)
+    df$varname <- gsub("[.][0-9]$", "", df$varname)
     for (att in c("label", "unit", "source_file", "unique_per_sbj")){
       if (!att %in% colnames(dict_data)) next
       df[,att] <- ""
       for(varname in df$varname){
-        df[which(df$varname==varname),att] <- dict_data[which(dict_data$varname==varname), att]
+        tryCatch({
+          df[which(df$varname==varname),att] <- dict_data[which(dict_data$varname==varname), att]
+        },error=function(e){
+          print(paste0("skip assign attribute ", att," to ",varname))
+          print(e)
+        })
       }
     }
     df$N <- df$n-df$miss
     df$n_freq <- as.numeric(as.character(df$freq))
     df$p <- as.numeric(as.character(df$freq))/df$N
-    df$summ_string <- paste0(round(df$p,2), " (", df$n_freq, "/",df$N,")")
-    fct_detail_df <- df[,c("group", "label", "unit", "source_file", "level","summ_string", "N", "n_freq", "p","varname", "unique_per_sbj")]
+    df$summary_string <- paste0(round(df$p,2), " (", df$n_freq, "/",df$N,")")
+    fct_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "level", "N", "n_freq", "p","varname", "unique_per_sbj")]
   },error=function(e){
     print("--- Error in fct_detail_df --- ")
     print(e)
@@ -297,7 +266,11 @@ front_summary_tbl <- function(
 # data = data_ml
 # dict_data = dict_ml
 # cluster_label = "PreVent study ID"
-# stratify_by=c("None")[1] 
+# stratify_by=c("None", # no breakdown
+#               "Mode of birth (EN)", # breakdown by >2 level categorical variable
+#               "On respiratory support with endotracheal tube (EN)___Yes", # tag_col
+#               "Brady_80_v4_dpd_min"
+#               )[2]
 # # --- engineer ---
 # trim_by_label = "Post-menstrual Age"  # reltive time info
 # trim_vec = c(-Inf, Inf) # trim relative time [from, to)
@@ -306,7 +279,7 @@ front_summary_tbl <- function(
 # pctcut_num_labels = c("PeriodicBreathing_v3 duration per day", "ABD_v3 number of events per day")
 # pctcut_num_vec = c(0.1, 99.9)
 # pctcut_num_coerce=TRUE
-# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# filter_tag_labels=c()
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=TRUE

@@ -35,6 +35,7 @@ shinyServer(function(input, output, session) {
                              inline = TRUE)
   })  
   observeEvent(input$setup_strat_by, {
+    setup_trim_ctrl <- input$setup_trim_ctrl
     if(input$setup_strat_by=="None") setup_trim_ctrl <- TRUE
     updateCheckboxInput(inputId = "setup_trim_ctrl", 
                         value = setup_trim_ctrl)
@@ -55,7 +56,8 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregation = input$setup_aggregation,
+      #aggregation = input$setup_summ_aggregation,
+      aggregation = TRUE,
       # --- local ---
       trim_ctrl = input$setup_trim_ctrl,
       stratify_by = input$setup_strat_by
@@ -376,7 +378,7 @@ shinyServer(function(input, output, session) {
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 1. setup ----
   output$dictionary_setup <- renderDataTable(
-    dict_ml[which(dict_ml$type!=""),c("source_file","varname","label","type","unit","mlrole")]
+    dict_ml[which(dict_ml$type!=""),c("source_file","varname","label","type","unit","mlrole", "unique_per_sbj")]
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({

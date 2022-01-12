@@ -36,6 +36,9 @@ sidebar <- dashboardSidebar(
                          selectInput("setup_strat_by",
                                      "Stratified by",
                                      choices = c("None",in.setup_strat_by)),
+                         # checkboxInput("setup_summ_aggregation",
+                         #               "Aggregate",
+                         #               TRUE),
                          checkboxInput("setup_trim_ctrl",
                                        "Trim Control Group",
                                        TRUE)
