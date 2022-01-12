@@ -35,9 +35,9 @@ front_summary_tbl <- function(
   
   # ---- translate front end labels to column names ----
   trim_by_col <- intersect(colnames(data),dict_data$varname[which(dict_data$label==trim_by_label)])
-  num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")] )
-  fct_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit!="tag01")] )
-  tag_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="fct"&dict_data$unit=="tag01")] )
+  num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="num")] )
+  fct_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="fct"&dict_data$unit!="tag01")] )
+  tag_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="fct"&dict_data$unit=="tag01")] )
   cluster_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==cluster_label)] )
   stratify_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==stratify_by)] )
   if(length(stratify_col)>0){
