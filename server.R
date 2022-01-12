@@ -56,8 +56,8 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      #aggregation = input$setup_summ_aggregation,
-      aggregation = TRUE,
+      aggregation = input$setup_summ_aggregation,
+      #aggregation = TRUE,
       # --- local ---
       trim_ctrl = input$setup_trim_ctrl,
       stratify_by = input$setup_strat_by
