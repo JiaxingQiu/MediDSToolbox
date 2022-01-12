@@ -278,6 +278,7 @@ shinyServer(function(input, output, session) {
       cv_nfold = as.numeric(input$ml_cv_nfold),
       na_frac_max=input$ml_na_frac_max, 
       test_data = test_data,
+      joint_col2_label=input$ml_joint_col2_label,
       stratified_cv=input$ml_stratified_cv,
       r_abs=input$ml_r_abs, 
       type=input$ml_type,

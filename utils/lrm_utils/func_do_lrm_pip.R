@@ -76,7 +76,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                          stratified_cv=stratified_cv)
   
   # --- lrm_infer modeling ---
-  print("--- lrm_infer  ---")
+  print("--- lrm_infer ---")
   infer_obj <- NULL
   # within model inference
   infer_obj <- lrm_infer(mdl_obj = model_obj$mdl_obj,
