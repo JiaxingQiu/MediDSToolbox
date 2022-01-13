@@ -63,8 +63,8 @@ flst = list.files( path)
 sapply(c(paste(path,flst,sep="/")), source, .GlobalEnv)
 
 
-dict_org <- read.csv("./data/dict_deid_data_final_with_ih.csv", stringsAsFactors = FALSE)
-data_org <- read.csv("./data/deid_data_final_with_ih.csv", stringsAsFactors = FALSE)  # for test speed
+dict_org <- read.csv("./data/dict_deid_data_final.csv", stringsAsFactors = FALSE)
+data_org <- read.csv("./data/deid_data_final.csv", stringsAsFactors = FALSE)  # for test speed
 dict_org$label <- gsub("_v[0-9]", "", dict_org$label)
 
 # key / cluster name and labels
@@ -90,11 +90,13 @@ tag_var_name <- as.character(dict_org$varname[which(dict_org$type=="fct"&dict_or
 tag_var_label <- as.character(dict_org$label[which(dict_org$varname%in%tag_var_name)])
 
 # decoded factor(>1 levels) var names and labels
-fct_var_name <- as.character(dict_org$varname[which(dict_org$type=="fct"&dict_org$unit!="tag01"&grepl("_factor",dict_org$varname))])
-fct_var_label <- as.character(dict_org$label[which(dict_org$type=="fct"&dict_org$unit!="tag01"&grepl("_factor",dict_org$varname))])
+fct_var_name <- as.character(dict_org$varname[which(dict_org$type=="fct"&dict_org$unit!="tag01"&endsWith(dict_org$varname, "_factor"))])
+fct_var_label <- as.character(dict_org$label[which(dict_org$varname%in%fct_var_name)])
 
 # final data for viz tool
-data_ml <- dummy_cols(data_org, select_columns = fct_var_name, ignore_na=TRUE) %>% 
+#vars2dummy <- intersect(dict_org$varname[which(dict_org$source_file%in%c("drvd", "base", "prnt"))], fct_var_name)
+vars2dummy <- fct_var_name
+data_ml <- dummy_cols(data_org, select_columns = vars2dummy, ignore_na=TRUE) %>% 
   select(-c(contains("_Un",ignore.case=FALSE)&!contains("primary_outcome_factor_Unfavorable",ignore.case=FALSE),
             contains("_No",ignore.case=FALSE)&!contains("_North",ignore.case = FALSE) )) %>% 
   as.data.frame()
@@ -108,9 +110,9 @@ fct2tag_var_source_file <- c()
 for (var in fct2tag_var_name){
   var_dict <- paste0(strsplit(var,"_factor_")[[1]][1],"_factor") # variable name in the dict_org
   var_level <- strsplit(var,"_factor_")[[1]][2]
-  var_label <- paste0(as.character(dict_org$label[dict_org$varname==var_dict]),"___",var_level)
+  var_label <- paste0(as.character(dict_org$label[dict_org$varname==var_dict])," == ",var_level)
   var_unique <- dict_org$unique_per_sbj[dict_org$varname==var_dict]
-  var_source_file <- dict_org$source_file[dict_org$varname==var_dict]
+  var_source_file <- "dummy drvd" #dict_org$source_file[dict_org$varname==var_dict]
   fct2tag_var_label <- c(fct2tag_var_label, var_label)
   fct2tag_var_unique <- c(fct2tag_var_unique, var_unique)
   fct2tag_var_source_file <- c(fct2tag_var_source_file, var_source_file)
@@ -180,8 +182,11 @@ dict_ml <- bind_rows(dict_ml,
 
 data_ml <- assign.dict(data_ml, dict_ml)
 dict_ml <- get.dict(data_ml)
-dict_ml$label_front <- dict_ml$label
-data_ml <- subset_df(data_ml, "40w")
+data_ml <- subset_df(data_ml, "40w", exclude_list=c("1073","1076","2008","2043","3026",
+                                                  "4042","4053","4054","5007","5008",
+                                                  "5014","2139","2140","3050","3059",
+                                                  "3078","3097","3144","5004","5030",
+                                                  "2069"))
 
 # ----- for ml tool ----
 tag_var_name <- union(tag_var_name, fct2tag_var_name)
@@ -242,7 +247,7 @@ dict_ml$varname_dict <- stringr::str_split_fixed(stringr::str_split_fixed(dict_m
 # update dictionary as attributes to dataframe
 data_ml <- assign.dict(data_ml, dict_ml)
 # reverse raw tag columns to factor type
-data_ml <- dict.tag2fct(data_ml, revlist = tag_var_name)
+# data_ml <- dict.tag2fct(data_ml, revlist = tag_var_name)
 
 # derive new variable
 data_ml$baby_weight_lin <- ifelse(data_ml$baby_weight<1000,data_ml$baby_weight, 1000)
@@ -284,17 +289,15 @@ y_num_cols <- dict_ml$varname[which(startsWith(dict_ml$varname, "Period")|
 cluster_cols <- dict_ml$varname[which(dict_ml$mlrole=="cluster")]
 
 # front end naming fashion
-dict_ml$label_front <- dict_ml$label
 # inputs 
-x_num_front_labels <- dict_ml[x_num_cols, "label_front"]
-x_fct_front_labels <- dict_ml[x_fct_cols, "label_front"]
-x_tag_front_labels <- dict_ml[x_tag_cols, "label_front"]
+x_num_front_labels <- dict_ml[x_num_cols, "label"]
+x_fct_front_labels <- dict_ml[x_fct_cols, "label"]
+x_tag_front_labels <- dict_ml[x_tag_cols, "label"]
 # outputs
-y_tag_front_labels <- dict_ml[y_tag_cols, "label_front"]
-y_num_front_labels <- dict_ml[y_num_cols, "label_front"]
+y_tag_front_labels <- dict_ml[y_tag_cols, "label"]
+y_num_front_labels <- dict_ml[y_num_cols, "label"]
 # cluster
-cluster_front_labels <- dict_ml[cluster_cols, "label_front"]
-
-
+cluster_front_labels <- dict_ml[cluster_cols, "label"]
+dict_ml <- merge(dict_ml,dict_org[,c("varname", "from_cols")])
 
 
