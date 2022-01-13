@@ -11,8 +11,6 @@ viz_death_star <- function(
   group_by_col = NULL,
   tag_col = "None", # color red / newly added tags 
   offset_col = NULL, # pma_days
-  na_col=NULL,
-  na_vec=c(),
   default_tag_cols = c(),# default tags that always colored black in a death star plot
   scale= c("Raw","Percentile (2D)", "Percentile (1D)")[1]
 ){
@@ -21,7 +19,7 @@ viz_death_star <- function(
   # heat
   stopifnot(length(y_col)>0)
   data$measure <- as.numeric(as.character(data[,y_col]))
-  y_label <- ifelse(dict_data[y_col,"label_front"]=="",y_col,dict_data[y_col,"label_front"])
+  y_label <- ifelse(dict_data[which(dict_data$varname==y_col),"label"]=="", y_col, dict_data[which(dict_data$varname==y_col),"label"])
   # sort
   stopifnot(length(sort_col)>0)
   data$sort <- as.numeric( as.character( data[,sort_col] ))
@@ -100,20 +98,18 @@ viz_death_star <- function(
   
   # relative time is usually relative to calendar time, but if offset col is not null, set "negative" start point to a time series
   data$init_time <-  data$relative_time - data$offset
-  # na out of boundry values
-  data[which(data[,na_col] > time_unit*na_vec[2] | data[,na_col]<time_unit*na_vec[1]), "measure_final"] <- NA
   
   plot_obj <- ggplot(data, aes(x=relative_time/time_unit, y=new_idx)) +
     geom_tile(aes(fill=measure_final)) + 
-    geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
     scale_fill_gradientn(colours = topo.colors(30)) +
+    geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
     geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='black',size=0.5, shape=4) +
     geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='red',size=0.5, shape=3) +
-    xlab(paste0(ifelse(dict_data[align_col,"label_front"]=="", align_col,dict_data[align_col,"label_front"]), 
+    xlab(paste0(ifelse(dict_data[align_col,"label"]=="", align_col,dict_data[align_col,"label"]), 
                 " by ",
                 ifelse(dict_data[align_col,"unit"]=="", align_col,dict_data[align_col,"unit"]),
                 ifelse(time_unit>1, paste0("/",time_unit),"") ))+
-    ylab('subject/cluster index')+
+    ylab('subject / cluster index')+
     labs(fill=y_label) +
     theme(legend.position = "top" ) 
   

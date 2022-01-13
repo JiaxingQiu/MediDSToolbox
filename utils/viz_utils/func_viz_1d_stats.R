@@ -1,8 +1,8 @@
 viz_1d_stats <- function(
-  data=data_viz,
-  dict_data=dict_viz,
-  y_col="mean_hr",
-  x_col="skewness_spo2",
+  data,
+  dict_data,
+  y_col,
+  x_col,
   cluster_col="id",
   group_by_col="bc_res_mix"
 ){
@@ -128,6 +128,7 @@ viz_1d_stats <- function(
       smooth_method <- "glm"
       smooth_formula <- "y ~ poly(x, 7)"
     }
+    
     p_pct <- ggplot(df[!is.na(df$group),], aes(x=x, y=q_val)) +
       geom_line(aes(linetype=percentile),size=0.5, color='grey') +
       geom_smooth(aes(linetype=percentile, color=percentile),size=0.5, method = smooth_method, formula = smooth_formula) +
@@ -215,9 +216,9 @@ viz_1d_stats <- function(
   # statistics
   p_1stat_set <- list()
   y_lab_string <- y_col
-  try({y_lab_string <- paste0(dict_data[y_col,"label"], "    (", dict_data[y_col,"unit"], ")") },TRUE)
+  try({y_lab_string <- paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]) },TRUE)
   x_lab_string <- x_col
-  try({x_lab_string <- paste0(dict_data[x_col,"label"], "    (", dict_data[x_col,"unit"], ")") },TRUE)
+  try({x_lab_string <- paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]) },TRUE)
   group_by_string <- group_by_col
   i=0
   for (stt in c( "avg", "q25" , "q50", "q75", "q90", "q95")){
@@ -234,24 +235,39 @@ viz_1d_stats <- function(
     i=i+1
     df_summ_grouped_plot <- df_summ_grouped[,c("group", "x", stt, "n_sbj_avail")]
     colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value", "n_sbj_avail")
+    
+    p_1stat_pctall <- p_pct + 
+      theme_bw() +
+      ylab(y_lab_string) +
+      xlab(x_lab_string) +
+      theme(legend.position = "top") +
+      ggtitle(NULL)
+    p_1stat_pctall$data <- p_1stat_pctall$data %>% filter(group =="All") 
+    
     p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value, color=group))+
       geom_smooth(se = FALSE) +
       theme_bw() +
       ylab(y_lab_string) +
       xlab(x_lab_string) +
       scale_color_discrete(name=group_by_string) +
-      ggtitle(title_string)
+      ggtitle(title_string) +
+      ylim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_y[[1]]$range$range) +
+      xlim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_x[[1]]$range$range)
+    
     p_1stat_denom <- ggplot(df_summ_grouped_plot, aes(x=x, y=n_sbj_avail, fill=group))+
       geom_bar(stat="identity", position="stack") +
       theme_bw() +
       ylab("Number of enrolled subjects") +
       xlab(x_lab_string) +
       scale_fill_discrete(name=group_by_string) + 
-      ggtitle("Data Availability")
+      ggtitle("Data Availability") 
     
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
       x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
+      p_1stat_pctall <- p_1stat_pctall + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
+                                                            breaks = x_breaks,
+                                                            labels = x_labels)
       p_1stat <- p_1stat + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                           breaks = x_breaks,
                                           labels = x_labels)
@@ -259,11 +275,18 @@ viz_1d_stats <- function(
                                               breaks = x_breaks,
                                               labels = x_labels)
     }
+    
     p_1stat_set[[i]] <- ggpubr::ggarrange(p_1stat, 
                                           p_1stat_denom, 
                                           nrow=1, 
-                                          common.legend = TRUE, 
+                                          common.legend = TRUE,
                                           legend = "top")
+    p_1stat_set[[i]] <-  ggpubr::ggarrange(p_1stat_pctall,
+                                           p_1stat_set[[i]],
+                                           nrow=1,
+                                           widths = c(1,2),
+                                           common.legend = FALSE,
+                                           legend = "top")
     
   }
   names(p_1stat_set) <- c( "avg", "q25" , "q50", "q75", "q90", "q95")

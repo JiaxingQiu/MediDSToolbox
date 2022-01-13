@@ -3,8 +3,8 @@ front_viz_death_star <- function(
   data,
   dict_data,
   # setup
-  time_unit = 1,
   trim_by_label,
+  time_unit = 1,
   trim_vec = c(-Inf, Inf),
   pctcut_num_labels = c(), # cutoff by percentile of one or more numeric variable
   pctcut_num_vec = c(0.1, 99.9),
@@ -13,7 +13,7 @@ front_viz_death_star <- function(
   cluster_label = "PreVent study ID", # tag columns
   # death star
   # user control
-  y_label = "ABD_v3 duration proportion per day", # num or fct(tag) y / response variable
+  y_label = "IH (SPO2<85%) >=50s event counts per day", # num or fct(tag) y / response variable
   sort_by_label = "Post-menstrual Age", 
   align_by_label = "Chronological Age", 
   group_by_label = "None", #"None" # fct
@@ -21,8 +21,6 @@ front_viz_death_star <- function(
   scale = c("Raw","Percentile (2D)", "Percentile (1D)")[1],
   # developer control
   offset_label = "Post-menstrual Age", 
-  na_label = "Post-menstrual Age", # set any value outside the range of this column NA
-  na_vec = c(22, 40), 
   default_tag_labels = c("Date of birth tag", "Date of death tag")
 ){
   
@@ -31,21 +29,19 @@ front_viz_death_star <- function(
   dict_data <- dict_data[which(dict_data$type!=""),]
   
   # find columns names from input labels
-  trim_by_col <- rownames(dict_data[which(dict_data$label_front==trim_by_label), ])
-  pctcut_num_cols <- rownames(dict_data[which(dict_data$label_front%in%pctcut_num_labels), ])
-  filter_tag_cols <- rownames(dict_data[which(dict_data$label_front%in%filter_tag_labels & dict_data$unit=="tag01"), ])
+  trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
+  pctcut_num_cols <-dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
+  filter_tag_cols <-dict_data$varname[which(dict_data$label%in%filter_tag_labels & dict_data$unit=="tag01")]
   
-  y_col <- rownames(dict_data[which(dict_data$label_front==y_label),])
-  sort_col <- rownames(dict_data[which(dict_data$label_front==sort_by_label),])
-  align_col <- rownames(dict_data[which(dict_data$label_front==align_by_label),])
-  cluster_col <- rownames(dict_data[which(dict_data$label_front==cluster_label),])
-  group_by_col <- rownames(dict_data[which(dict_data$label_front==group_by_label),])
-  tag_col <- rownames(dict_data[which(dict_data$label_front==tag_label),])
-  offset_col <- rownames(dict_data[which(dict_data$label_front==offset_label),])
-  na_col <- rownames(dict_data[which(dict_data$label_front==na_label),])
-  default_tag_cols <- rownames(dict_data[which(dict_data$label_front%in%default_tag_labels & dict_data$unit=="tag01"), ])
+  y_col <-dict_data$varname[which(dict_data$label==y_label)]
+  sort_col <-dict_data$varname[which(dict_data$label==sort_by_label)]
+  align_col <-dict_data$varname[which(dict_data$label==align_by_label)]
+  cluster_col <-dict_data$varname[which(dict_data$label==cluster_label)]
+  group_by_col <-dict_data$varname[which(dict_data$label==group_by_label)]
+  tag_col <-dict_data$varname[which(dict_data$label==tag_label)]
+  offset_col <-dict_data$varname[which(dict_data$label==offset_label)]
+  default_tag_cols <-dict_data$varname[which(dict_data$label%in%default_tag_labels & dict_data$unit=="tag01")]
   
-  na_vec <- as.numeric(na_vec)
   trim_vec <- as.numeric(trim_vec)
   # trim data by time conditions
   data <- data %>% filter(data[,trim_by_col]>=as.numeric(trim_vec[1])*time_unit & data[,trim_by_col]<as.numeric(trim_vec[2])*time_unit ) %>% as.data.frame()
@@ -81,10 +77,35 @@ front_viz_death_star <- function(
     group_by_col = group_by_col,
     tag_col = tag_col, 
     offset_col = offset_col,
-    na_col=na_col,
-    na_vec=na_vec,
     default_tag_cols= default_tag_cols,# default tags that always colored black in a death star plot
     scale=scale)
   
   return(plot_obj)
 }
+
+
+# ############################# not run ###############################
+# # data
+# data = data_ml
+# dict_data = dict_ml
+# # setup
+# trim_by_label = "Post-menstrual Age"
+# # setup
+# time_unit = 1
+# trim_vec = c(-Inf, Inf)
+# pctcut_num_labels = c() # cutoff by percentile of one or more numeric variable
+# pctcut_num_vec = c(0.1, 99.9)
+# pctcut_num_coerce = TRUE
+# filter_tag_labels = c()
+# cluster_label = "PreVent study ID" # tag columns
+# # death star
+# # user control
+# y_label = "IH (SPO2<85%) >=50s event counts per day" # num or fct(tag) y / response variable
+# sort_by_label = "Post-menstrual Age"
+# align_by_label = "Chronological Age"
+# group_by_label = "None" #"None" # fct
+# tag_label = "None"
+# scale = c("Raw","Percentile (2D)", "Percentile (1D)")[1]
+# # developer control
+# offset_label = "Post-menstrual Age"
+# default_tag_labels = c("Date of birth tag", "Date of death tag")
