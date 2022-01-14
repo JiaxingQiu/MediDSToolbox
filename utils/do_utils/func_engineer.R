@@ -119,8 +119,8 @@ engineer <- function(
         }
       }
       df_tag <- data %>% group_by(data[,cluster_col]) %>% 
-        summarise_at(vars(all_of(tag_cols)), ~max(.,0, na.rm = TRUE)) %>%
-        mutate_at(vars(all_of(tag_cols)), function(x) ifelse(is.infinite(x), 0, x)) %>%
+        summarise_at(vars(all_of(tag_cols)), ~max(.)) %>%
+        mutate_at(vars(all_of(tag_cols)), function(x) ifelse(is.infinite(x), NA, x)) %>%
         as.data.frame()
       colnames(df_tag) <- c(cluster_col, tag_cols)
       df_cat <- data %>% group_by(data[,cluster_col]) %>% 

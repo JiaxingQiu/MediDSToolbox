@@ -382,7 +382,7 @@ shinyServer(function(input, output, session) {
   # Summary Table ----
   output$summary_table <- renderDataTable({
     summ_obj <- summReport()
-    summ_obj$summ_df
+    summ_obj$summ_df_reformat
   })
   output$download_summary_table <- downloadHandler(
     filename = function() {
@@ -390,7 +390,7 @@ shinyServer(function(input, output, session) {
     },
     content = function(file) {
       summ_obj <- summReport()
-      write.csv(summ_obj$summ_df, file, row.names = FALSE)
+      write.csv(summ_obj$summ_df_reformat, file, row.names = TRUE)
     }
   )
   output$num_detail_table <- renderDataTable({
@@ -423,12 +423,12 @@ shinyServer(function(input, output, session) {
     summ_obj <- summReport()
     summ_obj$rsps_df
   })
-  output$na_plot <- renderPlot({
-    summ_obj <- summReport()
-    if(!is.null(summ_obj$na_obj)){
-      plot(summ_obj$na_obj)
-    } 
-  })
+  # output$na_plot <- renderPlot({
+  #   summ_obj <- summReport()
+  #   if(!is.null(summ_obj$na_obj)){
+  #     plot(summ_obj$na_obj)
+  #   } 
+  # })
   # ---- 2. eda ----
   output$eda_1d_p_violin <- renderPlot({
     eda_1d_obj <- stats1dViz()
@@ -704,7 +704,7 @@ shinyServer(function(input, output, session) {
   })
   output$ml_summary_table <- renderDataTable({
     XclusReports <- XclusReports()
-    XclusReports$ml_summ_obj$summ_df
+    XclusReports$ml_summ_obj$summ_df_reformat
   })
   output$ml_na_plot <- renderPlot({
     XclusReports <- XclusReports()

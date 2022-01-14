@@ -24,6 +24,7 @@ front_summary_tbl <- function(
   fct_detail_df <- NULL
   rsps_df <- NULL
   na_obj <- NULL
+  summ_df_reformat <- NULL
   
   tryCatch({
     data <- assign.dict(data, dict_data, overwrite = TRUE)
@@ -38,6 +39,7 @@ front_summary_tbl <- function(
   num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="num")] )
   fct_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="fct"&dict_data$unit!="tag01")] )
   tag_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="fct"&dict_data$unit=="tag01")] )
+  fct_cols <- union(fct_cols, tag_cols)
   cluster_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==cluster_label)] )
   stratify_col <- intersect(colnames(data), dict_data$varname[which(dict_data$label==stratify_by)] )
   if(length(stratify_col)>0){
@@ -163,21 +165,24 @@ front_summary_tbl <- function(
     stratify_label <- ifelse( dict_data[which(dict_data$varname==stratify_col),"label"] == "", stratify_col, dict_data[which(dict_data$varname==stratify_col),"label"]) 
     colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))] <- paste0(stratify_label," = ",colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))]) 
     
-    # numeric and factor predictor details
-    num_detail_df <- tbl_obj$num_detail_df
-    fct_detail_df <- tbl_obj$fct_detail_df
     
     # factor response details
+    data$cluster_col <- data[,cluster_col]
+    data$trim_by_col <- data[,trim_by_col]
+    rsps_df <- data %>% summarise(
+      n_cluster = n_distinct(cluster_col),
+      n_episode = sum( diff(trim_by_col[!is.na(trim_by_col)])<0 ), # number of episodes counted by jump in relative time 
+      n_row = n() ) %>% as.data.frame()
+    rsps_df$y <- "Overall"
     if(length(stratify_col)>0){
+      data$y <- as.character( data[, stratify_col] )
       if(dict_data$type[which(dict_data$varname==stratify_col)]=="fct"){
-        data$y <- data[, stratify_col]
-        data$cluster_col <- data[,cluster_col]
-        data$trim_by_col <- data[,trim_by_col]
-        rsps_df <- data %>% group_by(y) %>% summarise(
+        rsps_df_strat <- data %>% group_by(y) %>% summarise(
           n_cluster = n_distinct(cluster_col),
           n_episode = sum( diff(trim_by_col[!is.na(trim_by_col)])<0 ), # number of episodes counted by jump in relative time 
           n_row = n()
         ) %>% as.data.frame()
+        rsps_df <- bind_rows(rsps_df, rsps_df_strat )
       }
     }
   },error=function(e){
@@ -186,7 +191,7 @@ front_summary_tbl <- function(
   
   # --- reformat num_detail_df ---
   tryCatch({
-    df <- num_detail_df 
+    df <- tbl_obj$num_detail_df 
     df$N <- df$n-df$miss
     df$mean_sd <- paste0(round(df$mean,2), " (", round(df$sd,2), ")")
     df$range <- paste0(round(df$median,2), " [",round(df$p25,2),", ",round(df$p75,2),"] (",round(df$min,2),", ",round(df$max,2),")")
@@ -204,10 +209,9 @@ front_summary_tbl <- function(
     print(e)
   })
   
-  
   # --- reformat fct_detail_df ---
   tryCatch({
-    df <- fct_detail_df
+    df <- tbl_obj$fct_detail_df
     df$varname <- gsub("[.][0-9]$", "", df$varname)
     for (att in c("label", "unit", "source_file", "unique_per_sbj")){
       if (!att %in% colnames(dict_data)) next
@@ -225,12 +229,55 @@ front_summary_tbl <- function(
     df$n_freq <- as.numeric(as.character(df$freq))
     df$p <- as.numeric(as.character(df$freq))/df$N
     df$summary_string <- paste0(round(df$p,2), " (", df$n_freq, "/",df$N,")")
-    fct_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "level", "N", "n_freq", "p","varname", "unique_per_sbj")]
+    df$label_org <- df$label
+    df$label <- paste0(df$label_org, " = ", df$level)
+    fct_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "N", "n_freq", "p","varname", "unique_per_sbj")]
   },error=function(e){
     print("--- Error in fct_detail_df --- ")
     print(e)
   })
   
+  # reformat total summary table 
+  fct_detail_df_reformat <- NULL
+  for (g in unique(fct_detail_df$group) ){
+    df_chunk <- fct_detail_df[which(fct_detail_df$group==g), c("label", "summary_string")]
+    colnames(df_chunk) <- c("label", g)
+    if(is.null(fct_detail_df_reformat)) {
+      fct_detail_df_reformat <- df_chunk
+    }else{
+      fct_detail_df_reformat <- merge(fct_detail_df_reformat, df_chunk)
+    }
+  }
+  num_detail_df_reformat <- NULL
+  for (g in unique(fct_detail_df$group) ){
+    df_chunk <- num_detail_df[which(num_detail_df$group==g), c("label", "summary_string")]
+    colnames(df_chunk) <- c("label", g)
+    if(is.null(num_detail_df_reformat)) {
+      num_detail_df_reformat <- df_chunk
+    }else{
+      num_detail_df_reformat <- merge(num_detail_df_reformat, df_chunk)
+    }
+  }
+  
+  summ_df_reformat <- bind_rows(num_detail_df_reformat, fct_detail_df_reformat)
+  summ_df_reformat <- summ_df_reformat[, union("label",colnames(summ_df_reformat))]
+  rsps_reformat <- NULL
+  for(col in setdiff(colnames(summ_df_reformat), "label") ) {
+    rsps_reformat <- as.data.frame(t(rsps_df))
+    colnames(rsps_reformat) <- rsps_reformat["y",]
+    rsps_reformat$label <- rownames(rsps_reformat)
+    rsps_reformat <- rsps_reformat[setdiff(rownames(rsps_reformat), "y"),]
+    rownames( rsps_reformat ) <- 1:nrow(rsps_reformat)
+    rsps_reformat <- rsps_reformat[,union("label",colnames(rsps_reformat))]
+  }
+  #summ_df_reformat <- bind_rows(rsps_reformat, summ_df_reformat)
+  # reformat column names of summary table
+  for (col in setdiff(colnames(summ_df_reformat), "label") ){
+    colname_new <- NULL
+    colname_new <- paste0(col,"    N=", as.numeric(rsps_reformat[which(rsps_reformat$label=="n_cluster"), col]) )
+    colname_new <- paste0(colname_new, "; NROW=", as.numeric(rsps_reformat[which(rsps_reformat$label=="n_row"),col]) )
+    colnames(summ_df_reformat)[which(colnames(summ_df_reformat)==col)] <- colname_new
+  }
   
   # --- NA plot ---
   for (fct_col in fct_cols){
@@ -249,6 +296,7 @@ front_summary_tbl <- function(
   })
   
   return(list("summ_df" = res_df, 
+              "summ_df_reformat" = summ_df_reformat,
               "num_detail_df" = num_detail_df,
               "fct_detail_df" = fct_detail_df,
               "rsps_df" = rsps_df,
@@ -284,4 +332,4 @@ front_summary_tbl <- function(
 # impute_per_cluster=FALSE
 # winsorizing=TRUE
 # aggregation=TRUE
-
+# 

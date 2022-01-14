@@ -471,7 +471,9 @@ body <- dashboardBody(
             tabsetPanel(type = "tabs",
                         tabPanel("Summary",
                                  downloadButton("download_summary_table","csv"),
-                                 plotOutput("na_plot", width ="2000px", height = "500px"),
+                                 #plotOutput("na_plot", width ="2000px", height = "500px"),
+                                 tags$p(tags$b("Numeric ---")," N= ; Mean(sd);  Median [25th, 75th] (min, max)"),
+                                 tags$p(tags$b("Factor ---"), " % (n/N), where n is count of data belong to a category, N is count of non-missing data"),
                                  dataTableOutput("summary_table")
                         ),
                         tabPanel("Numeric",
