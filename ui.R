@@ -545,7 +545,7 @@ body <- dashboardBody(
             h3("Exploratory Data Analysis -- Death Star"),
             fluidRow(column(1,actionButton("eda_star_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_death_star",
-                                height = "700px",
+                                height = "800px",
                                 dblclick = "plot_death_star_dblclick",
                                 brush = brushOpts(
                                   id = "plot_death_star_brush",

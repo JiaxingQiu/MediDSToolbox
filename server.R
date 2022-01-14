@@ -377,7 +377,7 @@ shinyServer(function(input, output, session) {
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 1. setup ----
   output$dictionary_setup <- renderDataTable(
-    dict_ml[which(dict_ml$type!=""),c("source_file","varname","label","type","unit","unique_per_sbj","from_cols")]
+    dict_ml[which(dict_ml$type!=""),c("source_file","varname","label","type","unit","unique_per_sbj")]
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({
@@ -552,7 +552,7 @@ shinyServer(function(input, output, session) {
   # ---- 3. supervised ml ----
   # setup ----
   output$dictionary_table_ml <- renderDataTable(
-    dict_ml[which(dict_ml$mlrole!=""),c("label","source_file","varname","mlrole","type","unit","from_cols")]
+    dict_ml[which(dict_ml$mlrole!=""),c("label","source_file","varname","mlrole","type","unit")]
   )
   
   # Univariate Heatmap ----
