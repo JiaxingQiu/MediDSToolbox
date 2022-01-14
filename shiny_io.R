@@ -37,8 +37,8 @@ in.eda_y_label_allu <- dict_ml$label[which(dict_ml$type=="num")]
 in.eda_tag_labels_allu <- dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")]
 
 # ---- 2. supervised ml ----
-in.ml_y_label <- c(y_tag_front_labels, y_num_front_labels, "Site (EN)___Miami")
-in.ml_y_label.selected <- "Primary outcome (EN)___Unfavorable"
+in.ml_y_label <- c(y_tag_front_labels, y_num_front_labels, "Site (EN) == Miami")
+in.ml_y_label.selected <- "Primary outcome (EN) == Unfavorable"
 in.ml_trim_ctrl <- TRUE
 
 in.ml_num_adjust_label <- c("Gestational Age","None")
@@ -56,10 +56,10 @@ in.ml_linear_num_labels.selected <- c("Gestational Age")
 in.ml_fct_labels_mdl.choices <- x_fct_front_labels
 in.ml_fct_labels_mdl.selected <- c("Site (EN)")
 in.ml_tag_labels_mdl.choices <- x_tag_front_labels
-in.ml_tag_labels_mdl.selected <- c("Baby Gender (EN)___Female",
-                                   "Resus at birth: CPAP (EN)___Yes",
-                                   "Maternal race (EN)___Black_African_American",
-                                   "Maternal ethnicity (EN)___Hispanic_or_Latino")
+in.ml_tag_labels_mdl.selected <- c("Baby Gender (EN) == Female",
+                                   "Resus at birth: CPAP (EN) == Yes",
+                                   "Maternal race (EN) == Black_African_American",
+                                   "Maternal ethnicity (EN) == Hispanic_or_Latino")
 in.ml_stratified_cv <- TRUE
 in.ml_fix_knots <- TRUE
 in.ml_joint_col2_label <- c("None","Gestational Age") 

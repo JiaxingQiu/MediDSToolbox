@@ -149,7 +149,26 @@ shinyServer(function(input, output, session) {
   })
   
   # ---- 3. supervised ml ----
-  
+  X2listen <- reactive({
+    list(input$ml_linear_num_labels,
+         input$ml_nonlin_rcs3_labels,
+         input$ml_nonlin_rcs4_labels,
+         input$ml_nonlin_rcs5_labels,
+         input$ml_fct_labels_mdl,
+         input$ml_tag_labels_mdl)
+  })
+  observeEvent(X2listen(), {
+    X_labels <- unique(c(
+      input$ml_linear_num_labels,
+      input$ml_nonlin_rcs3_labels,
+      input$ml_nonlin_rcs4_labels,
+      input$ml_nonlin_rcs5_labels,
+      input$ml_fct_labels_mdl,
+      input$ml_tag_labels_mdl
+    ))
+    updateSelectInput(inputId = "ml_joint_col2_label", 
+                      choices = union("None", X_labels))
+  })
   uniHeatmap <- eventReactive(input$ml_uni_go, {
     front_uni_heatmap(
       data=data_ml,

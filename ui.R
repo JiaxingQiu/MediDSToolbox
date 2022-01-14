@@ -244,7 +244,7 @@ sidebar <- dashboardSidebar(
                                    accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
                          selectInput("ml_joint_col2_label",
                                      "Joint effect with",
-                                     choices = in.ml_joint_col2_label)
+                                     choices = c("None"))
         )),
     div(id = 'sidebar_ml_timely',
         conditionalPanel("input.sidebar == 'ml_timely'",
