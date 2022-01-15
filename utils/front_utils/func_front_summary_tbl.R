@@ -3,7 +3,7 @@ front_summary_tbl <- function(
   dict_data, # dictionary of dataset
   cluster_label, # key / cluster column label
   # --- engineer ---
-  trim_by_label, # relative time trimming column label
+  trim_by_label= NULL, # relative time trimming column label
   trim_vec=c(-Inf, Inf), 
   time_unit=1,
   pctcut_num_labels=c(),
@@ -258,18 +258,20 @@ front_summary_tbl <- function(
       num_detail_df_reformat <- merge(num_detail_df_reformat, df_chunk)
     }
   }
-  
+  # combine numeric and factor reformated details in one table
   summ_df_reformat <- bind_rows(num_detail_df_reformat, fct_detail_df_reformat)
   summ_df_reformat <- summ_df_reformat[, union("label",colnames(summ_df_reformat))]
+  
+  # reformat response table
   rsps_reformat <- NULL
-  for(col in setdiff(colnames(summ_df_reformat), "label") ) {
-    rsps_reformat <- as.data.frame(t(rsps_df))
-    colnames(rsps_reformat) <- rsps_reformat["y",]
-    rsps_reformat$label <- rownames(rsps_reformat)
-    rsps_reformat <- rsps_reformat[setdiff(rownames(rsps_reformat), "y"),]
-    rownames( rsps_reformat ) <- 1:nrow(rsps_reformat)
-    rsps_reformat <- rsps_reformat[,union("label",colnames(rsps_reformat))]
-  }
+  rsps_reformat <- as.data.frame(t(rsps_df))
+  rsps_reformat["y",][which(is.na(rsps_reformat["y",]))] <- "NotAvailable"
+  colnames(rsps_reformat) <- as.character( rsps_reformat["y",] )
+  rsps_reformat$label <- rownames(rsps_reformat)
+  rsps_reformat <- rsps_reformat[setdiff(rownames(rsps_reformat), "y"),]
+  rownames( rsps_reformat ) <- 1:nrow(rsps_reformat)
+  rsps_reformat <- rsps_reformat[,union("label",colnames(rsps_reformat))]
+
   #summ_df_reformat <- bind_rows(rsps_reformat, summ_df_reformat)
   # reformat column names of summary table
   for (col in setdiff(colnames(summ_df_reformat), "label") ){
