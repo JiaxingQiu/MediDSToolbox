@@ -263,40 +263,38 @@ viz_1d_stats <- function(
                                                             breaks = x_breaks,
                                                             labels = x_labels)
       }
-      p_1stat_pctall <- NULL
-      if(!is.null(p_pct)){
-        p_1stat_pctall <- p_pct + 
-          theme_bw() +
-          ylab(y_lab_string) +
-          xlab(x_lab_string) +
-          theme(legend.position = "top") +
-          ggtitle(NULL)
-        p_1stat_pctall$data <- p_1stat_pctall$data %>% filter(group =="All") 
-        if(grepl("_days",x_col)){
-          p_1stat_pctall <- p_1stat_pctall + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
-                                                                breaks = x_breaks,
-                                                                labels = x_labels)
-        }
-        p_1stat <- p_1stat + 
-          ylim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_y[[1]]$range$range) +
-          xlim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_x[[1]]$range$range)
-        
-        
-      }
+      # p_1stat_pctall <- NULL
+      # if(!is.null(p_pct)){
+      #   p_1stat_pctall <- p_pct + 
+      #     theme_bw() +
+      #     ylab(y_lab_string) +
+      #     xlab(x_lab_string) +
+      #     theme(legend.position = "top") +
+      #     ggtitle(NULL)
+      #   p_1stat_pctall$data <- p_1stat_pctall$data %>% filter(group =="All") 
+      #   if(grepl("_days",x_col)){
+      #     p_1stat_pctall <- p_1stat_pctall + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
+      #                                                           breaks = x_breaks,
+      #                                                           labels = x_labels)
+      #   }
+      #   p_1stat <- p_1stat + 
+      #     ylim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_y[[1]]$range$range) +
+      #     xlim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_x[[1]]$range$range)
+      # }
       
       p_1stat_set[[i]] <- ggpubr::ggarrange(p_1stat, 
                                             p_1stat_denom, 
                                             nrow=1, 
                                             common.legend = TRUE,
                                             legend = "top")
-      if(!is.null(p_1stat_pctall)){
-        p_1stat_set[[i]] <-  ggpubr::ggarrange(p_1stat_pctall,
-                                             p_1stat_set[[i]],
-                                             nrow=1,
-                                             widths = c(1,2),
-                                             common.legend = FALSE,
-                                             legend = "top")
-      }
+      # if(!is.null(p_1stat_pctall)){
+      #   p_1stat_set[[i]] <-  ggpubr::ggarrange(p_1stat_pctall,
+      #                                        p_1stat_set[[i]],
+      #                                        nrow=1,
+      #                                        widths = c(1,2),
+      #                                        common.legend = FALSE,
+      #                                        legend = "top")
+      # }
       
     }
     names(p_1stat_set) <- c( "avg", "q25" , "q50", "q75", "q90", "q95")
