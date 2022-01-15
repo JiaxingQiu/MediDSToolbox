@@ -129,8 +129,11 @@ front_summary_tbl <- function(
   }
   data_engineered <- assign.dict(data, dict_data)
   
+  
+  
+  
+  # ---- summary table ----
   data <- data_engineered
-  # --- summary table ---
   # engineer stratify_col
   if(length(stratify_col)>0){
     if (dict_data$type[which(dict_data$varname==stratify_col)]=="num"){
@@ -146,7 +149,6 @@ front_summary_tbl <- function(
     }
   }
   tryCatch({
-    
     # summary table stratefied by response
     tbl_obj <- do_summ_tbl(data=data, 
                         dict_data=get.dict(data),
@@ -165,8 +167,7 @@ front_summary_tbl <- function(
     stratify_label <- ifelse( dict_data[which(dict_data$varname==stratify_col),"label"] == "", stratify_col, dict_data[which(dict_data$varname==stratify_col),"label"]) 
     colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))] <- paste0(stratify_label," = ",colnames(res_df)[which(!colnames(res_df)%in%c("rowname","Overall"))]) 
     
-    
-    # factor response details
+    #  response 
     data$cluster_col <- data[,cluster_col]
     data$trim_by_col <- data[,trim_by_col]
     rsps_df <- data %>% summarise(
@@ -189,7 +190,7 @@ front_summary_tbl <- function(
     print(e)
   })
   
-  # --- reformat num_detail_df ---
+  # ---- create num_detail_df ----
   tryCatch({
     df <- tbl_obj$num_detail_df 
     df$N <- df$n-df$miss
@@ -209,7 +210,7 @@ front_summary_tbl <- function(
     print(e)
   })
   
-  # --- reformat fct_detail_df ---
+  # ---- create fct_detail_df ----
   tryCatch({
     df <- tbl_obj$fct_detail_df
     df$varname <- gsub("[.][0-9]$", "", df$varname)
@@ -237,28 +238,42 @@ front_summary_tbl <- function(
     print(e)
   })
   
-  # reformat total summary table 
+  # ---- reformat fct_detail_df_reformat ----
   fct_detail_df_reformat <- NULL
-  for (g in unique(fct_detail_df$group) ){
-    df_chunk <- fct_detail_df[which(fct_detail_df$group==g), c("label", "summary_string")]
-    colnames(df_chunk) <- c("label", g)
-    if(is.null(fct_detail_df_reformat)) {
-      fct_detail_df_reformat <- df_chunk
-    }else{
-      fct_detail_df_reformat <- merge(fct_detail_df_reformat, df_chunk)
+  tryCatch({
+    if(!is.null(fct_detail_df)){
+      for (g in unique(fct_detail_df$group) ){
+        df_chunk <- fct_detail_df[which(fct_detail_df$group==g), c("label", "summary_string")]
+        colnames(df_chunk) <- c("label", g)
+        if(is.null(fct_detail_df_reformat)) {
+          fct_detail_df_reformat <- df_chunk
+        }else{
+          fct_detail_df_reformat <- merge(fct_detail_df_reformat, df_chunk)
+        }
+      }
     }
-  }
+  },error=function(e){
+    print("Error! deriving fct_detail_df_reformat ")
+  })
+ 
+  # ---- reformat num_detail_df_reformat ----
   num_detail_df_reformat <- NULL
-  for (g in unique(fct_detail_df$group) ){
-    df_chunk <- num_detail_df[which(num_detail_df$group==g), c("label", "summary_string")]
-    colnames(df_chunk) <- c("label", g)
-    if(is.null(num_detail_df_reformat)) {
-      num_detail_df_reformat <- df_chunk
-    }else{
-      num_detail_df_reformat <- merge(num_detail_df_reformat, df_chunk)
+  tryCatch({
+    if(!is.null(num_detail_df)){
+      for (g in unique(num_detail_df$group) ){
+        df_chunk <- num_detail_df[which(num_detail_df$group==g), c("label", "summary_string")]
+        colnames(df_chunk) <- c("label", g)
+        if(is.null(num_detail_df_reformat)) {
+          num_detail_df_reformat <- df_chunk
+        }else{
+          num_detail_df_reformat <- merge(num_detail_df_reformat, df_chunk)
+        }
+      }
     }
-  }
-  # combine numeric and factor reformated details in one table
+  })
+  
+  # ---- combine numeric + factor + response in one  ----
+  summ_df_reformat <- NULL
   summ_df_reformat <- bind_rows(num_detail_df_reformat, fct_detail_df_reformat)
   summ_df_reformat <- summ_df_reformat[, union("label",colnames(summ_df_reformat))]
   
