@@ -14,7 +14,7 @@ front_viz_1d_stats <- function(
   filter_tag_labels = c(), # tag columns
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
-  winsorizing=TRUE,
+  winsorizing=FALSE,
   aggregation=FALSE,
   # distributions
   group_by_label="None" # fct
