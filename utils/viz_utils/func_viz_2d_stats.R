@@ -28,17 +28,17 @@ viz_2d_stats<- function(
   p_raw <- ggplot(data=df_plot, aes(x=df_plot[,x_col1], y=df_plot[,x_col2]))+
     geom_tile(aes(fill=y_fit)) + 
     scale_fill_gradientn(colours = topo.colors(5)) +
-    xlab(paste0(dict_data[x_col1,"label_front"], "    ", dict_data[x_col1,"unit"]))+
-    ylab(paste0(dict_data[x_col2,"label_front"], "    ", dict_data[x_col2,"unit"]))+
-    labs(fill=paste0("Estimated ",dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+    xlab(paste0(dict_data[x_col1,"label"], "    ", dict_data[x_col1,"unit"]))+
+    ylab(paste0(dict_data[x_col2,"label"], "    ", dict_data[x_col2,"unit"]))+
+    labs(fill=paste0("Estimated ",dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
     theme(legend.position = "top" ) 
   
   p_pct <- ggplot(data=df_plot, aes(x=df_plot[,x_col1], y=df_plot[,x_col2]))+
     geom_tile(aes(fill=est_pctl(y_fit) )) + 
     scale_fill_gradientn(colours = topo.colors(5)) +
-    xlab(paste0(dict_data[x_col1,"label_front"], "    ", dict_data[x_col1,"unit"]))+
-    ylab(paste0(dict_data[x_col2,"label_front"], "    ", dict_data[x_col2,"unit"]))+
-    labs(fill=paste0("Percentile of estimated ",dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+    xlab(paste0(dict_data[x_col1,"label"], "    ", dict_data[x_col1,"unit"]))+
+    ylab(paste0(dict_data[x_col2,"label"], "    ", dict_data[x_col2,"unit"]))+
+    labs(fill=paste0("Percentile of estimated ",dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
     theme(legend.position = "top" ) 
   
    
@@ -50,26 +50,26 @@ viz_2d_stats<- function(
     p_raw <- ggplot(data=df_plot, aes(x=df_plot[,x_col1], y=df_plot[,x_col2]))+
       geom_tile(aes(fill=y_fit)) + 
       scale_fill_gradientn(colours = topo.colors(5)) +
-      xlab(paste0(dict_data[x_col1,"label_front"], "    ", dict_data[x_col1,"unit"]))+
-      ylab(paste0(dict_data[x_col2,"label_front"], "    ", dict_data[x_col2,"unit"]))+
-      labs(fill=paste0("Estimated ",dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+      xlab(paste0(dict_data[x_col1,"label"], "    ", dict_data[x_col1,"unit"]))+
+      ylab(paste0(dict_data[x_col2,"label"], "    ", dict_data[x_col2,"unit"]))+
+      labs(fill=paste0("Estimated ",dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       theme(legend.position = "top" ) 
     
     p_pct <- ggplot(data=df_plot, aes(x=df_plot[,x_col1], y=df_plot[,x_col2]))+
       geom_tile(aes(fill=est_pctl(y_fit) )) + 
       scale_fill_gradientn(colours = topo.colors(5)) +
-      xlab(paste0(dict_data[x_col1,"label_front"], "    ", dict_data[x_col1,"unit"]))+
-      ylab(paste0(dict_data[x_col2,"label_front"], "    ", dict_data[x_col2,"unit"]))+
-      labs(fill=paste0("Percentile of estimated ",dict_data[y_col,"label_front"], "    ", dict_data[y_col,"unit"]))+
+      xlab(paste0(dict_data[x_col1,"label"], "    ", dict_data[x_col1,"unit"]))+
+      ylab(paste0(dict_data[x_col2,"label"], "    ", dict_data[x_col2,"unit"]))+
+      labs(fill=paste0("Percentile of estimated ",dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       theme(legend.position = "top" ) 
   }
   if (grepl("_days", x_col1)) {
     x_breaks <- seq(min(df_plot[,x_col1], na.rm=TRUE), max(df_plot[,x_col1], na.rm = TRUE),7)
     x_labels <- seq(round(min(df_plot[,x_col1], na.rm=TRUE)/7), round(max(df_plot[,x_col1], na.rm = TRUE)/7),1)[1:length(x_breaks)]
-    p_raw <- p_raw + scale_x_continuous(name=paste0(dict_data[x_col1,"label_front"], "    (week)"),
+    p_raw <- p_raw + scale_x_continuous(name=paste0(dict_data[x_col1,"label"], "    (week)"),
                                         breaks = x_breaks,
                                         labels = x_labels)
-    p_pct <- p_pct + scale_x_continuous(name=paste0(dict_data[x_col1,"label_front"], "    (week)"),
+    p_pct <- p_pct + scale_x_continuous(name=paste0(dict_data[x_col1,"label"], "    (week)"),
                                         breaks = x_breaks,
                                         labels = x_labels)
   }
@@ -77,10 +77,10 @@ viz_2d_stats<- function(
   if (grepl("_days", x_col2)) {
     y_breaks <- seq(min(df_plot[,x_col2], na.rm=TRUE), max(df_plot[,x_col2], na.rm = TRUE),7)
     y_labels <- seq(round(min(df_plot[,x_col2], na.rm=TRUE)/7), round(max(df_plot[,x_col2], na.rm = TRUE)/7),1)[1:length(y_breaks)]
-    p_raw <- p_raw + scale_y_continuous(name=paste0(dict_data[x_col2,"label_front"], "    (week)"),
+    p_raw <- p_raw + scale_y_continuous(name=paste0(dict_data[x_col2,"label"], "    (week)"),
                                         breaks = y_breaks,
                                         labels = y_labels)
-    p_pct <- p_pct + scale_y_continuous(name=paste0(dict_data[x_col2,"label_front"], "    (week)"),
+    p_pct <- p_pct + scale_y_continuous(name=paste0(dict_data[x_col2,"label"], "    (week)"),
                                         breaks = y_breaks,
                                         labels = y_labels)
   }
