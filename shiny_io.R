@@ -33,7 +33,7 @@ in.eda_group_by_label_star <- c("None", "Primary outcome (EN)","GA weeks binned"
 in.eda_tag_label <- c("None", dict_ml$label[which(dict_ml$unit=="tag01")])
 
 
-in.eda_y_label_allu <- dict_ml$label[which(dict_ml$type=="num")]
+in.eda_y_label_allu <- c("None", dict_ml$label[which(dict_ml$type=="num")])
 in.eda_tag_labels_allu <- dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")]
 
 # ---- 2. supervised ml ----

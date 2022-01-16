@@ -5,14 +5,20 @@ viz_alluvial <- function(
   time_unit = 7, # time unit in each break window
   time_breaks = c(28,36,40), # vector of time window breaks
   time_quantity = c("average", "1st record")[2], # quantify responce y in each time window by average or 1st record
-  y_col = "baby_weight", # responce y variable (only numeric)
+  y_col = c("baby_weight",NULL)[1], # responce y variable (only numeric or null)
   cluster_col = c("subjectnbr")[1],
   tag_cols = c("dod___tag", "exit_date___tag", "posair_ynunk") # additional tag status
 ){
   
   plot_obj <- NULL
-  # if responce is numerical, responce will be broken to percentile groups
-  if (dict_data[y_col,"type"]=="num"){
+  if (length(dict_data[which(dict_data$varname == y_col),"type"])==0 ){
+    # create a fake base column with num type 
+    y_col <- "base"
+    data[,y_col] <- NA
+    dict_data_new <- data.frame(varname = y_col, type="num")
+    dict_data <- bind_rows(dict_data, dict_data_new)
+  }
+  if (dict_data[which(dict_data$varname == y_col),"type"]=="num"){ # if responce is numerical, responce will be broken to percentile groups
     # coerce dtype of responce(y)
     data$y <- as.numeric(data[,y_col])
     data$time <- as.numeric(data[,time_col])
