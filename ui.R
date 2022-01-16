@@ -538,7 +538,7 @@ body <- dashboardBody(
             )
     ),
     tabItem(tabName = "eda_2dstats",
-            h3("Exploratory Data Analysis -- 2D Statistics"),
+            h3("Exploratory Data Analysis -- LOESS 2D Statistics"),
             fluidRow(column(1,actionButton("eda_stats2d_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_2d_stats", height = "1000px"))),
     tabItem(tabName = "eda_star",
