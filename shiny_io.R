@@ -37,25 +37,32 @@ in.eda_y_label_allu <- dict_ml$label[which(dict_ml$type=="num")]
 in.eda_tag_labels_allu <- dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")]
 
 # ---- 2. supervised ml ----
-in.ml_y_label <- c(y_tag_front_labels, y_num_front_labels, "Site (EN) == Miami")
+in.ml_y_label <- c(dict_ml$label[which(dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01")], 
+                   dict_ml$label[which(startsWith(dict_ml$varname, "Period")|
+                                           startsWith(dict_ml$varname, "Apnea")|
+                                           startsWith(dict_ml$varname, "ABD")|
+                                           startsWith(dict_ml$varname, "Brady")|
+                                           startsWith(dict_ml$varname, "Desat")|
+                                           startsWith(dict_ml$varname, "Hyperoxemia"))], 
+                   "Site (EN) == Miami")
 in.ml_y_label.selected <- "Primary outcome (EN) == Unfavorable"
 in.ml_trim_ctrl <- TRUE
 
 in.ml_num_adjust_label <- c("Gestational Age","None")
-in.ml_num_labels.choices <- x_num_front_labels
-in.ml_num_labels.selected <- intersect(x_num_front_labels, dict_ml$label[which(dict_ml$source_file=="base")] )
+in.ml_num_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
+in.ml_num_labels.selected <- intersect(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], dict_ml$label[which(dict_ml$source_file=="base")] )
 
-in.ml_nonlin_rcs5_labels.choices <- x_num_front_labels
+in.ml_nonlin_rcs5_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
 in.ml_nonlin_rcs5_labels.selected <- c("Maternal age")
-in.ml_nonlin_rcs4_labels.choices <- x_num_front_labels
+in.ml_nonlin_rcs4_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
 in.ml_nonlin_rcs4_labels.selected <- c("Birth weight","Maternal age")
-in.ml_nonlin_rcs3_labels.choices <- x_num_front_labels
+in.ml_nonlin_rcs3_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
 in.ml_nonlin_rcs3_labels.selected <- c("APGAR score at 1 minute","Doses of any medication today")
-in.ml_linear_num_labels.choices <- x_num_front_labels
+in.ml_linear_num_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
 in.ml_linear_num_labels.selected <- c("Gestational Age")
-in.ml_fct_labels_mdl.choices <- x_fct_front_labels
+in.ml_fct_labels_mdl.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit!="tag01")]
 in.ml_fct_labels_mdl.selected <- c("Site (EN)")
-in.ml_tag_labels_mdl.choices <- x_tag_front_labels
+in.ml_tag_labels_mdl.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit=="tag01")]
 in.ml_tag_labels_mdl.selected <- c("Baby Gender (EN) == Female",
                                    "Resus at birth: CPAP (EN) == Yes",
                                    "Maternal race (EN) == Black_African_American",

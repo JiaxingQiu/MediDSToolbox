@@ -270,34 +270,6 @@ attr(data_ml$nondod_unfav, "mlrole") <- "output"
 
 dict_ml <- get.dict(data_ml)
 data_ml <- assign.dict(data_ml, dict_ml)
-
-
-# --- specify ml roles for shiny UI (optional) ----
-# x_cols is all the predictors specified by the dictionary
-x_num_cols <- dict_ml$varname[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
-x_tag_cols <- dict_ml$varname[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit=="tag01")]
-x_fct_cols <- dict_ml$varname[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit!="tag01")]
-# tag_col is binary responce varname
-y_tag_cols <- dict_ml$varname[which(dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01")]
-y_num_cols <- dict_ml$varname[which(startsWith(dict_ml$varname, "Period")|
-                                      startsWith(dict_ml$varname, "Apnea")|
-                                      startsWith(dict_ml$varname, "ABD")|
-                                      startsWith(dict_ml$varname, "Brady")|
-                                      startsWith(dict_ml$varname, "Desat")|
-                                      startsWith(dict_ml$varname, "Hyperoxemia"))]
-# cluster_cols is a list of repeated measure used in modeling 
-cluster_cols <- dict_ml$varname[which(dict_ml$mlrole=="cluster")]
-
-# front end naming fashion
-# inputs 
-x_num_front_labels <- dict_ml[x_num_cols, "label"]
-x_fct_front_labels <- dict_ml[x_fct_cols, "label"]
-x_tag_front_labels <- dict_ml[x_tag_cols, "label"]
-# outputs
-y_tag_front_labels <- dict_ml[y_tag_cols, "label"]
-y_num_front_labels <- dict_ml[y_num_cols, "label"]
-# cluster
-cluster_front_labels <- dict_ml[cluster_cols, "label"]
 dict_ml <- merge(dict_ml,dict_org[,c("varname", "from_cols")])
 
 

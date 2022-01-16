@@ -42,6 +42,7 @@ front_uni_heatmap <- function(
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   num_adjust_col <- dict_data$varname[which(dict_data$label==num_adjust_label)]
+  num_cols <- union(num_cols, num_adjust_col)
   
   # ---- engineering ----
   if(trim_ctrl){
@@ -130,7 +131,7 @@ front_uni_heatmap <- function(
   
 }
 
-############################################# not run #############################################
+# ############################################ not run #############################################
 # data = data_ml
 # dict_data = dict_ml
 # # --- setup ---
@@ -145,12 +146,12 @@ front_uni_heatmap <- function(
 # pctcut_num_labels=c()
 # pctcut_num_vec=c(0.1, 99.9)
 # pctcut_num_coerce = TRUE
-# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# filter_tag_labels=c("On respiratory support with endotracheal tube (EN) == Yes", "Any  Doses of any medication today")
 # # --- local ---
 # num_labels = dict_data$label[which(dict_data$type=="num")][c(1:20)]
-# y_label = "Primary outcome (EN)___Unfavorable"
+# y_label = "Primary outcome (EN) == Unfavorable"
 # cluster_label = "PreVent study ID"
-# num_adjust_label = NULL 
+# num_adjust_label = NULL
 # method="logit_rcs"
 # pct = TRUE
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
