@@ -36,12 +36,12 @@ front_X_clus <- function(
   })
   
   # --- find corresponding column names ---
-  x_cols <- dict_data$varname[which(dict_data$label_front%in%x_labels)]
-  y_col <- dict_data$varname[which(dict_data$label_front==y_label)]
+  x_cols <- dict_data$varname[which(dict_data$label%in%x_labels)]
+  y_col <- dict_data$varname[which(dict_data$label==y_label)]
   num_cols <- intersect(union(x_cols,y_col), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
   fct_cols <- setdiff(union(x_cols,y_col), num_cols)
-  cluster_col <- dict_data$varname[which(dict_data$label_front==cluster_label)]
-  trim_by_col <- dict_data$varname[which(dict_data$label_front==trim_by_label)]
+  cluster_col <- dict_data$varname[which(dict_data$label==cluster_label)]
+  trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   
