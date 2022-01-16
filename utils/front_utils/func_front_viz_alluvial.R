@@ -14,7 +14,6 @@ front_viz_alluvial <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=TRUE,
-  aggregation=FALSE,
   # alluvial
   time_label, # x axis is time-related breaks
   time_breaks = c(), # vector of time window breaks
@@ -42,7 +41,7 @@ front_viz_alluvial <- function(
   fct_cols <- intersect( dict_data$varname[which(dict_data$type=="fct")], c(time_col, y_col, tag_cols))
   
   # engineer the data
-  data <- engineer(data = data,
+  data_engineered <- engineer(data = data,
                    num_cols = num_cols,
                    fct_cols = fct_cols,
                    cluster_col = cluster_col,
@@ -56,8 +55,11 @@ front_viz_alluvial <- function(
                    imputation = imputation,
                    impute_per_cluster = impute_per_cluster,
                    winsorizing = winsorizing,
-                   aggregation = aggregation)
+                   aggregation = FALSE) # always set aggregation to be false
   
+  
+  
+  data <- data_engineered
   plot_obj <- NULL
   print("---- viz_alluvial ----")
   tryCatch({
@@ -84,8 +86,22 @@ front_viz_alluvial <- function(
 # ################## not run #######################
 # data = data_ml
 # dict_data = dict_ml
-# y_label = "Birth weight" # responce y variable (only numeric)
+# y_label = "Desat_75 number of events per day" # responce y variable (only numeric)
 # cluster_label = "PreVent study ID"
+# 
+# # --- engineer ---
+# trim_by_label = "Post-menstrual Age" #trim by time column
+# trim_vec = c(22, 37)
+# time_unit = 7
+# pctcut_num_labels = c() # cutoff by percentile of one or more numeric variable
+# pctcut_num_vec = c(0, 100)
+# pctcut_num_coerce = TRUE
+# filter_tag_labels = c() # tag columns
+# imputation=c("None","Mean", "Median", "Zero")[1]
+# impute_per_cluster=FALSE
+# winsorizing=TRUE
+# 
+# # --- local ---
 # time_label = "Post-menstrual Age" # x axis is time-related breaks
 # time_breaks = c(28,36,40) # vector of time window breaks
 # time_quantity = c("average", "1st record")[2] # quantify responce y in each time window by average or 1st record

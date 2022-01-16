@@ -139,8 +139,7 @@ engineer <- function(
       data <- merge(data, df_num)
     }
   }
-  data_engineered <- data[,c(cluster_col, trim_by_col, num_cols, fct_cols)]
-  
+  data_engineered <- data[,unique(c(cluster_col, trim_by_col, num_cols, fct_cols))]
   
   
   # ---- return final engineered dataset ----
