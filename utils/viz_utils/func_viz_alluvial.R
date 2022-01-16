@@ -77,13 +77,14 @@ viz_alluvial <- function(
           select(cluster) %>%
           as.data.frame()
         df$status[df$cluster %in% sbj_tag$cluster] <- as.character(dict_data[tag_col,"label"])
-        new_tag_list <- c(new_tag_list, as.character(dict_data[tag_col,"label"]))
+        new_tag_list <- unique(c(new_tag_list, as.character(dict_data[tag_col,"label"])))
       }
       
       df$status <- factor(df$status,
-                          levels= c("NA",new_tag_list,
+                          levels = unique( c("NA",
+                                     new_tag_list,
                                     "[0th, 25th)","[0th, 50th)","[0th, 75th)","[0th, 90th)","[0th, 95th)","[0th, 100th]",
-                                    "[25th, 50th)","[50th, 75th)","[75th, 90th)","[90th, 95th)","[95th, 100th]") 
+                                    "[25th, 50th)","[50th, 75th)","[75th, 90th)","[90th, 95th)","[95th, 100th]") )
       )
       df$time_group <- time_breaks[i]
       df <- df[,c('cluster','time_group','status')]
@@ -94,10 +95,10 @@ viz_alluvial <- function(
     plot_obj <- ggplot(df_all,
                        aes(x = time_group, stratum = status, alluvium = cluster,
                            fill = status, label = status)) +
-      scale_x_discrete(expand = c(.1, .1)) +
       geom_flow() +
       geom_stratum(alpha = .5) +
       geom_text(stat = "stratum", size = 5) +
+      #scale_x_discrete(expand = c(.1, .1)) +
       theme(legend.position = "none",
             axis.title.x=element_blank()) 
     
