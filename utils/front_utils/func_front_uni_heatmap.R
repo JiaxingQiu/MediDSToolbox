@@ -117,7 +117,16 @@ front_uni_heatmap <- function(
                                   pct=pct, 
                                   y_map_func=y_map_func, 
                                   y_map_max=y_map_max)
-    var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_prob=max(yhat)) %>% arrange(max_prob) %>% as.data.frame()
+    if ("c_score" %in% colnames(df_result_all)) {
+      var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_c=max(c_score)) %>% arrange(max_c) %>% as.data.frame()
+      df_result_all$c_label <- NA
+      for (var in unique(df_result_all$var_name) ){
+        c <- round(unique(df_result_all$c_score[which(df_result_all$var_name==var)]),4)
+        df_result_all$c_label[which(df_result_all$var_name==var)][1] <- paste0("C = ", c)
+      }
+    }else {
+      var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_prob=max(yhat)) %>% arrange(max_prob) %>% as.data.frame()
+    }
     df_result_all_sort <- dplyr::left_join(var_order,df_result_all)
     plot_obj <- ggplot(df_result_all_sort, aes(x=pctl,y=var_name))+
       geom_tile(aes(fill=yhat)) +
@@ -125,6 +134,9 @@ front_uni_heatmap <- function(
       theme(axis.title.y=element_blank()) + 
       scale_fill_gradientn(colours = rev(rainbow(7))) +
       scale_y_discrete(limits=var_order$var_name)
+    if("c_score" %in% colnames(df_result_all_sort)){
+      plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
+    }
     
   }
   return(plot_obj)

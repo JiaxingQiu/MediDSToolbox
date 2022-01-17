@@ -73,7 +73,7 @@ uni_tag_nums <- function(data,
 }
 
 
-uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adjust_col=NULL){
+uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=5, num_adjust_col=NULL){
   df_mdl$num_col <- df_mdl[, num_col]
   df_mdl$tag_col <- df_mdl[, tag_col]
   df_result <- NULL
@@ -86,7 +86,7 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adju
       df_fit <- rms::Predict(mdl,num_col, fun=plogis)
       df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
       df_result$pctl <- round(df_result$pctl,2)
-      
+      df_result$c_score <- mdl$stats[["C"]]
     },TRUE )
   }else{
     df_result <- NULL
@@ -99,7 +99,7 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adju
       df_fit <- rms::Predict(mdl,num_col, fun=plogis)
       df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
       df_result$pctl <- round(df_result$pctl,2)
-      
+      df_result$c_score <- mdl$stats[["C"]]
     },TRUE )
     if(is.null(df_result)){
       try({
@@ -111,6 +111,7 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adju
         df_fit <- rms::Predict(mdl,num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
+        df_result$c_score <- mdl$stats[["C"]]
       },TRUE )
     }
     if(is.null(df_result)){
@@ -123,6 +124,7 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adju
         df_fit <- rms::Predict(mdl,num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
+        df_result$c_score <- mdl$stats[["C"]]
       },TRUE )
     }
     if(is.null(df_result)){
@@ -135,6 +137,7 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=3, num_adju
         df_fit <- rms::Predict(mdl,num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
+        df_result$c_score <- mdl$stats[["C"]]
       },TRUE )
     }
     
