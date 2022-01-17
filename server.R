@@ -784,6 +784,10 @@ shinyServer(function(input, output, session) {
     }
     vars_selected_df
   })
+  output$ml_select_group_lasso_score10fold <- renderTable({
+    x_select_report <- XselectReports()
+    x_select_report$score10fold
+  })
   # lasso performance
   output$perform_download_df_hat_lasso <- downloadHandler(
     filename = function() {

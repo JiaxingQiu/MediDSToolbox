@@ -143,7 +143,7 @@ lasso_x_select_group <- function(
                                   y=y, 
                                   group=v.group, 
                                   loss="logit",
-                                  pred.loss = "misclass",
+                                  pred.loss = "loss",
                                   nfolds = 10)
   # ----- show panalization trace -----
   # par(mfrow = c(1, 1))
@@ -175,9 +175,65 @@ lasso_x_select_group <- function(
   # plot variable importance (coefficients) on final model obj
   #data.frame(group = v.group, beta = lasso_optimal$beta[,1])
   
+  
+  # ------ manually 10 fold cross validation scores ---------
+  train_scores_tbl_all <- data.frame()
+  valid_scores_tbl_all <- data.frame()
+  for(i in c(1:10)){
+    try({
+      # shuffle data rawname / index
+      row_index <- sample(1:nrow(data),nrow(data))
+      rownames(data) <- row_index
+      foldsize <- round(nrow(data)/10)
+      
+      validset <- data[which( as.numeric(rownames(data)) %in% c(seq((i-1)*foldsize, i*foldsize, 1)+1) ), ]
+      trainset <- data[which(!as.numeric(rownames(data)) %in% c(seq((i-1)*foldsize, i*foldsize, 1)+1) ), ]
+      
+      train_x <- data.matrix(trainset[complete.cases(trainset[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname])
+      train_y <- data.matrix(trainset[complete.cases(trainset[,c(x_col_df_all$x_colname,y_col)]),y_col])
+      train_y <- ifelse(train_y==1, 1, -1)
+      
+      valid_x <- data.matrix(validset[complete.cases(validset[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname])
+      valid_y <- data.matrix(validset[complete.cases(validset[,c(x_col_df_all$x_colname,y_col)]),y_col])
+      valid_y <- ifelse(valid_y==1, 1, -1)
+      lasso_fold_optimal <- NULL
+      lasso_fold_optimal <- gglasso::gglasso(x=train_x, 
+                                             y=train_y, 
+                                             group=v.group, 
+                                             loss="logit",
+                                             lambda = lasso_cv$lambda.1se)
+      y_prob_train <- exp(predict(lasso_fold_optimal, newx = train_x, type="link")) / (1 + exp(predict(lasso_fold_optimal, newx = train_x, type="link")))
+      train_scores <- mdl_test(y_true=as.numeric(  ifelse(train_y<0,0,1) ),
+                               y_prob =as.numeric(  y_prob_train ),
+                               threshold = mean(data[,y_col],na.rm=TRUE))
+      train_scores_tbl <- train_scores$res_df
+      train_scores_tbl$data <- i
+      train_scores_tbl_all <- bind_rows(train_scores_tbl_all, train_scores_tbl)
+        
+      y_prob_valid <- exp(predict(lasso_fold_optimal, newx = valid_x, type="link")) / (1 + exp(predict(lasso_fold_optimal, newx = valid_x, type="link")))
+      valid_scores <- mdl_test(y_true = as.numeric( ifelse(valid_y<0,0,1) ),
+                               y_prob =  as.numeric( y_prob_valid) ,
+                               threshold = mean(data[,y_col],na.rm=TRUE))
+      valid_scores_tbl <- valid_scores$res_df
+      valid_scores_tbl$data <- i
+      valid_scores_tbl_all <- bind_rows(valid_scores_tbl_all, valid_scores_tbl)
+    },TRUE)
+  }
+  train_score_final <- train_scores_tbl_all[,setdiff(colnames(train_scores_tbl_all),"data")] %>% 
+    summarise_all( list(mean = ~mean(., na.rm=TRUE),
+                        sd = ~sd(., na.rm=TRUE)) )
+  valid_score_final <- valid_scores_tbl_all[,setdiff(colnames(valid_scores_tbl_all),"data")] %>% 
+    summarise_all( list(mean = ~mean(., na.rm=TRUE),
+                        sd = ~sd(., na.rm=TRUE)) )
+  
+  scores_final <- bind_rows(train_score_final, valid_score_final)
+  scores_final$dataset <- c("train", "valid")
+  scores_final <- scores_final[,union("dataset", colnames(scores_final))]
+  
   return(list( lasso_cv = lasso_cv,
                lasso_trace = lasso_trace,
-               lasso_optimal = lasso_optimal ))
+               lasso_optimal = lasso_optimal,
+               scores_final_10fold = scores_final))
   
 }
 

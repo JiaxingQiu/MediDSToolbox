@@ -254,7 +254,6 @@ front_lasso_select <- function(
     print(e)
   })
   
-  
   print("----- lss_perform in -----")
   lss_perform_in <- NULL
   tryCatch({
@@ -348,6 +347,7 @@ front_lasso_select <- function(
   
   return( list(x_select_mdls = x_select_mdls,
                x_select_mdls_grouped = x_select_mdls_grouped,
+               score10fold = x_select_mdls_grouped$scores_final_10fold,
                perform_in_df_hat = perform_in_df_hat,
                perform_inorg_df_hat = perform_inorg_df_hat,
                perform_ex_df_hat = perform_ex_df_hat,

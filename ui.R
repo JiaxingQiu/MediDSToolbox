@@ -123,7 +123,7 @@ sidebar <- dashboardSidebar(
     
     # ---- 3. supervised ml ----
     menuItem("ML (supervised)", tabName = "ml", startExpanded = FALSE,
-             menuSubItem('Setup', tabName = 'ml_setup'),
+             menuSubItem('Set up', tabName = 'ml_setup'),
              menuSubItem('Uni-Predictor Effect', tabName = 'ml_uni'), # univariable regression
              menuSubItem('Multi-Predictors Clus', tabName = 'ml_clus'),
              menuSubItem('RCS LASSO Regression', tabName = 'ml_select'),
@@ -594,6 +594,7 @@ body <- dashboardBody(
                                  ),
                         tabPanel("Group Lasso",
                                  tableOutput("ml_select_group_lasso_vars_selected"),
+                                 tableOutput("ml_select_group_lasso_score10fold"),
                                  plotOutput("ml_select_group_lasso_tuning_plot", height = "800px"),
                                  plotOutput("ml_select_group_lasso_vip"),
                                  tableOutput("ml_select_group_lasso_coef_df")
