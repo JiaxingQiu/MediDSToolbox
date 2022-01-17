@@ -123,23 +123,24 @@ sidebar <- dashboardSidebar(
     
     # ---- 3. supervised ml ----
     menuItem("ML (supervised)", tabName = "ml", startExpanded = FALSE,
-             menuSubItem('Response', tabName = 'ml_setup'),
-             menuSubItem('Univariate Effect', tabName = 'ml_uni'), # univariable regression
-             menuSubItem('Predictor Selection', tabName = 'ml_select'),
-             menuSubItem('Predictor Clus', tabName = 'ml_clus'),
-             menuSubItem('Regression', tabName = 'ml_multi'), # multivariable regression
-             menuSubItem('Regression over Time', tabName = 'ml_timely')),
+             menuSubItem('Setup', tabName = 'ml_setup'),
+             menuSubItem('Uni-Predictor Effect', tabName = 'ml_uni'), # univariable regression
+             menuSubItem('Multi-Predictors Clus', tabName = 'ml_clus'),
+             menuSubItem('RCS LASSO Regression', tabName = 'ml_select'),
+             menuSubItem('RCS Ridge Regression', tabName = 'ml_multi'), # multivariable regression
+             menuSubItem('RCS Ridge Regression over Time', tabName = 'ml_timely')),
     ## Show panel only when sidebar is selected
     useShinyjs(),
     div(id = 'sidebar_ml_setup',
         conditionalPanel("input.sidebar == 'ml_setup'",
-                         selectInput("ml_y_label",
-                                     "Response",
-                                     choices = in.ml_y_label,
-                                     selected = in.ml_y_label.selected),
+                         
                          checkboxInput("ml_trim_ctrl", 
                                        "Trim Control Group", 
-                                       value = in.ml_trim_ctrl)
+                                       value = in.ml_trim_ctrl),
+                        
+                         fileInput("ex_test_csv", "External Test Dataset(.csv)",
+                                   multiple = FALSE,
+                                   accept = c("text/csv","text/comma-separated-values,text/plain",".csv"))
         )),
     div(id = 'sidebar_ml_uni',
         conditionalPanel("input.sidebar == 'ml_uni'",
@@ -147,12 +148,6 @@ sidebar <- dashboardSidebar(
                                      "Method (smoother)",
                                      choices = c('Kernel Density Estimates', "logit_rcs", "loess", "bootstrap"),
                                      selected = "logit_rcs"),
-                         fluidRow(
-                           column(width=7, selectInput("ml_uni_y_map_func", 
-                                                       "Response type", 
-                                                       choices = c("fold_risk", "probability", "log_odds")  ) ),
-                           column(width=4, numericInput("ml_uni_y_max", "max", 3))
-                         ),
                          selectInput("ml_num_adjust_label",
                                      "Adjust for", 
                                      choices = in.ml_num_adjust_label),
@@ -163,40 +158,11 @@ sidebar <- dashboardSidebar(
                                      selected = in.ml_num_labels.selected)
         )),
     div(id = 'sidebar_ml_select',
-        conditionalPanel("input.sidebar == 'ml_select'",
-                         selectInput("ml_nonlin_rcs5_labels",
-                                     "Restricted Cubic Spline (5 knots)",
-                                     multiple = TRUE,
-                                     choices = in.ml_nonlin_rcs5_labels.choices,
-                                     selected = in.ml_nonlin_rcs5_labels.selected ),
-                         selectInput("ml_nonlin_rcs4_labels",
-                                     "Restricted Cubic Spline (4 knots)",
-                                     multiple = TRUE,
-                                     choices = in.ml_nonlin_rcs4_labels.choices,
-                                     selected = in.ml_nonlin_rcs4_labels.selected ),
-                         selectInput("ml_nonlin_rcs3_labels",
-                                     "Restricted Cubic Spline (3 knots)",
-                                     multiple = TRUE,
-                                     choices = in.ml_nonlin_rcs3_labels.choices,
-                                     selected = in.ml_nonlin_rcs3_labels.selected ),
-                         selectInput("ml_linear_num_labels",
-                                     "Continous (linear)",
-                                     multiple = TRUE,
-                                     choices = in.ml_linear_num_labels.choices,
-                                     selected = in.ml_linear_num_labels.selected ),
-                         selectInput("ml_fct_labels_mdl",
-                                     "Discrete (categorical)",
-                                     multiple = TRUE,
-                                     choices = in.ml_fct_labels_mdl.choices,
-                                     selected = in.ml_fct_labels_mdl.selected ),
-                         selectInput("ml_tag_labels_mdl",
-                                     "Discrete (binary)",
-                                     multiple = TRUE,
-                                     choices = in.ml_tag_labels_mdl.choices,
-                                     selected = in.ml_tag_labels_mdl.selected ),
-                         checkboxInput("ml_select_standardize", 
-                                       "Standardize", 
-                                       value = TRUE)
+        conditionalPanel("input.sidebar == 'ml_select'"
+                         # ,
+                         # checkboxInput("ml_select_standardize", 
+                         #               "Standardize", 
+                         #               value = TRUE)
                          
         )),
     div(id = 'sidebar_ml_clus',
@@ -234,17 +200,7 @@ sidebar <- dashboardSidebar(
                          checkboxInput("ml_fix_knots", 
                                        "Fix Knots X", 
                                        value = in.ml_fix_knots),
-                         fluidRow(
-                           column(width=7, selectInput("ml_y_map_func", 
-                                                       "Response type", 
-                                                       choices = c("fold_risk", "probability", "log_odds")  ) ),
-                           column(width=4, numericInput("ml_y_max", "max", 3))
-                         ),
                          
-                         # Input: Select a file ---
-                         fileInput("ex_test_csv", "External CSV",
-                                   multiple = FALSE,
-                                   accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
                          selectInput("ml_joint_col2_label",
                                      "Joint effect with",
                                      choices = c("None"))
@@ -560,15 +516,75 @@ body <- dashboardBody(
     
     # ---- 3. ml (supervised) ----
     tabItem(tabName = "ml_setup",
-            h3("Machine Learning (supervised)"),
-            fluidRow(dataTableOutput("dictionary_table_ml"))),
+            h3("Machine Learning (supervised) -- Set up"),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Setup", 
+                                 hr(),
+                                 h4("--- Response ---"),
+                                 hr(),
+                                 fluidRow(column(6,
+                                                 selectInput("ml_y_label",
+                                                             "Response",
+                                                             choices = in.ml_y_label,
+                                                             selected = in.ml_y_label.selected, width = 400)),
+                                          column(3,
+                                                 selectInput("ml_y_map_func", 
+                                                             "type", 
+                                                             choices = c("fold_risk", "probability", "log_odds")  ) ),
+                                          column(2,
+                                                 numericInput("ml_y_max", "max", 10)
+                                                 )
+                                          ),
+                                 hr(),
+                                 h4("--- Predictors ---"),
+                                 hr(),
+                                 fluidRow(column(6, 
+                                                 selectInput("ml_nonlin_rcs5_labels",
+                                                             "Restricted Cubic Spline (5 knots)",
+                                                             multiple = TRUE,
+                                                             choices = in.ml_nonlin_rcs5_labels.choices,
+                                                             selected = in.ml_nonlin_rcs5_labels.selected, width = 400),
+                                                 selectInput("ml_nonlin_rcs4_labels",
+                                                             "Restricted Cubic Spline (4 knots)",
+                                                             multiple = TRUE,
+                                                             choices = in.ml_nonlin_rcs4_labels.choices,
+                                                             selected = in.ml_nonlin_rcs4_labels.selected, width = 400),
+                                                 selectInput("ml_nonlin_rcs3_labels",
+                                                             "Restricted Cubic Spline (3 knots)",
+                                                             multiple = TRUE,
+                                                             choices = in.ml_nonlin_rcs3_labels.choices,
+                                                             selected = in.ml_nonlin_rcs3_labels.selected, width = 400),
+                                                 selectInput("ml_linear_num_labels",
+                                                             "Continous (linear)",
+                                                             multiple = TRUE,
+                                                             choices = in.ml_linear_num_labels.choices,
+                                                             selected = in.ml_linear_num_labels.selected, width = 400)
+                                          ),
+                                          column(6,
+                                                 selectInput("ml_fct_labels_mdl",
+                                                             "Discrete (categorical)",
+                                                             multiple = TRUE,
+                                                             choices = in.ml_fct_labels_mdl.choices,
+                                                             selected = in.ml_fct_labels_mdl.selected, width = 400),
+                                                 selectInput("ml_tag_labels_mdl",
+                                                             "Discrete (binary)",
+                                                             multiple = TRUE,
+                                                             choices = in.ml_tag_labels_mdl.choices,
+                                                             selected = in.ml_tag_labels_mdl.selected, width = 400)
+                                                 )
+                                          )
+                                 ),
+                        tabPanel("Dictionary", 
+                                 dataTableOutput("dictionary_table_ml"))
+            )
+    ),
     
     tabItem(tabName = "ml_uni",
             h3("Machine Learning (supervised) -- Univariable Percentile Heatmap"),
             fluidRow(column(1,actionButton("ml_uni_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_uniheat", height = "800px"))),
     tabItem(tabName = "ml_select",
-            h3("Machine Learning (supervised) -- LASSO Feature Selection"),
+            h3("Machine Learning (supervised) -- RCS LASSO Regression (Feature Selection)"),
             fluidRow(column(1,actionButton("ml_select_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Lasso",
@@ -581,6 +597,23 @@ body <- dashboardBody(
                                  plotOutput("ml_select_group_lasso_tuning_plot", height = "800px"),
                                  plotOutput("ml_select_group_lasso_vip"),
                                  tableOutput("ml_select_group_lasso_coef_df")
+                        ),
+                        tabPanel("Performance",
+                                 fluidRow(column(3,selectInput("perform_from_lasso",
+                                                               label=NULL,
+                                                               choices = c("Internal", "External")) ),
+                                          column(3,selectInput("perform_dataset_lasso",
+                                                               label=NULL,
+                                                               choices = c("Engineered", "Original")) ),
+                                          downloadButton("perform_download_df_hat_lasso","Y hat (.csv)"),
+                                          downloadButton("perform_download_scores_tbl_lasso","X rank (.csv)")
+                                 ),
+                                 fluidRow(column(6, plotOutput("perform_cali_plot_lasso",height = "400px")),
+                                          column(6, plotOutput("perform_tte_plot_lasso",height = "400px"))
+                                          ),
+                                 plotOutput("perform_scores_plot_lasso",height = "600px"),
+                                 tableOutput("perform_scores_tbl_lasso"),
+                                 plotOutput("perform_fitted_eff_plot_lasso",height = "1000px")
                         )
                         )),
     
@@ -600,7 +633,7 @@ body <- dashboardBody(
                         tabPanel("Spearman2 dof",
                                  plotOutput("dof_plot")))),
     tabItem(tabName = "ml_multi",
-            h3("Machine Learning (supervised) -- Multivariable Regression"),
+            h3("Machine Learning (supervised) -- RCS Ridge Regression (Inference)"),
             fluidRow(column(1, actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Development", 
@@ -626,7 +659,9 @@ body <- dashboardBody(
                                           downloadButton("perform_download_df_hat","Y hat (.csv)"),
                                           downloadButton("perform_download_scores_tbl","X rank (.csv)")
                                  ),
-                                 plotOutput("perform_cali_plot",height = "600px"),
+                                 fluidRow(column(6, plotOutput("perform_cali_plot",height = "400px")),
+                                          column(6, plotOutput("perform_tte_plot",height = "400px"))
+                                 ),
                                  plotOutput("perform_scores_plot",height = "600px"),
                                  tableOutput("perform_scores_tbl"),
                                  plotOutput("perform_fitted_eff_plot",height = "1000px")

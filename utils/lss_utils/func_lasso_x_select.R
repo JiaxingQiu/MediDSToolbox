@@ -79,28 +79,28 @@ lasso_x_select <- function(
   # ---- cv lasso an ridge regression ---
   lasso_cv <- glmnet::cv.glmnet(x=x, y=y, family=family, nfolds = 10, nlambda=100, alpha = 1, standardize = standardize)
   ridge_cv <- glmnet::cv.glmnet(x=x, y=y, family=family, nfolds = 10, nlambda=100, alpha = 0, standardize = standardize)
-  # plot results
-  par(mfrow = c(2, 2))
-  plot(lasso_cv, main = "Lasso penalty\n\n")
-  plot(ridge_cv, main = "Ridge penalty\n\n")
-  
+  # # plot results
+  # par(mfrow = c(2, 2))
+  # plot(lasso_cv, main = "Lasso penalty\n\n")
+  # plot(ridge_cv, main = "Ridge penalty\n\n")
+  # 
   # ----- show panalization trace -----
   lasso_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize)
   ridge_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 0, standardize = standardize)
-  # plot optimal models
-  plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n")
-  abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
-  abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
-  plot(ridge_trace, xvar = "lambda", main = "Ridge penalty\n\n")
-  abline(v = log(ridge_cv$lambda.min), col = "red", lty = "dashed")
-  abline(v = log(ridge_cv$lambda.1se), col = "blue", lty = "dashed")
-  
+  # # plot optimal models
+  # plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n")
+  # abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
+  # abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
+  # plot(ridge_trace, xvar = "lambda", main = "Ridge penalty\n\n")
+  # abline(v = log(ridge_cv$lambda.min), col = "red", lty = "dashed")
+  # abline(v = log(ridge_cv$lambda.1se), col = "blue", lty = "dashed")
+  # 
   #  ----- train optimal lambda models ----
   lasso_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize, lambda = lasso_cv$lambda.1se)
   ridge_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = standardize, lambda = ridge_cv$lambda.1se)
   # plot variable importance (coefficients) on final model obj
-  vip::vip(lasso_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
-  vip::vip(ridge_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
+  # vip::vip(lasso_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
+  # vip::vip(ridge_optimal, horizontal = TRUE, geom = "point", include_type=TRUE)
   #print(lasso_optimal)
   #summary(lasso_optimal)
   return(list( cv_mdls = list(lasso_cv = lasso_cv, ridge_cv = ridge_cv),

@@ -1,38 +1,37 @@
-lrm_perform <- function(
-  mdl_obj,
-  df,
-  y_map_func = "fold_risk",
-  y_map_max = 7,
-  rel_time_col=NULL,
-  x_cols=c() # list of predictors to see the performance 
+lss_perform <- function(
+  mdl_obj, # a grouped lasso regression model object
+  df, # a dataset to test out performance on
+  y_map_func = "fold_risk", # response type
+  y_map_max = 7, # response upper cutoff
+  rel_time_col=NULL
 ){
   
+  library(stringr)
   library(tidytext)
   library(ggplot2)
   # initiate the return objects
   fitted_eff_plot <- NULL
   scores_plot <- NULL
   scores_all_final <- NULL
-  df_hat <- NULL
   tte_plot <- NULL
-  
+  df_hat <- NULL
+
   # define logit reversing function
   logit2prob <- function(logit){
     odds <- exp(logit)
     prob <- odds / (1 + odds)
     return(prob)
   }
-  # find column name for response variable
-  y_col <- as.character( mdl_obj$sformula )[2]
-  if (length(intersect(x_cols, setdiff(colnames(df), y_col)))==0){
-    warning("none of the requested predictor names (x_cols) is in df, using all predictors instead")
-    x_cols <- setdiff(mdl_obj$Design$name, y_col)
-  }else{
-    x_cols <- intersect(x_cols, setdiff(colnames(df), y_col))
-  }
-  # ------------------- y-hat generation ---------------------
+  # find column name for response variable and predictor variables
+  y_col <- colnames(mdl_obj$y)
+  x_cols <- colnames(mdl_obj$x)
+  Xobj <- reconstructX(lasso_optimal_mdl_obj = mdl_obj,df=df)
+  x_cols_raw <- Xobj$x_cols_raw
+  new_x <- Xobj$new_x
+  
+  # ------------- y-hat generation ------------
   # global mean of outcome
-  base_mean_mdl <- mean(mdl_obj$y, na.rm=TRUE)#mean(df[,y_col],na.rm=TRUE)
+  base_mean_mdl <- mean(mdl_obj$y, na.rm=TRUE)
   # define the right mapping function for y-axis
   if(y_map_func == "probability"){
     ymap <- function(y_logodds, base_mean=NULL){
@@ -51,29 +50,30 @@ lrm_perform <- function(
       return(y_logodds)
     }
   }
+  
   # prediction on dataframe
-  df$y_pred  <- ymap(rms::predictrms(mdl_obj, newdata = df))
-  df$y_logodds  <- rms::predictrms(mdl_obj, newdata = df)
+  df$y_pred  <- ymap( predict(mdl_obj, newx=new_x , type = "link") )
+  df$y_logodds  <- predict(mdl_obj, newx=new_x , type = "link")
   df$y_true <- as.factor(df[,y_col])
   df_hat <- df
-  
-  # ------------- calibration plot -------------
+
+  # ----------- calibration plot ---------------
   df_hat$y_cali_groups <- cut(est_pctl( df_hat$y_pred ), 10)
   df_hat$y_true01 <- ifelse(as.numeric(as.character(df[,y_col]))==1, 1, 0)
   base_mean_obs <- mean( df_hat$y_true01, na.rm=TRUE )
-  df_cali <- df_hat %>% 
-    group_by(y_cali_groups) %>%  
+  df_cali <- df_hat %>%
+    group_by(y_cali_groups) %>%
     summarise(y_cali_observed = ymap(log(mean(y_true01, na.rm=TRUE)/(1-mean(y_true01, na.rm=TRUE))), base_mean=base_mean_obs),
-              y_cali_predicted = mean(y_pred, na.rm=TRUE)) %>% 
+              y_cali_predicted = mean(y_pred, na.rm=TRUE)) %>%
     as.data.frame()
   cali_plot <- ggplot(df_cali, aes(x=y_cali_predicted, y=y_cali_observed)) +
     geom_point() +
     geom_line(color="grey") +
-    geom_abline(intercept=0, slope = 1, size=0.3, linetype="dotted") + 
+    geom_abline(intercept=0, slope = 1, size=0.3, linetype="dotted") +
     xlab(paste0("Predicted ", y_map_func))+
     ylab(paste0("Observed ", y_map_func))
-    
-  
+
+
   # --------- fitted marginal effects -------
   # reformat plot dataframes by group
   tryCatch({
@@ -81,7 +81,7 @@ lrm_perform <- function(
     i=0
     df_plot_num <- data.frame()
     df_plot_fct <- data.frame()
-    for (x_col in x_cols){
+    for (x_col in x_cols_raw ){
       df_plot_pred <- df[,c(x_col, "y_pred", "y_true")]
       colnames(df_plot_pred) <- c("predictor_value", "y_pred", "y_true")
       df_plot_pred$predictor_name <- x_col
@@ -107,7 +107,7 @@ lrm_perform <- function(
       # fitted version of marginal effect plots
       fit_eff_plot_list[[i]] <- ggplot(df_plot_num, aes(x=predictor_value, y=y_pred, color=y_true)) +
         geom_smooth(method = smooth_method, formula = smooth_formula)+
-        facet_wrap(~predictor_name, ncol=3, scales = "free_x") + 
+        facet_wrap(~predictor_name, ncol=3, scales = "free_x") +
         ylab(y_map_func) +
         xlab(NULL) +
         scale_color_discrete(name = y_col)+
@@ -120,26 +120,26 @@ lrm_perform <- function(
       # fitted version of marginal effect plots
       fit_eff_plot_list[[i]] <- ggplot(df_plot_fct, aes(x=predictor_value, y=y_pred, group=y_true, color=y_true)) +
         geom_boxplot()+
-        facet_wrap(~predictor_value, ncol=3, scales = "free_x") + 
+        facet_wrap(~predictor_value, ncol=3, scales = "free_x") + # note !!! use predictor_value (level) here for factors
         ylab(y_map_func) +
         xlab(NULL) +
         scale_color_discrete(name = y_col)+
         scale_color_manual(values=c( "blue", "orange"))+
         theme(legend.position="top",
               axis.ticks.x = element_blank(),
-              axis.text.x = element_blank())
+              axis.text.x = element_blank()) 
     }
-    
+
     fit_eff_plot_list <- fit_eff_plot_list[!sapply(fit_eff_plot_list,is.null)]
     fitted_eff_plot <- ggpubr::ggarrange(plotlist = fit_eff_plot_list, ncol=1, common.legend = TRUE, legend = "top")
-    
+
   },error=function(e){print(e)})
-  
-  
-  # --------------- relative time plot -------------------
+
+  # --------- relative time plot ----------
   tryCatch({
     stopifnot(length(rel_time_col)>0)
     stopifnot(rel_time_col %in% colnames(df))
+    
     # zoom in relative time column by the range of event group
     rel_time_min <- min(df[which(df[,y_col]==1),rel_time_col],na.rm=TRUE)
     rel_time_max <- max(df[which(df[,y_col]==1),rel_time_col],na.rm=TRUE)
@@ -173,20 +173,34 @@ lrm_perform <- function(
     print(e)
   })
   
+  
+  
+  
   # ----------- feature permutation importance -------------
   tryCatch({
-    test_obj_raw <- lrm_test(test_data = df,
-                             y_col = y_col,
-                             mdl_obj = mdl_obj)
+    y_true_org <- as.numeric(as.character( df[,y_col] ) )
+    y_prob_org <- as.numeric(logit2prob(predict(mdl_obj, newx = new_x, type="link")))
+    y_true <- y_true_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
+    y_prob <- y_prob_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
+    test_obj_raw <- mdl_test(y_true = y_true,
+                             y_prob = y_prob,
+                             threshold=base_mean_mdl)
     scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
     scores_all <- data.frame()
-    for (x_col in setdiff(x_cols,rel_time_col)){
+    for (x_col in setdiff(x_cols_raw,rel_time_col)){
       df_shuffled <- df
       # shuffle the predictor
       df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
-      test_obj <- lrm_test(test_data = df_shuffled,
-                           y_col=y_col,
-                           mdl_obj = mdl_obj)
+      Xobjtest <- reconstructX(mdl_obj, df_shuffled)
+      new_x_test = Xobjtest$new_x
+      y_true_org <- as.numeric(as.character( df_shuffled[,y_col] ) )
+      y_prob_org <- as.numeric(logit2prob(predict(mdl_obj, newx = new_x_test, type="link")))
+      y_true <- y_true_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
+      y_prob <- y_prob_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
+      
+      test_obj <-  mdl_test(y_true = y_true,
+                            y_prob = y_prob,
+                            threshold=base_mean_mdl)
       scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
       scores$varname <- x_col
       scores_all <- bind_rows(scores_all, scores)
@@ -195,16 +209,16 @@ lrm_perform <- function(
     scores_raw$varname <- "none"
     scores_all_final <- bind_rows(scores_all, scores_raw)
     colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
-    
-    # make permutation importance plot 
+
+    # make permutation importance plot
     df_plot_scores_all <- data.frame()
     for (score_col in setdiff(colnames(scores_all_final), "removed_variable") ){
       df_plot_scores <- scores_all_final[,c("removed_variable", score_col)]
       colnames(df_plot_scores) <- c("removed_variable", "score_value")
       df_plot_scores$score_by <- score_col
-      df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores) 
+      df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores)
     }
-    
+
     scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=tidytext::reorder_within(removed_variable, score_value, score_by) )) +
       geom_point()+
       geom_vline(data=df_plot_scores_all[which(df_plot_scores_all$removed_variable=="none"),], aes(xintercept=score_value))+
@@ -212,19 +226,83 @@ lrm_perform <- function(
       facet_wrap(~score_by, scales = "free", ncol = 2)+
       theme(axis.title.x=element_blank(),
             axis.title.y=element_blank())
-    
+
   },error=function(e){print(e)})
-  
-  
-  
-  
+
+
+
+
   return(list(
     df_hat = df_hat,
     fitted_eff_plot = fitted_eff_plot,
     scores_plot = scores_plot,
     scores_all_final = scores_all_final,
     cali_plot = cali_plot,
-    tte_plot = tte_plot
+    tte_plot=tte_plot
   ))
-  
+
 }
+
+
+
+
+reconstructX <- function(lasso_optimal_mdl_obj, df){
+  df_org <- df
+  x_cols_org <- names(attr(lasso_optimal_mdl_obj$x,"scaled:center"))
+  df[,x_cols_org] <- scale(df[,x_cols_org], center = attr(lasso_optimal_mdl_obj$x,"scaled:center"), scale = attr(lasso_optimal_mdl_obj$x,"scaled:scale") )
+  
+  
+  # find column name for response variable and predictor variables
+  y_col <- colnames(lasso_optimal_mdl_obj$y)
+  x_cols <- colnames(lasso_optimal_mdl_obj$x)
+  x_cols_raw <- c()
+  group_info_df <- lasso_optimal_mdl_obj$group_info
+  
+  # reconstruct rcs variables
+  for (xg in unique(group_info_df$x_group) ){
+    gname <- unlist(strsplit(xg, "_"))[length(unlist(strsplit(xg, "_")))]
+    col <- gsub(paste0("_",gname), "",xg)
+    x_cols_raw <- union(x_cols_raw, col)
+    if(gname == "rcs3"){
+      df[,col] <- as.numeric(rcs(df[,col],3)[,1])
+      df[,paste0(col,"'")] <- as.numeric(rcs(df[,col],3)[,2])
+    }
+    if(gname == "rcs4"){
+      df[,col] <- as.numeric(rcs(df[,col],4)[,1])
+      df[,paste0(col,"'")] <- as.numeric(rcs(df[,col],4)[,2])
+      df[,paste0(col,"''")] <- as.numeric(rcs(df[,col],4)[,3])
+    }
+    if(gname == "rcs5"){
+      df[,col] <- as.numeric(rcs(df[,col],5)[,1])
+      df[,paste0(col,"'")] <- as.numeric(rcs(df[,col],5)[,2])
+      df[,paste0(col,"''")] <- as.numeric(rcs(df[,col],5)[,3])
+      df[,paste0(col,"'''")] <- as.numeric(rcs(df[,col],5)[,4])
+    }
+    if(gname == "level"){
+      levels <- unique(as.character(df[,col]))
+      for(l in levels){
+        df[,paste0(col,"___",l)] <- ifelse(df[,col]==l,1,0)
+      }
+    }
+  }
+  stopifnot(all(x_cols %in% colnames(df)))
+  stopifnot(all(x_cols_org %in% x_cols_raw))
+  new_x <- data.matrix(df[,x_cols])
+  return(list(new_x = new_x,
+              new_df = df,
+              x_cols_raw = x_cols_raw))
+}
+
+
+
+# ######################## not run ############################
+# mdl_obj = x_select_mdls_grouped$lasso_optimal # a grouped lasso regression model object
+# df = data_in # a dataset to test out performance on
+# y_map_func = "fold_risk" # response type
+# y_map_max = 7 # response upper cutoff
+# rel_time_col=NULL
+# x_cols=c() # list of predictors to see the performance
+
+
+
+

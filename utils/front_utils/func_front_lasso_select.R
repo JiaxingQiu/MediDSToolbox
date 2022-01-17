@@ -1,4 +1,4 @@
-front_multi_regression <- function(
+front_lasso_select <- function(
   data,
   dict_data,
   y_label, 
@@ -11,7 +11,7 @@ front_multi_regression <- function(
   x_labels_tag = c(), 
   x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
   # --- engineer ---
-  trim_by_label, # reltive time info
+  trim_by_label,
   trim_vec = c(-Inf, Inf), # trim relative time [from, to)
   time_unit = 1, # the increment scale of relative time
   pctcut_num_labels = c(),
@@ -20,40 +20,24 @@ front_multi_regression <- function(
   filter_tag_labels=c(),
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
-  winsorizing=TRUE,
-  aggregation=FALSE,
+  winsorizing=FALSE,
+  aggregation=TRUE, # should set to be true
   # --- local ---
   trim_ctrl = TRUE,
-  r2=0.9,
-  rcs5_low="70%",
-  rcs4_low="50%",
-  cv_nfold=5, 
-  na_frac_max=0.3, 
-  test_data=NULL, 
-  joint_col2_label=c("None")[1],
-  stratified_cv=TRUE,
-  r_abs=0.8, 
-  type=c("pearson","spearman")[1],
-  rank=TRUE,
-  seed_value=333,
-  fix_knots = TRUE,
+  standardize=TRUE, # always set to be true
+  test_data=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3
 ){
   
+  x_select_mdls <- NULL
+  x_select_mdls_grouped <- NULL
+  if (!aggregation){
+    warning("No repeated measures allowed, please check 'aggregation' in 'Setup' page")
+  } 
   
-  set.seed(seed = seed_value)
-  tryCatch({
-    data <- assign.dict(data, dict_data, overwrite = TRUE)
-    dict_data <- get.dict(data)
-  },error=function(e){
-    print("--- Skip refine dictionary from data ---")
-    print(e)
-  })
-   
-  # ---- translate front end labels to column names ----
-  x_cols <- dict_data$varname[which(dict_data$label%in%x_labels)]
-  x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num")] # linear numeric columns
+  # ---- pre-process ----
+  x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num")]# linear numeric columns
   x_cols_nonlin_rcs5 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs5&dict_data$mlrole=="input"&dict_data$type=="num")]
   x_cols_nonlin_rcs4 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs4&dict_data$mlrole=="input"&dict_data$type=="num")]
   x_cols_nonlin_rcs3 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs3&dict_data$mlrole=="input"&dict_data$type=="num")]
@@ -62,13 +46,11 @@ front_multi_regression <- function(
   y_col_tag <- dict_data$varname[which(dict_data$label==y_label & dict_data$type=="fct" & dict_data$unit=="tag01" )]
   y_col_num <- dict_data$varname[which(dict_data$label==y_label & dict_data$type=="num" )]
   y_col <- union(y_col_tag, y_col_num)
+  fct_cols <- unique(c(x_cols_fct, x_cols_tag, y_col_tag)) # group columns together by typr for data engineering
+  num_cols <- unique(c(x_cols_linear, x_cols_nonlin_rcs3,x_cols_nonlin_rcs4,x_cols_nonlin_rcs5, y_col_num))
   cluster_col <- dict_data$varname[which(dict_data$label==cluster_label)]
   rel_time_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
-  joint_col2 <- dict_data$varname[which(dict_data$label==joint_col2_label)]
-  if(length(joint_col2)==0) joint_col2 <- NULL
-  num_cols <- intersect(union(y_col_num,x_cols), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
-  fct_cols <- setdiff(union(y_col_tag, x_cols), num_cols)
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   
@@ -90,7 +72,6 @@ front_multi_regression <- function(
     print("Error!")
     print(e)
   })
-  
   # ---- prepare engineered training and validation dataset (internal) ----
   print("---- prepare engineered train and validation dataset (internal) ----")
   tryCatch({
@@ -151,7 +132,6 @@ front_multi_regression <- function(
     print("Error!")
     print(e)
   })
-  
   # ---- prepare original / no-engineering test dataset (external)  ----
   print("---- prepare original / no-engineering test dataset (external)  ----")
   tryCatch({
@@ -232,113 +212,142 @@ front_multi_regression <- function(
   })
   
   
-  # ---- modeling ---- 
-  print("---- modeling ----")
-  if(dict_data[y_col, "type"]=="fct"){
-    print("--- do_lrm_pip ---")
-    results <- do_lrm_pip(data=data_in, 
-                          dict_data=dict_data,
-                          x_cols_linear=x_cols_linear,
-                          x_cols_nonlin_rcs5=x_cols_nonlin_rcs5,
-                          x_cols_nonlin_rcs4=x_cols_nonlin_rcs4,
-                          x_cols_nonlin_rcs3=x_cols_nonlin_rcs3,
-                          x_cols_fct=x_cols_fct,
-                          x_cols_tag=x_cols_tag,
-                          x_cols=x_cols, 
-                          y_col=y_col, 
-                          cluster_col=cluster_col,
-                          r2=r2,
-                          rcs5_low=rcs5_low,
-                          rcs4_low=rcs4_low,
-                          cv_nfold=cv_nfold,
-                          data_org = data_org,
-                          test_data=data_ex, 
-                          test_data_org=data_exorg,
-                          na_frac_max=na_frac_max, 
-                          joint_col2=joint_col2,
-                          stratified_cv=stratified_cv,
-                          r_abs=r_abs, 
-                          type=type,
-                          rank=rank,
-                          fix_knots=fix_knots,
-                          y_map_func=y_map_func,
-                          y_map_max=y_map_max,
-                          trim_by_col = trim_by_col)
-    
-  }else if(dict_data[y_col, "type"]=="num"){
-    print("--- do_ols_pip ---")
-    # results <- do_ols_pip(data=data, 
-    #                       dict_data=dict_data,
-    #                       x_cols=x_cols, 
-    #                       y_col=y_col, 
-    #                       cluster_col=cluster_col,
-    #                       r2=r2,
-    #                       rcs5_low=rcs5_low,
-    #                       rcs4_low=rcs4_low,
-    #                       cv_nfold=cv_nfold,
-    #                       test_data=test_data, 
-    #                       na_frac_max=na_frac_max, 
-    #                       joint_col2=joint_col2,
-    #                       stratified_cv=stratified_cv,
-    #                       r_abs=r_abs, 
-    #                       type=type,
-    #                       rank=rank)
-    
+  if(length(y_col_tag)>0 ){
+    family <- "binomial"
+  } else if(length(y_col_num) > 0){
+    family <- "gaussian"
   }
+  print("---- lasso_x_select ----")
+  tryCatch({
+    x_select_mdls <- lasso_x_select(data = data_in,
+                                    y_col = y_col,
+                                    family = family,
+                                    x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
+                                    x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
+                                    x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
+                                    x_cols_linear = x_cols_linear, 
+                                    x_cols_fct = x_cols_fct,
+                                    x_cols_tag = x_cols_tag,
+                                    standardize = standardize,
+                                    dict_data = dict_data)
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   
-  # ---- return ----
+  print("---- lasso_x_select_group ----")
+  tryCatch({
+    x_select_mdls_grouped <- lasso_x_select_group(data = data_in,
+                                                  y_col = y_col,
+                                                  family = family,
+                                                  x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
+                                                  x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
+                                                  x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
+                                                  x_cols_linear = x_cols_linear, 
+                                                  x_cols_fct = x_cols_fct,
+                                                  x_cols_tag = x_cols_tag,
+                                                  standardize = standardize,
+                                                  dict_data = dict_data)
+    
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   
-  #  model development reports 
-  devel_model_info_tbl <- results$model_obj$cv_obj$model_info
-  devel_score_summ_tbl <- results$model_obj$cv_obj$model_scores
-  devel_score_summ_tbl <- devel_score_summ_tbl[,union(c("success_nfold","train_AUROC_mean","valid_AUROC_mean","train_AUROC_se","valid_AUROC_se"), colnames(devel_score_summ_tbl))]
-  devel_cali_plot <- results$model_obj$cv_obj$calibration_curve
-  devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace
-  devel_final_model_obj <- results$model_obj$mdl_obj # for print, anova and save locally
   
-  # model inference reports
-  infer_effect_plot_1d <- results$infer_obj$eff_plot_1d
-  infer_effect_plot_2d <- results$infer_obj$eff_plot_2d
+  print("----- lss_perform in -----")
+  lss_perform_in <- NULL
+  tryCatch({
+    lss_perform_in <- lss_perform(
+      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      df = data_in, # a dataset to test out performance on
+      y_map_func = y_map_func, # response type
+      y_map_max = y_map_max, # response upper cutoff
+      rel_time_col=rel_time_col
+    )
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   
+  print("----- lss_perform inorg -----")
+  lss_perform_inorg <- NULL
+  tryCatch({
+    lss_perform_inorg <- lss_perform(
+      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      df = data_inorg, # a dataset to test out performance on
+      y_map_func = y_map_func, # response type
+      y_map_max = y_map_max, # response upper cutoff
+      rel_time_col=rel_time_col
+    )
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
+  
+  print("----- lss_perform ex -----")
+  lss_perform_ex <- NULL
+  tryCatch({
+    lss_perform_ex <- lss_perform(
+      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      df = data_ex, # a dataset to test out performance on
+      y_map_func = y_map_func, # response type
+      y_map_max = y_map_max, # response upper cutoff
+      rel_time_col=rel_time_col
+    )
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
+  
+  print("----- lss_perform exorg -----")
+  lss_perform_exorg <- NULL
+  tryCatch({
+    lss_perform_exorg <- lss_perform(
+      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      df = data_exorg, # a dataset to test out performance on
+      y_map_func = y_map_func, # response type
+      y_map_max = y_map_max, # response upper cutoff
+      rel_time_col=rel_time_col
+    )
+  },error=function(e){
+    print("Error!")
+    print(e)
+  })
   # model performance reports on new dataset 
-  perform_in_df_hat <- results$perform_obj$internal$df_hat
-  perform_inorg_df_hat <- results$perform_obj$internal_org$df_hat
-  perform_ex_df_hat <- results$perform_obj$external$df_hat
-  perform_exorg_df_hat <- results$perform_obj$external_org$df_hat
+  perform_in_df_hat <- lss_perform_in$df_hat
+  perform_inorg_df_hat <- lss_perform_inorg$df_hat
+  perform_ex_df_hat <- lss_perform_ex$df_hat
+  perform_exorg_df_hat <- lss_perform_exorg$df_hat
   
-  perform_in_fitted_eff_plot <- results$perform_obj$internal$fitted_eff_plot
-  perform_inorg_fitted_eff_plot <- results$perform_obj$internal_org$fitted_eff_plot
-  perform_ex_fitted_eff_plot <- results$perform_obj$external$fitted_eff_plot
-  perform_exorg_fitted_eff_plot <- results$perform_obj$external_org$fitted_eff_plot
+  perform_in_fitted_eff_plot <- lss_perform_in$fitted_eff_plot
+  perform_inorg_fitted_eff_plot <- lss_perform_inorg$fitted_eff_plot
+  perform_ex_fitted_eff_plot <- lss_perform_ex$fitted_eff_plot
+  perform_exorg_fitted_eff_plot <- lss_perform_exorg$fitted_eff_plot
   
-  perform_in_cali_plot <- results$perform_obj$internal$cali_plot
-  perform_inorg_cali_plot <- results$perform_obj$internal_org$cali_plot
-  perform_ex_cali_plot <- results$perform_obj$external$cali_plot
-  perform_exorg_cali_plot <- results$perform_obj$external_org$cali_plot
+  perform_in_tte_plot <- lss_perform_in$tte_plot
+  perform_inorg_tte_plot <- lss_perform_inorg$tte_plot
+  perform_ex_tte_plot <- lss_perform_ex$tte_plot
+  perform_exorg_tte_plot <- lss_perform_exorg$tte_plot
   
-  perform_in_tte_plot <- results$perform_obj$internal$tte_plot
-  perform_inorg_tte_plot <- results$perform_obj$internal_org$tte_plot
-  perform_ex_tte_plot <- results$perform_obj$external$tte_plot
-  perform_exorg_tte_plot <- results$perform_obj$external_org$tte_plot
+  perform_in_cali_plot <- lss_perform_in$cali_plot
+  perform_inorg_cali_plot <- lss_perform_inorg$cali_plot
+  perform_ex_cali_plot <- lss_perform_ex$cali_plot
+  perform_exorg_cali_plot <- lss_perform_exorg$cali_plot
   
-  perform_in_scores_plot <- results$perform_obj$internal$scores_plot
-  perform_inorg_scores_plot <- results$perform_obj$internal_org$scores_plot
-  perform_ex_scores_plot <- results$perform_obj$external$scores_plot
-  perform_exorg_scores_plot<- results$perform_obj$external_org$scores_plot
+  perform_in_scores_plot <- lss_perform_in$scores_plot
+  perform_inorg_scores_plot <- lss_perform_inorg$scores_plot
+  perform_ex_scores_plot <- lss_perform_ex$scores_plot
+  perform_exorg_scores_plot<- lss_perform_exorg$scores_plot
   
-  perform_in_scores_tbl <- results$perform_obj$internal$scores_all_final
-  perform_inorg_scores_tbl <- results$perform_obj$internal_org$scores_all_final
-  perform_ex_scores_tbl <- results$perform_obj$external$scores_all_final
-  perform_exorg_scores_tbl <- results$perform_obj$external_org$scores_all_final
+  perform_in_scores_tbl <- lss_perform_in$scores_all_final
+  perform_inorg_scores_tbl <- lss_perform_inorg$scores_all_final
+  perform_ex_scores_tbl <- lss_perform_ex$scores_all_final
+  perform_exorg_scores_tbl <- lss_perform_exorg$scores_all_final
   
   
-  return(list( devel_model_info_tbl = devel_model_info_tbl,
-               devel_score_summ_tbl = devel_score_summ_tbl,
-               devel_cali_plot = devel_cali_plot,
-               devel_cv_eval_trace_tbl = devel_cv_eval_trace_tbl,
-               devel_final_model_obj = devel_final_model_obj,
-               infer_effect_plot_1d = infer_effect_plot_1d,
-               infer_effect_plot_2d = infer_effect_plot_2d,
+  return( list(x_select_mdls = x_select_mdls,
+               x_select_mdls_grouped = x_select_mdls_grouped,
                perform_in_df_hat = perform_in_df_hat,
                perform_inorg_df_hat = perform_inorg_df_hat,
                perform_ex_df_hat = perform_ex_df_hat,
@@ -362,16 +371,18 @@ front_multi_regression <- function(
                perform_in_scores_tbl = perform_in_scores_tbl,
                perform_inorg_scores_tbl = perform_inorg_scores_tbl,
                perform_ex_scores_tbl = perform_ex_scores_tbl,
-               perform_exorg_scores_tbl = perform_exorg_scores_tbl))
-
+               perform_exorg_scores_tbl = perform_exorg_scores_tbl
+               ))
 }
 
 
 
-# ############################################# not run #############################################
+
+
+# ##################### not run #############################
 # data = data_ml
 # dict_data = dict_ml
-# y_label = "Primary outcome (EN)___Unfavorable"
+# y_label = "Primary outcome (EN) == Unfavorable"
 # cluster_label = "PreVent study ID"
 # x_labels_linear = c("Gestational Age", "pH associated with highest CO2 on blood gas")
 # x_labels_nonlin_rcs5 = c("Maternal age")
@@ -381,32 +392,21 @@ front_multi_regression <- function(
 # x_labels_tag = c("Baby Gender (EN)___Female")
 # x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag))
 # # --- engineer ---
-# trim_by_label = "Post-menstrual Age"  # reltive time info
+# trim_by_label = "Post-menstrual Age"
 # trim_vec = c(-Inf, Inf) # trim relative time [from, to)
 # time_unit = 7 # the increment scale of relative time
-# trim_ctrl = TRUE
-# pctcut_num_labels = c("PeriodicBreathing_v3 duration per day", "ABD_v3 number of events per day")
+# pctcut_num_labels = c()
 # pctcut_num_vec = c(0.1, 99.9)
 # pctcut_num_coerce=TRUE
-# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# filter_tag_labels=c()
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
-# winsorizing=TRUE
-# aggregation=FALSE
+# winsorizing=FALSE
+# aggregation=TRUE # should set to be true
 # # --- local ---
-# r2=0.9
-# rcs5_low="70%"
-# rcs4_low="50%"
-# cv_nfold=5
-# na_frac_max=0.3
-# test_data=NULL
-# joint_col2_label="Gestational Age"
-# stratified_cv=TRUE
-# r_abs=0.8
-# type=c("pearson","spearman")[1]
-# rank=TRUE
-# seed_value=333
-# fix_knots = TRUE
+# trim_ctrl = TRUE
+# standardize=TRUE # always set to be true
+# test_data = data_ml[c(20000:40000),]
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
 

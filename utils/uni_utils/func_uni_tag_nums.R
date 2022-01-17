@@ -35,7 +35,7 @@ uni_tag_nums <- function(data,
   
   df_result_all = data.frame()
   for(num_col in num_cols){
-    df_mdl <- data[,intersect(colnames(data), c(num_cols,tag_col,cluster_col,num_adjust_col))]
+    df_mdl <- data[,intersect(colnames(data), unique(c(num_cols,tag_col,cluster_col,num_adjust_col))) ]
     try({
       if(attr(data[,num_col],"unique")){
         df_mdl <- dplyr::distinct(df_mdl)

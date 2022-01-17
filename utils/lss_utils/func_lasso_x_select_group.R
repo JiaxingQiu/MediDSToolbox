@@ -44,6 +44,12 @@ lasso_x_select_group <- function(
   x_cols_nonlin_rcs5 <- intersect(x_cols_nonlin_rcs5, input_cols_choices) # now we successfully split the rcs knots groups
   x_cols <- unique(c(x_cols_linear, x_cols_nonlin_rcs3, x_cols_nonlin_rcs4, x_cols_nonlin_rcs5,x_cols_tag))
   
+  data_org <- data
+  
+  if(standardize) {
+    data[,x_cols] <- scale(data_org[,x_cols])
+  }
+  
   # add transformations to predictor variables and save grouping info in a dataframe object
   x_col_df_all <- data.frame()
   # --- rcs5 ---
@@ -125,8 +131,9 @@ lasso_x_select_group <- function(
     x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
   }
   
-  x <- data.matrix(scale(data[complete.cases(data[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname]))
-  y <- matrix(data[complete.cases(data[,c(x_col_df_all$x_colname,y_col)]),y_col])
+  x <- data.matrix(data[complete.cases(data[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname])
+  y <- data.matrix(data[complete.cases(data[,c(x_col_df_all$x_colname,y_col)]),y_col])
+  colnames(y) <- y_col
   y <- ifelse(y==1, 1, -1)
   #y <- as.factor(y)
   v.group <- as.numeric(as.factor(x_col_df_all$x_group))
@@ -139,17 +146,17 @@ lasso_x_select_group <- function(
                                   pred.loss = "misclass",
                                   nfolds = 10)
   # ----- show panalization trace -----
-  par(mfrow = c(1, 1))
-  plot(lasso_cv, main = "Lasso penalty\n\n")
-  abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
-  abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
-  
+  # par(mfrow = c(1, 1))
+  # plot(lasso_cv, main = "Lasso penalty\n\n")
+  # abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
+  # abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
+  # 
   # ----- show panalization trace -----
   lasso_trace <- gglasso::gglasso(x=x, 
                                     y=y, 
                                     group=v.group, 
                                     loss="logit")
-  plot(lasso_trace)
+  # plot(lasso_trace)
   
   #  ----- train optimal lambda models ----
   lasso_optimal <- gglasso::gglasso(x=x, 
@@ -157,6 +164,13 @@ lasso_x_select_group <- function(
                                     group=v.group, 
                                     loss="logit",
                                     lambda = lasso_cv$lambda.1se)
+  
+  attr(x,"scaled:center") <- attr(scale(data_org[,x_cols]),"scaled:center")
+  attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols]),"scaled:scale")
+  
+  lasso_optimal$x <- x
+  lasso_optimal$y <- ifelse(y<0,0,1)
+  lasso_optimal$group_info <- x_col_df_all
   
   # plot variable importance (coefficients) on final model obj
   #data.frame(group = v.group, beta = lasso_optimal$beta[,1])

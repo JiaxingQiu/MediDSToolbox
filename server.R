@@ -173,6 +173,8 @@ shinyServer(function(input, output, session) {
     ))
     updateSelectInput(inputId = "ml_joint_col2_label", 
                       choices = union("None", X_labels))
+    updateSelectInput(inputId = "ml_num_labels", 
+                      selected = unique(X_labels))
   })
   # --- ml_linear_num_labels ---
   X2listen4linear <- reactive({
@@ -262,12 +264,19 @@ shinyServer(function(input, output, session) {
       trim_ctrl = input$ml_trim_ctrl,
       num_adjust_label=input$ml_num_adjust_label, 
       method=input$ml_method, 
-      y_map_func = input$ml_uni_y_map_func,
-      y_map_max = input$ml_uni_y_max
+      y_map_func = input$ml_y_map_func,
+      y_map_max = input$ml_y_max
     )
   })
   XselectReports <- eventReactive(input$ml_select_go, {
-    front_X_select(
+    test_data <- NULL
+    if(!is.null(input$ex_test_csv)){
+      ext <- tools::file_ext(input$ex_test_csv$datapath)
+      req(input$ex_test_csv)
+      try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+      test_data <- read.csv(input$ex_test_csv$datapath)
+    }
+    front_lasso_select(
       data = data_ml,
       dict_data = dict_ml,
       y_label=input$ml_y_label, 
@@ -291,7 +300,10 @@ shinyServer(function(input, output, session) {
       winsorizing=input$setup_winsorizing,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
-      standardize=input$ml_select_standardize
+      #standardize=input$ml_select_standardize,
+      test_data=test_data,
+      y_map_func=input$ml_y_map_func,
+      y_map_max=input$ml_y_max
     )
   })
   
@@ -643,7 +655,6 @@ shinyServer(function(input, output, session) {
   output$dictionary_table_ml <- renderDataTable(
     dict_ml[which(dict_ml$mlrole!=""),c("label","source_file","varname","mlrole","type","unit")]
   )
-  
   # Univariate Heatmap ----
   output$plot_uniheat <- renderPlot({
     uniHeatmap()
@@ -672,7 +683,6 @@ shinyServer(function(input, output, session) {
       abline(v = log(ridge_cv$lambda.1se), col = "blue", lty = "dashed")
     }
   })
-  
   output$ml_select_lasso_vip <- renderPlot({
     x_select_report <- XselectReports()
     x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
@@ -700,7 +710,6 @@ shinyServer(function(input, output, session) {
         xlab(" | coefficients | ") 
     }
   })
-  
   output$ml_select_lasso_coef_df <- renderTable({
     x_select_report <- XselectReports()
     x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
@@ -720,7 +729,6 @@ shinyServer(function(input, output, session) {
       coef_df_all
     }
   })
-  
   output$ml_select_group_lasso_tuning_plot <- renderPlot({
     x_select_report <- XselectReports()
     x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
@@ -734,7 +742,6 @@ shinyServer(function(input, output, session) {
       abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
     }
   })
-  
   output$ml_select_group_lasso_vip <- renderPlot({
     x_select_report <- XselectReports()
     x_select_obj <- x_select_report$x_select_mdls_grouped # raw lasso regression
@@ -751,7 +758,6 @@ shinyServer(function(input, output, session) {
         xlim(0,max(abs(coef_df_all$coef))+0.1)
     }
   })
-  
   output$ml_select_group_lasso_coef_df <- renderTable({
     x_select_report <- XselectReports()
     x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
@@ -764,7 +770,6 @@ shinyServer(function(input, output, session) {
       coef_df_all
     }
   })
-  
   output$ml_select_group_lasso_vars_selected <- renderTable({
     vars_selected_df <- NULL
     x_select_report <- XselectReports()
@@ -778,6 +783,143 @@ shinyServer(function(input, output, session) {
       vars_selected_df <- data.frame(vars_selected = unique(gsub("'","",coef_df_all$vars[which(coef_df_all$coef!=0)])))
     }
     vars_selected_df
+  })
+  # lasso performance
+  output$perform_download_df_hat_lasso <- downloadHandler(
+    filename = function() {
+      paste0('lasso_y_hat_', Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      x_select_report <- XselectReports()
+      df_hat <- NULL
+      if(input$perform_from_lasso=="Internal"){
+        if(input$perform_dataset_lasso=="Engineered"){
+          df_hat <- x_select_report$perform_in_df_hat
+        }else if(input$perform_dataset_lasso=="Original"){
+          df_hat <- x_select_report$perform_inorg_df_hat
+        }
+      }else if(input$perform_from_lasso=="External"){
+        if(input$perform_dataset_lasso=="Engineered"){
+          df_hat <- x_select_report$perform_ex_df_hat
+        }else if(input$perform_dataset_lasso=="Original"){
+          df_hat <- x_select_report$perform_exorg_df_hat
+        }
+      }
+      write.csv(df_hat, file, row.names = FALSE)
+    }
+  )
+  output$perform_download_scores_tbl_lasso <- downloadHandler(
+    filename = function() {
+      paste0('lasso_x_rank_', Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      x_select_report <- XselectReports()
+      scores_tbl <- NULL
+      if(input$perform_from_lasso=="Internal"){
+        if(input$perform_dataset_lasso=="Engineered"){
+          scores_tbl <- x_select_report$perform_in_scores_tbl
+        }else if(input$perform_dataset_lasso=="Original"){
+          scores_tbl <- x_select_report$perform_inorg_scores_tbl
+        }
+      }else if(input$perform_from_lasso=="External"){
+        if(input$perform_dataset_lasso=="Engineered"){
+          scores_tbl <- x_select_report$perform_ex_scores_tbl
+        }else if(input$perform_dataset_lasso=="Original"){
+          scores_tbl <- x_select_report$perform_exorg_scores_tbl
+        }
+      }
+      write.csv(scores_tbl, file, row.names = FALSE)
+    }
+  )
+  output$perform_cali_plot_lasso <- renderPlot({
+    x_select_report <- XselectReports()
+    cali_plot <- NULL
+    if(input$perform_from_lasso=="Internal"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        cali_plot <- x_select_report$perform_in_cali_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        cali_plot <- x_select_report$perform_inorg_cali_plot
+      }
+    }else if(input$perform_from_lasso=="External"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        cali_plot <- x_select_report$perform_ex_cali_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        cali_plot <- x_select_report$perform_exorg_cali_plot
+      }
+    }
+    cali_plot
+  })
+  output$perform_fitted_eff_plot_lasso <- renderPlot({
+    x_select_report <- XselectReports()
+    fitted_eff_plot <- NULL
+    if(input$perform_from_lasso=="Internal"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        fitted_eff_plot <- x_select_report$perform_in_fitted_eff_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        fitted_eff_plot <- x_select_report$perform_inorg_fitted_eff_plot
+      }
+    }else if(input$perform_from_lasso=="External"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        fitted_eff_plot <- x_select_report$perform_ex_fitted_eff_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        fitted_eff_plot <- x_select_report$perform_exorg_fitted_eff_plot
+      }
+    }
+    fitted_eff_plot
+  })
+  output$perform_tte_plot_lasso <- renderPlot({
+    x_select_report <- XselectReports()
+    tte_plot <- NULL
+    if(input$perform_from_lasso=="Internal"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        tte_plot <- x_select_report$perform_in_tte_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        tte_plot <- x_select_report$perform_inorg_tte_plot
+      }
+    }else if(input$perform_from_lasso=="External"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        tte_plot <- x_select_report$perform_ex_tte_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        tte_plot <- x_select_report$perform_exorg_tte_plot
+      }
+    }
+    tte_plot
+  })
+  output$perform_scores_plot_lasso <- renderPlot({
+    x_select_report <- XselectReports()
+    scores_plot <- NULL
+    if(input$perform_from_lasso=="Internal"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        scores_plot <- x_select_report$perform_in_scores_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        scores_plot <- x_select_report$perform_inorg_scores_plot
+      }
+    }else if(input$perform_from_lasso=="External"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        scores_plot <- x_select_report$perform_ex_scores_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        scores_plot <- x_select_report$perform_exorg_scores_plot
+      }
+    }
+    scores_plot
+  })
+  output$perform_scores_tbl_lasso <- renderTable({
+    x_select_report <- XselectReports()
+    scores_tbl <- NULL
+    if(input$perform_from_lasso=="Internal"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        scores_tbl <- x_select_report$perform_in_scores_tbl
+      }else if(input$perform_dataset_lasso=="Original"){
+        scores_tbl <- x_select_report$perform_inorg_scores_tbl
+      }
+    }else if(input$perform_from_lasso=="External"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        scores_tbl <- x_select_report$perform_ex_scores_tbl
+      }else if(input$perform_dataset_lasso=="Original"){
+        scores_tbl <- x_select_report$perform_exorg_scores_tbl
+      }
+    }
+    scores_tbl
   })
   
   
@@ -863,7 +1005,7 @@ shinyServer(function(input, output, session) {
   # performance
   output$perform_download_df_hat <- downloadHandler(
     filename = function() {
-      paste0('y_hat_', Sys.Date(), ".csv")
+      paste0('ridge_y_hat_', Sys.Date(), ".csv")
     },
     content = function(file) {
       MLreports <- MLreports()
@@ -886,7 +1028,7 @@ shinyServer(function(input, output, session) {
   )
   output$perform_download_scores_tbl <- downloadHandler(
     filename = function() {
-      paste0('x_rank_', Sys.Date(), ".csv")
+      paste0('ridge_x_rank_', Sys.Date(), ".csv")
     },
     content = function(file) {
       MLreports <- MLreports()
@@ -924,6 +1066,24 @@ shinyServer(function(input, output, session) {
       }
     }
     cali_plot
+  })
+  output$perform_tte_plot <- renderPlot({
+    MLreports <- MLreports()
+    tte_plot <- NULL
+    if(input$perform_from=="Internal"){
+      if(input$perform_dataset=="Engineered"){
+        tte_plot <- MLreports$perform_in_tte_plot
+      }else if(input$perform_dataset=="Original"){
+        tte_plot <- MLreports$perform_inorg_tte_plot
+      }
+    }else if(input$perform_from=="External"){
+      if(input$perform_dataset=="Engineered"){
+        tte_plot <- MLreports$perform_ex_tte_plot
+      }else if(input$perform_dataset=="Original"){
+        tte_plot <- MLreports$perform_exorg_tte_plot
+      }
+    }
+    tte_plot
   })
   output$perform_fitted_eff_plot<- renderPlot({
     MLreports <- MLreports()
