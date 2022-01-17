@@ -7,7 +7,8 @@ viz_alluvial <- function(
   time_quantity = c("average", "1st record")[2], # quantify responce y in each time window by average or 1st record
   y_col = c("baby_weight",NULL)[1], # responce y variable (only numeric or null)
   cluster_col = c("subjectnbr")[1],
-  tag_cols = c("dod___tag", "exit_date___tag", "posair_ynunk") # additional tag status
+  tag_cols = c("dod___tag", "exit_date___tag", "posair_ynunk"), # additional tag status,
+  includeNA=TRUE
 ){
   
   plot_obj <- NULL
@@ -96,14 +97,23 @@ viz_alluvial <- function(
       df <- df[,c('cluster','time_group','status')]
       df_all <- bind_rows(df_all, df)
     }
-    
-    
+    df_all$status_label <- NA
+    for (stts in unique(df_all$status)){
+      df_all$status_label[which(df_all$time_group==min(as.numeric(df_all$time_group[which(as.character( df_all$status )==as.character(stts))]), na.rm=TRUE) & 
+                                  df_all$status==stts)] <- stts
+    }
+    if(!includeNA){
+      df_all <- df_all[which(!df_all$status%in%c("NA",NA)),]
+    }
     plot_obj <- ggplot(df_all,
                        aes(x = time_group, stratum = status, alluvium = cluster,
                            fill = status, label = status)) +
       geom_flow() +
       geom_stratum(alpha = .5) +
-      geom_text(stat = "stratum", size = 5) +
+      geom_text(stat = 'stratum',
+                aes(label=status_label),
+                size=4,
+                hjust="left") +
       #scale_x_discrete(expand = c(.1, .1)) +
       theme(legend.position = "none",
             axis.title.x=element_blank()) 

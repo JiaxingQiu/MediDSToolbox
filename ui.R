@@ -102,20 +102,23 @@ sidebar <- dashboardSidebar(
     div(id = 'sidebar_eda_allu',
         conditionalPanel("input.sidebar == 'eda_allu'",
                          selectInput("eda_y_label_allu",
-                                     label="Response",
+                                     label="Numeric Percentiles",
                                      choices = in.eda_y_label_allu ),
                          selectInput("eda_tag_labels_allu",
-                                     label="Add binary status",
+                                     label="Binary Status",
                                      choices = in.eda_tag_labels_allu,
                                      multiple = TRUE),
-                         radioButtons("eda_time_quantity_allu",
-                                      "Quantify by",
-                                      c("Average"="average","1st Record"="1st record"),
-                                      inline = TRUE),
+                         # radioButtons("eda_time_quantity_allu",
+                         #              "Quantify by",
+                         #              c("Average"="average","1st Record"="1st record"),
+                         #              inline = TRUE),
                          checkboxGroupInput("eda_time_breaks_allu",
                                             "Time breaks",
                                             choices = seq(0,40,2),
-                                            inline = TRUE)
+                                            inline = TRUE),
+                         checkboxInput("eda_includeNA_allu",
+                                       "Include NA",
+                                       TRUE)
         )),
     
     # ---- 3. supervised ml ----
@@ -574,6 +577,7 @@ body <- dashboardBody(
                                  tableOutput("ml_select_lasso_coef_df")
                                  ),
                         tabPanel("Group Lasso",
+                                 tableOutput("ml_select_group_lasso_vars_selected"),
                                  plotOutput("ml_select_group_lasso_tuning_plot", height = "800px"),
                                  plotOutput("ml_select_group_lasso_vip"),
                                  tableOutput("ml_select_group_lasso_coef_df")
@@ -622,8 +626,8 @@ body <- dashboardBody(
                                           downloadButton("perform_download_df_hat","Y hat (.csv)"),
                                           downloadButton("perform_download_scores_tbl","X rank (.csv)")
                                  ),
-                                 plotOutput("perform_cali_plot"),
-                                 plotOutput("perform_scores_plot"),
+                                 plotOutput("perform_cali_plot",height = "600px"),
+                                 plotOutput("perform_scores_plot",height = "600px"),
                                  tableOutput("perform_scores_tbl"),
                                  plotOutput("perform_fitted_eff_plot",height = "1000px")
                         )

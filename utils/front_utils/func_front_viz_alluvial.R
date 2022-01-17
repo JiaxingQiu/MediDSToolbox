@@ -17,8 +17,9 @@ front_viz_alluvial <- function(
   # alluvial
   time_label, # x axis is time-related breaks
   time_breaks = c(), # vector of time window breaks
-  time_quantity = c("average", "1st record")[2], # quantify responce y in each time window by average or 1st record
-  tag_labels = c() # additional tag status
+  time_quantity = c("average", "1st record")[1], # quantify responce y in each time window by average or 1st record
+  tag_labels = c(), # additional tag status
+  includeNA=TRUE
 ){
   
   tryCatch({
@@ -72,7 +73,8 @@ front_viz_alluvial <- function(
       time_quantity = time_quantity, # quantify responce y in each time window by average or 1st record
       y_col = y_col, # responce y variable (only numeric)
       cluster_col = cluster_col,
-      tag_cols = tag_cols # additional tag status
+      tag_cols = tag_cols, # additional tag status
+      includeNA=includeNA
     )
   },error=function(e){
     print("Error")

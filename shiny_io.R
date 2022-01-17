@@ -55,7 +55,7 @@ in.ml_num_labels.selected <- intersect(dict_ml$label[which(dict_ml$mlrole=="inpu
 in.ml_nonlin_rcs5_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
 in.ml_nonlin_rcs5_labels.selected <- c("Maternal age")
 in.ml_nonlin_rcs4_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
-in.ml_nonlin_rcs4_labels.selected <- c("Birth weight","Maternal age")
+in.ml_nonlin_rcs4_labels.selected <- c("Birth weight")
 in.ml_nonlin_rcs3_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]
 in.ml_nonlin_rcs3_labels.selected <- c("APGAR score at 1 minute","Doses of any medication today")
 in.ml_linear_num_labels.choices <- dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]

@@ -29,9 +29,13 @@ shinyServer(function(input, output, session) {
                       value = c(min_value, max_value) )
   })  
   observeEvent(input$setup_trim_vec, {
-    time_breaks <- floor(as.numeric(quantile(seq(input$setup_trim_vec[1],input$setup_trim_vec[2],1), seq(0,1,0.1))))
+    time_breaks <- seq(input$setup_trim_vec[1],input$setup_trim_vec[2],1)
+    if(length(time_breaks)>20){
+      time_breaks <- floor(as.numeric(quantile(seq(input$setup_trim_vec[1],input$setup_trim_vec[2],1), seq(0,1,1/20))))
+    }
     updateCheckboxGroupInput(inputId = "eda_time_breaks_allu", 
                              choices = time_breaks,
+                             label = input$setup_trim_by_label,
                              inline = TRUE)
   })  
   observeEvent(input$setup_strat_by, {
@@ -143,8 +147,9 @@ shinyServer(function(input, output, session) {
                        # alluvial plot
                        time_label = input$setup_trim_by_label, 
                        time_breaks = input$eda_time_breaks_allu, 
-                       time_quantity = input$eda_time_quantity_allu, 
-                       tag_labels = input$eda_tag_labels_allu
+                       time_quantity = "average",#input$eda_time_quantity_allu, 
+                       tag_labels = input$eda_tag_labels_allu,
+                       includeNA = input$eda_includeNA_allu
     ) 
   })
   
@@ -169,6 +174,71 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "ml_joint_col2_label", 
                       choices = union("None", X_labels))
   })
+  # --- ml_linear_num_labels ---
+  X2listen4linear <- reactive({
+    list(input$ml_nonlin_rcs3_labels,
+         input$ml_nonlin_rcs4_labels,
+         input$ml_nonlin_rcs5_labels)
+  })
+  observeEvent(X2listen4linear(), {
+    X_labels_used <- unique(c(
+      input$ml_nonlin_rcs3_labels,
+      input$ml_nonlin_rcs4_labels,
+      input$ml_nonlin_rcs5_labels
+    ))
+    updateSelectInput(inputId = "ml_linear_num_labels", 
+                      choices = setdiff(in.ml_linear_num_labels.choices, X_labels_used),
+                      selected = input$ml_linear_num_labels)
+  })
+  # --- ml_nonlin_rcs3_labels ---
+  X2listen4rcs3 <- reactive({
+    list(input$ml_linear_num_labels,
+         input$ml_nonlin_rcs4_labels,
+         input$ml_nonlin_rcs5_labels)
+  })
+  observeEvent(X2listen4rcs3(), {
+    X_labels_used <- unique(c(
+      input$ml_linear_num_labels,
+      input$ml_nonlin_rcs4_labels,
+      input$ml_nonlin_rcs5_labels
+    ))
+    updateSelectInput(inputId = "ml_nonlin_rcs3_labels", 
+                      choices = setdiff(in.ml_nonlin_rcs3_labels.choices, X_labels_used),
+                      selected = input$ml_nonlin_rcs3_labels)
+  })
+  # --- ml_nonlin_rcs4_labels ---
+  X2listen4rcs4 <- reactive({
+    list(input$ml_linear_num_labels,
+         input$ml_nonlin_rcs3_labels,
+         input$ml_nonlin_rcs5_labels)
+  })
+  observeEvent(X2listen4rcs4(), {
+    X_labels_used <- unique(c(
+      input$ml_linear_num_labels,
+      input$ml_nonlin_rcs3_labels,
+      input$ml_nonlin_rcs5_labels
+    ))
+    updateSelectInput(inputId = "ml_nonlin_rcs4_labels", 
+                      choices = setdiff(in.ml_nonlin_rcs4_labels.choices, X_labels_used),
+                      selected = input$ml_nonlin_rcs4_labels)
+  })
+  # --- ml_nonlin_rcs5_labels ---
+  X2listen4rcs5 <- reactive({
+    list(input$ml_linear_num_labels,
+         input$ml_nonlin_rcs3_labels,
+         input$ml_nonlin_rcs4_labels)
+  })
+  observeEvent(X2listen4rcs5(), {
+    X_labels_used <- unique(c(
+      input$ml_linear_num_labels,
+      input$ml_nonlin_rcs3_labels,
+      input$ml_nonlin_rcs4_labels
+    ))
+    updateSelectInput(inputId = "ml_nonlin_rcs5_labels", 
+                      choices = setdiff(in.ml_nonlin_rcs5_labels.choices, X_labels_used),
+                      selected = input$ml_nonlin_rcs5_labels)
+  })
+  
   uniHeatmap <- eventReactive(input$ml_uni_go, {
     front_uni_heatmap(
       data=data_ml,
@@ -684,7 +754,7 @@ shinyServer(function(input, output, session) {
   
   output$ml_select_group_lasso_coef_df <- renderTable({
     x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls_grouped # raw lasso regression
+    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
     if (!is.null(x_select_obj)){
       lasso_optimal <- x_select_obj$lasso_optimal
       coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
@@ -694,6 +764,22 @@ shinyServer(function(input, output, session) {
       coef_df_all
     }
   })
+  
+  output$ml_select_group_lasso_vars_selected <- renderTable({
+    vars_selected_df <- NULL
+    x_select_report <- XselectReports()
+    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
+    if (!is.null(x_select_obj)){
+      lasso_optimal <- x_select_obj$lasso_optimal
+      coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
+      coef_df$vars <- as.character(rownames(lasso_optimal$beta))
+      coef_df$coef_abs <- abs(coef_df$coef)
+      coef_df_all <- coef_df
+      vars_selected_df <- data.frame(vars_selected = unique(gsub("'","",coef_df_all$vars[which(coef_df_all$coef!=0)])))
+    }
+    vars_selected_df
+  })
+  
   
   # Variable Clus ----
   output$dof_plot <- renderPlot({
