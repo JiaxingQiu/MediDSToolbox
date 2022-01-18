@@ -1,10 +1,10 @@
 viz_2d_stats<- function(
-  data = data_viz,
-  dict_data = dict_viz,
-  x_col1="hours_to_infect",
-  x_col2="magnesium___vital",
-  y_col="heart_rate___vital",
-  cluster_col="X__uid"
+  data,
+  dict_data,
+  x_col1,
+  x_col2,
+  y_col,
+  cluster_col
 ){
   
   
@@ -23,7 +23,7 @@ viz_2d_stats<- function(
   dd <- merge(data.frame(x_col1=seq(min(as.numeric(data[,x_col1]),na.rm=TRUE),max(as.numeric(data[,x_col1]),na.rm=TRUE),1)), 
               data.frame(x_col2=seq(min(as.numeric(data[,x_col2]),na.rm=TRUE),max(as.numeric(data[,x_col2]),na.rm=TRUE),1)))
   colnames(dd) <- c(x_col1, x_col2)
-  df_plot <- cbind(data.frame( y_fit = predict(mdl, dd)),dd)
+  df_plot <- cbind(data.frame( y_fit = as.numeric(predict(mdl, dd)) ),dd)
   
   p_raw <- ggplot(data=df_plot, aes(x=df_plot[,x_col1], y=df_plot[,x_col2]))+
     geom_tile(aes(fill=y_fit)) + 

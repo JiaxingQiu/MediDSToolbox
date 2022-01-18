@@ -1,4 +1,3 @@
-# non-temporal information in the dataset
 lrm_infer <-  function(
   mdl_obj, # a rms model object
   y_map_func = "fold_risk",
