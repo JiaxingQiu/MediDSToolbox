@@ -299,6 +299,8 @@ front_multi_regression <- function(
   # model inference reports
   infer_effect_plot_1d <- results$infer_obj$eff_plot_1d
   infer_effect_plot_2d <- results$infer_obj$eff_plot_2d
+  infer_effect_plot_list <- results$infer_obj$eff_plot
+  infer_effect_plot_diy_list <- results$infer_obj$eff_plot_diy
   
   # model performance reports on new dataset 
   perform_in_df_hat <- results$perform_obj$internal$df_hat
@@ -339,6 +341,8 @@ front_multi_regression <- function(
                devel_final_model_obj = devel_final_model_obj,
                infer_effect_plot_1d = infer_effect_plot_1d,
                infer_effect_plot_2d = infer_effect_plot_2d,
+               infer_effect_plot_list = infer_effect_plot_list,
+               infer_effect_plot_diy_list = infer_effect_plot_diy_list,
                perform_in_df_hat = perform_in_df_hat,
                perform_inorg_df_hat = perform_inorg_df_hat,
                perform_ex_df_hat = perform_ex_df_hat,

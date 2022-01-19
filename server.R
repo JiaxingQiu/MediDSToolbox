@@ -989,9 +989,23 @@ shinyServer(function(input, output, session) {
       saveRDS(MLreports$devel_final_model_obj, file)
     }
   )
-  output$infer_effect_plot_1d <- renderPlot({
+  output$infer_effect_plot_1d_continuous <- renderPlot({
     MLreports <- MLreports()
-    MLreports$infer_effect_plot_1d
+    tryCatch({
+      infer_effect_plot_1d_continuous <- MLreports$infer_effect_plot_diy_list$continuous
+    },error=function(e){
+      infer_effect_plot_1d_continuous <- MLreports$infer_effect_plot_list$continuous
+    })
+    infer_effect_plot_1d_continuous
+  })
+  output$infer_effect_plot_1d_discrete <- renderPlot({
+    MLreports <- MLreports()
+    tryCatch({
+      infer_effect_plot_1d_discrete <- MLreports$infer_effect_plot_diy_list$discrete
+    },error=function(e){
+      infer_effect_plot_1d_discrete <- MLreports$infer_effect_plot_list$discrete
+    })
+    infer_effect_plot_1d_discrete
   })
   output$infer_effect_plot_2d <- renderPlot({
     MLreports <- MLreports()

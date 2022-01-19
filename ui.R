@@ -645,7 +645,8 @@ body <- dashboardBody(
                         ),
                         tabPanel("Inference", 
                                  downloadButton("devel_download_mdl","Model (.rda)"),
-                                 plotOutput("infer_effect_plot_1d",height = "1000px"),
+                                 plotOutput("infer_effect_plot_1d_continuous",height = "600px"),
+                                 plotOutput("infer_effect_plot_1d_discrete"),
                                  plotOutput("infer_anova_plot"),
                                  verbatimTextOutput("infer_model_prt"),
                                  plotOutput("infer_effect_plot_2d",height = "1000px")
