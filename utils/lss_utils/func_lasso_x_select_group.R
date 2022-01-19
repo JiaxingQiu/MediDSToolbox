@@ -151,6 +151,7 @@ lasso_x_select_group <- function(
   # abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
   # abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
   # 
+  
   # ----- show panalization trace -----
   lasso_trace <- gglasso::gglasso(x=x, 
                                     y=y, 
@@ -159,11 +160,15 @@ lasso_x_select_group <- function(
   # plot(lasso_trace)
   
   #  ----- train optimal lambda models ----
+  opt_lambda <- lasso_cv$lambda.1se
+  if (lasso_cv$cvm[which(lasso_cv$lambda==lasso_cv$lambda.min)] == min(lasso_cv$cvm) ){
+    opt_lambda <- lasso_cv$lambda.min
+  }
   lasso_optimal <- gglasso::gglasso(x=x, 
                                     y=y, 
                                     group=v.group, 
                                     loss="logit",
-                                    lambda = lasso_cv$lambda.1se)
+                                    lambda = opt_lambda)
   
   attr(x,"scaled:center") <- attr(scale(data_org[,x_cols]),"scaled:center")
   attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols]),"scaled:scale")

@@ -46,6 +46,8 @@ lrm_infer <-  function(
   i=0
   tryCatch({
     eff_plot <- ggplot(rms::Predict(mdl_obj, fun=ymap), anova=anova(mdl_obj), pval=TRUE, size.anova=2, sepdiscrete='list')
+    if(!is.null(eff_plot$continuous)) eff_plot$continuous <- eff_plot$continuous + ylab(y_map_func)
+    if(!is.null(eff_plot$discrete)) eff_plot$discrete <- eff_plot$discrete + ylab(y_map_func)
     if(!is.null(eff_plot$continuous)){
       i=i+1
       eff_plot_1d_list[[i]] <- eff_plot$continuous
@@ -64,6 +66,8 @@ lrm_infer <-  function(
   
   tryCatch({
     eff_plot_diy <- ggplot_rms_diy(mdl_obj=mdl_obj, ymap=ymap) 
+    if(!is.null(eff_plot_diy$continuous)) eff_plot_diy$continuous <- eff_plot_diy$continuous + ylab(y_map_func)
+    if(!is.null(eff_plot_diy$discrete)) eff_plot_diy$discrete <- eff_plot_diy$discrete + ylab(y_map_func)
   },error=function(e){print(e)})
   
   # 2d marginal effects if joint_col2 given

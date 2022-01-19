@@ -123,7 +123,7 @@ sidebar <- dashboardSidebar(
     
     # ---- 3. supervised ml ----
     menuItem("ML (supervised)", tabName = "ml", startExpanded = FALSE,
-             menuSubItem('Set up', tabName = 'ml_setup'),
+             menuSubItem('Select X and Y', tabName = 'ml_setup'),
              menuSubItem('Uni-Predictor Effect', tabName = 'ml_uni'), # univariable regression
              menuSubItem('Multi-Predictors Clus', tabName = 'ml_clus'),
              menuSubItem('RCS LASSO Regression', tabName = 'ml_select'),
