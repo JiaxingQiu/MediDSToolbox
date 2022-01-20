@@ -24,8 +24,8 @@ sidebar <- dashboardSidebar(
     menuItem("Project Info", tabName = "prj_info"),
     
     # ---- 1. setup ----
-    menuItem("Engineering", tabName = "setup", startExpanded = FALSE,
-             menuSubItem('Set up', tabName = 'setup_engineer'),
+    menuItem("Set up", tabName = "setup", startExpanded = FALSE,
+             menuSubItem('Engineer', tabName = 'setup_engineer'),
              menuSubItem('Summary', tabName = 'setup_summ')),
     useShinyjs(),
     div(id = 'sidebar_setup_engineer',
@@ -44,7 +44,7 @@ sidebar <- dashboardSidebar(
                                        TRUE)
         )),
     # ---- 2. eda ----
-    menuItem("Exploration", tabName = "eda", startExpanded = FALSE,
+    menuItem("Explore Data", tabName = "eda", startExpanded = FALSE,
              menuSubItem('1D Stats', tabName = 'eda_1dstats'),
              menuSubItem('2D Stats', tabName = 'eda_2dstats'),
              menuSubItem('Death Star', tabName = 'eda_star'),
@@ -360,7 +360,7 @@ body <- dashboardBody(
     ),
     # ---- 1. setup ----
     tabItem(tabName = "setup_engineer",
-            h3("Engineering -- Set Up"),
+            h3(" Set Up -- Engineer"),
             tabsetPanel(type = "tabs",
                         tabPanel("Engineer",
                                  tags$h4("--------------- Step 1 ----------------"),
