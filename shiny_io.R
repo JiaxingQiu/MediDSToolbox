@@ -17,6 +17,7 @@ in.setup_pctcut_num_labels <- dict_ml$label[which(dict_ml$type=="num")]
 in.setup_filter_tag_labels <- dict_ml$label[which(dict_ml$unit=="tag01")]
 in.setup_imputation.selected <-  "None"
 in.setup_strat_by <- dict_ml$label[which(dict_ml$type=="fct")]
+
 # ---- 2. eda ----
 in.eda_y_label_stats1d <- dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )]
 in.eda_x_label_stats1d <- c("Chronological Age", "Post-menstrual Age", setdiff(dict_ml$label[which(dict_ml$type!="")],c("Chronological Age", "Post-menstrual Age") ) )
@@ -36,7 +37,7 @@ in.eda_tag_label <- c("None", dict_ml$label[which(dict_ml$unit=="tag01")])
 in.eda_y_label_allu <- c("None", dict_ml$label[which(dict_ml$type=="num")])
 in.eda_tag_labels_allu <- dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")]
 
-# ---- 2. supervised ml ----
+# ---- 3. supervised ml ----
 in.ml_y_label <- c(dict_ml$label[which(dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01")], 
                    dict_ml$label[which(startsWith(dict_ml$varname, "Period")|
                                            startsWith(dict_ml$varname, "Apnea")|
@@ -71,7 +72,7 @@ in.ml_stratified_cv <- TRUE
 in.ml_fix_knots <- TRUE
 in.ml_joint_col2_label <- c("None","Gestational Age") 
 
-# ---- 3. unsupervised ml ----
+# ---- 4. unsupervised ml ----
 in.unml_cluster_label <- "PreVent study ID"
 in.unml_trim_by_label <- c("Chronological Age", "Post-menstrual Age", "Gestational Age")
 in.unml_trim_time_unit <- 7

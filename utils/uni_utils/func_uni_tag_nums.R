@@ -150,12 +150,11 @@ uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=5, num_adju
 uni_tag_num_loess <- function(df_mdl, num_col, tag_col){
   
   df_result <- NULL
-  df_mdl$num_col <- df_mdl[, num_col]
+  df_mdl$num_col <- est_pctl(df_mdl[, num_col])
   df_mdl$tag_col <- df_mdl[, tag_col]
   tryCatch({
-    df_mdl$num_output <- df_mdl$tag_col
-    fml <- formula("num_output ~ num_col")
-    mdl <- loess(fml,data=df_mdl)
+    fml <- formula("tag_col ~ num_col")
+    mdl <- loess(fml, data=df_mdl, span=0.3)
     newx <- c(seq(0,100,1)/100)[2:101]
     yhat <- predict(mdl,newx)
     df_result <- data.frame(pctl=newx, prob=yhat)

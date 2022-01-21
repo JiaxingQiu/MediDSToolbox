@@ -146,7 +146,11 @@ sidebar <- dashboardSidebar(
         conditionalPanel("input.sidebar == 'ml_uni'",
                          selectInput("ml_method",
                                      "Method (smoother)",
-                                     choices = c('Kernel Density Estimates', "logit_rcs", "loess", "bootstrap"),
+                                     choices = c(
+                                       "RCS Smoothed Y"= "logit_rcs", 
+                                       "Data Availability"='Kernel Density Estimates', 
+                                       "LOESS Smoothed Y"="loess", 
+                                       "bootstrap"),
                                      selected = "logit_rcs"),
                          selectInput("ml_num_adjust_label",
                                      "Adjust for", 

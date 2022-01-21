@@ -131,7 +131,11 @@ viz_1d_stats <- function(
     
     p_pct <- ggplot(df[!is.na(df$group),], aes(x=x, y=q_val)) +
       geom_line(aes(linetype=percentile),size=0.5, color='grey') +
-      geom_smooth(aes(linetype=percentile, color=percentile),size=0.5, method = smooth_method, formula = smooth_formula) +
+      geom_smooth(aes(linetype=percentile, color=percentile),
+                  size=0.5, 
+                  method = smooth_method, 
+                  formula = smooth_formula,
+                  span=0.3) +
       scale_color_manual(values = c("black","red","black","black","black")) +
       scale_linetype_manual(values=c(5,1,2,3,4)) +
       xlab(paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]))+
@@ -238,7 +242,7 @@ viz_1d_stats <- function(
       colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value", "n_sbj_avail")
       
       p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value, color=group))+
-        geom_smooth(se = FALSE) +
+        geom_smooth(se = FALSE,span=0.6) + #se=TRUE, fill="#F5F5F5"
         theme_bw() +
         ylab(y_lab_string) +
         xlab(x_lab_string) +
