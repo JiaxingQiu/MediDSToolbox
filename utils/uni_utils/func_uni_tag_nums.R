@@ -3,7 +3,7 @@ uni_tag_nums <- function(data,
                          tag_col, 
                          cluster_col, 
                          num_adjust_col=NULL, 
-                         method="logit_rcs", 
+                         method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
                          pct=TRUE,
                          y_map_func=c("fold_risk", "probability", "log_odds")[1],
                          y_map_max=3
@@ -61,7 +61,10 @@ uni_tag_nums <- function(data,
       df_result <- uni_tag_num_loess(df_mdl, num_col, tag_col)
     }else if (method=="logit_rcs"){
       df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col)
+    }else if(method=="mean"){
+      df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
     }
+    
     if (!is.null(df_result)){
       df_result$var_name <- num_col
       df_result_all <- bind_rows(df_result_all, df_result)
@@ -187,3 +190,16 @@ uni_tag_num_bootstrap <- function(df_mdl, num_col, tag_col, ncut=50){
   df_result$pctl <- round(df_result$pctl,2)
   return(df_result)
 }
+
+
+
+
+uni_tag_num_mean <- function(df_mdl, num_col, tag_col, ncut=100){
+  df_mdl$num_col <- round(est_pctl( df_mdl[, num_col] ),2)
+  df_mdl$tag_col <- df_mdl[, tag_col]
+  df_result <- df_mdl %>% group_by(num_col) %>% summarise(prob = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
+  colnames(df_result) <- c("pctl","prob")
+  return(df_result)
+  
+}
+
