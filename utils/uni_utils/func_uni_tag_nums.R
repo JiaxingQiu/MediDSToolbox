@@ -189,17 +189,46 @@ uni_tag_num_bootstrap <- function(df_mdl, num_col, tag_col, ncut=50){
   }
   df_result <- data.frame(pctl=us, prob=prob_vec)
   df_result$pctl <- round(df_result$pctl,2)
+  
+  # expand it to be 100 bins
+  inter <- approx(df_result$pctl, df_result$prob, method="constant", n=100)
+  df_result <- data.frame(pctl=round(inter$x,2),prob=inter$y)
+  
   return(df_result)
 }
 
 
 
 
-uni_tag_num_mean <- function(df_mdl, num_col, tag_col){
-  df_mdl$num_col <- round(est_pctl( df_mdl[, num_col] ),2)
+uni_tag_num_mean <- function(df_mdl, num_col, tag_col, frac_avail = 0.7){
+  
+  # tuning the binwidth for percentile
+  # if percentile surpass the missingness threshold (0.8)
+  est_pctl_vec <- est_pctl(df_mdl[, num_col])
+  print("---- tuning resolution / n_digit ----")
+  n_digits <- c()
+  for(n_digit in c(4,3,2,1)){
+    est_pctl_vec_bin_values <- unique(round(est_pctl_vec,n_digit))
+    est_pctl_vec_bin_values <- est_pctl_vec_bin_values[which(!is.na(est_pctl_vec_bin_values))]
+    binwidth <- 1/(10^n_digit)
+    n_bins <- length(est_pctl_vec_bin_values)
+    frac_bins <- round(length(est_pctl_vec_bin_values)/(10^n_digit+1),3)  
+    print(paste0("binwidth=",binwidth, "; n_bins=",n_bins, "; frac_bins=",frac_bins) )
+    if(frac_bins >= frac_avail) n_digits <- c(n_digits, n_digit)
+  }
+  
+  n_digit_opt <- n_digits[1]
+  df_mdl$num_col <- round(est_pctl_vec, n_digit_opt)
   df_mdl$tag_col <- df_mdl[, tag_col]
-  df_result <- df_mdl %>% group_by(num_col) %>% summarise(prob = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
-  colnames(df_result) <- c("pctl","prob")
+  df_result_raw <- df_mdl %>% group_by(num_col) %>% summarise(prob_raw = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
+  colnames(df_result_raw) <- c("pctl","prob")
+  # interpolate to fill gaps in 
+  inter <- approx(df_result_raw$pctl, df_result_raw$prob, method="linear", n=10^n_digit_opt)
+  df_result <- data.frame(pctl=round(inter$x,n_digit_opt),prob=inter$y)
+  # expand it to be 100 bins
+  inter <- approx(df_result$pctl, df_result$prob, method="constant", n=100)
+  df_result <- data.frame(pctl=round(inter$x,2),prob=inter$y)
+  
   return(df_result)
   
 }
