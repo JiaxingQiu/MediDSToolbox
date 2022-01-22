@@ -303,7 +303,8 @@ shinyServer(function(input, output, session) {
       #standardize=input$ml_select_standardize,
       test_data=test_data,
       y_map_func=input$ml_y_map_func,
-      y_map_max=input$ml_y_max
+      y_map_max=input$ml_y_max,
+      return_performance=input$ml_select_return_performance
     )
   })
   

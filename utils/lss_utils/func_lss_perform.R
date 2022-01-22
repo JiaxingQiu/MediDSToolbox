@@ -106,7 +106,7 @@ lss_perform <- function(
       i = i+1
       # fitted version of marginal effect plots
       fit_eff_plot_list[[i]] <- ggplot(df_plot_num, aes(x=predictor_value, y=y_pred, color=y_true)) +
-        geom_smooth(method = smooth_method, formula = smooth_formula)+
+        geom_smooth(method = smooth_method, formula = smooth_formula, span=0.3)+
         facet_wrap(~predictor_name, ncol=3, scales = "free_x") +
         ylab(y_map_func) +
         xlab(NULL) +

@@ -27,7 +27,8 @@ front_lasso_select <- function(
   standardize=TRUE, # always set to be true
   test_data=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=3
+  y_map_max=3,
+  return_performance = TRUE
 ){
   
   x_select_mdls <- NULL
@@ -257,6 +258,7 @@ front_lasso_select <- function(
   print("----- lss_perform in -----")
   lss_perform_in <- NULL
   tryCatch({
+    stopifnot(return_performance)
     lss_perform_in <- lss_perform(
       mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
       df = data_in, # a dataset to test out performance on
@@ -272,6 +274,7 @@ front_lasso_select <- function(
   print("----- lss_perform inorg -----")
   lss_perform_inorg <- NULL
   tryCatch({
+    stopifnot(return_performance)
     lss_perform_inorg <- lss_perform(
       mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
       df = data_inorg, # a dataset to test out performance on
@@ -287,6 +290,7 @@ front_lasso_select <- function(
   print("----- lss_perform ex -----")
   lss_perform_ex <- NULL
   tryCatch({
+    stopifnot(return_performance)
     lss_perform_ex <- lss_perform(
       mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
       df = data_ex, # a dataset to test out performance on
@@ -302,6 +306,7 @@ front_lasso_select <- function(
   print("----- lss_perform exorg -----")
   lss_perform_exorg <- NULL
   tryCatch({
+    stopifnot(return_performance)
     lss_perform_exorg <- lss_perform(
       mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
       df = data_exorg, # a dataset to test out performance on

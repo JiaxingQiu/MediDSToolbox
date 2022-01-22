@@ -163,11 +163,10 @@ sidebar <- dashboardSidebar(
                                      selected = in.ml_num_labels.selected)
         )),
     div(id = 'sidebar_ml_select',
-        conditionalPanel("input.sidebar == 'ml_select'"
-                         # ,
-                         # checkboxInput("ml_select_standardize", 
-                         #               "Standardize", 
-                         #               value = TRUE)
+        conditionalPanel("input.sidebar == 'ml_select'",
+                         checkboxInput("ml_select_return_performance",
+                                       "Return Performance",
+                                       value = FALSE)
                          
         )),
     div(id = 'sidebar_ml_clus',

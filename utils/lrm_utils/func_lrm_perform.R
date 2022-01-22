@@ -147,7 +147,9 @@ lrm_perform <- function(
     df_plot_pred <- data.frame(relative_time = df[,rel_time_col],
                                y_pred = as.numeric(df$y_pred),
                                y_true = as.factor(as.character( df$y_true)))
-    df_mean <- df_plot_pred %>% group_by(relative_time, y_true) %>% summarise( y_pred_mean = mean(y_pred, na.rm=TRUE)) %>% as.data.frame()
+    df_mean <- df_plot_pred %>% group_by(relative_time, y_true) %>% summarise( y_pred_mean = mean(y_pred, na.rm=TRUE),
+                                                                               y_pred_median = median(y_pred, na.rm=TRUE)
+                                                                               ) %>% as.data.frame()
     df_plot_pred <- merge(df_plot_pred, df_mean)
     # tuning smoothing method and formula based on data size
     smooth_method <- NULL
@@ -160,8 +162,8 @@ lrm_perform <- function(
       smooth_formula <- "y ~ poly(x, 6)"
     }
     tte_plot <- ggplot(df_plot_pred, aes(x=relative_time, y=y_pred, color=y_true)) +
-      geom_line(aes(y=y_pred_mean), alpha=0.3)+
-      geom_smooth(method = smooth_method, formula = smooth_formula)+
+      geom_line(aes(y=y_pred_median), alpha=0.3)+
+      geom_smooth(method = smooth_method, formula = smooth_formula, span=0.3)+
       ylab(y_map_func) +
       xlab(rel_time_col) +
       scale_color_discrete(name = y_col)+
