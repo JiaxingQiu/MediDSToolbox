@@ -52,8 +52,9 @@ uni_tag_nums <- function(data,
     df_mdl <- df_mdl[complete.cases(df_mdl[,tag_col]),]
     stopifnot(all(unique(as.numeric(as.character( df_mdl[,tag_col])))%in% c(0,1))) #assert tag y is 01 binary
     afford_dof <- n_distinct(df_mdl[which(df_mdl[,tag_col]==1), cluster_col])/15
+    print(paste0("---- affordable degree of freedom ---- ", afford_dof))
     dof_list <- c(3,4,5,6)
-    dof <- max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)
+    dof <- max(5, max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)) # at least 5 knots
     
     if (method=="bootstrap"){
       df_result <- uni_tag_num_bootstrap(df_mdl, num_col, tag_col)
@@ -194,7 +195,7 @@ uni_tag_num_bootstrap <- function(df_mdl, num_col, tag_col, ncut=50){
 
 
 
-uni_tag_num_mean <- function(df_mdl, num_col, tag_col, ncut=100){
+uni_tag_num_mean <- function(df_mdl, num_col, tag_col){
   df_mdl$num_col <- round(est_pctl( df_mdl[, num_col] ),2)
   df_mdl$tag_col <- df_mdl[, tag_col]
   df_result <- df_mdl %>% group_by(num_col) %>% summarise(prob = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
