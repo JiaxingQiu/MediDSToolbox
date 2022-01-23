@@ -374,6 +374,9 @@ body <- dashboardBody(
                                  hr(),
                                  fluidRow(
                                    column(4, style='border-right: 1px solid grey',
+                                          selectInput("setup_cluster_label",
+                                                      label="Cluster",
+                                                      choices = in.setup_cluster_label ),
                                           selectInput("setup_trim_by_label",
                                                       label="Trim time unit by",
                                                       choices = in.setup_trim_by_label),
@@ -408,16 +411,13 @@ body <- dashboardBody(
                                  hr(),
                                  fluidRow(
                                    column(4, style='border-right: 1px solid grey', 
-                                          selectInput("setup_cluster_label",
-                                                      label="Cluster",
-                                                      choices = in.setup_cluster_label ),
                                           selectInput("setup_aggregate_per", 
                                                       "Aggregate by", 
                                                       choices=c("None"="row", 
-                                                                "Time unit"="cluster_trim_by_unit", 
+                                                                "Time Unit per Cluster"="cluster_trim_by_unit", 
                                                                 "Cluster"="cluster")),
                                           checkboxInput("setup_winsorizing",
-                                                        "Winsorize",
+                                                        "Winsorize all numeric",
                                                         value = FALSE)
                                    ),
                                    column(4, style='border-right: 1px solid grey',
