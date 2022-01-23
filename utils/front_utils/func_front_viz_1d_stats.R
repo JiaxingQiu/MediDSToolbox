@@ -15,7 +15,7 @@ front_viz_1d_stats <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=FALSE,
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # distributions
   group_by_label="None" # fct
   
@@ -66,8 +66,9 @@ front_viz_1d_stats <- function(
                    fct_cols = fct_cols,
                    cluster_col = cluster_col,
                    trim_by_col = trim_by_col,
-                   trim_min = trim_vec[1]*time_unit,
-                   trim_max = trim_vec[2]*time_unit,
+                   trim_min = trim_vec[1],
+                   trim_max = trim_vec[2],
+                   trim_step_size = time_unit,
                    pctcut_num_cols = pctcut_num_cols,
                    pctcut_num_vec = pctcut_num_vec,
                    pctcut_num_coerce = pctcut_num_coerce,
@@ -75,7 +76,7 @@ front_viz_1d_stats <- function(
                    imputation = imputation,
                    impute_per_cluster = impute_per_cluster,
                    winsorizing = winsorizing,
-                   aggregation = aggregation)
+                   aggregate_per = aggregate_per)
   
   
   

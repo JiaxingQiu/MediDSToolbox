@@ -36,9 +36,11 @@ sidebar <- dashboardSidebar(
                          selectInput("setup_strat_by",
                                      "Stratified by",
                                      choices = c("None",in.setup_strat_by)),
-                         checkboxInput("setup_summ_aggregation",
-                                       "Aggregated",
-                                       TRUE),
+                         selectInput("setup_summ_aggregate_per", 
+                                     "Aggregate by", 
+                                     choices=c("None"="row", 
+                                               "Time unit"="cluster_trim_by_unit", 
+                                               "Cluster"="cluster")),
                          checkboxInput("setup_trim_ctrl",
                                        "Trim Control Group",
                                        TRUE)
@@ -166,7 +168,7 @@ sidebar <- dashboardSidebar(
         conditionalPanel("input.sidebar == 'ml_select'",
                          checkboxInput("ml_select_return_performance",
                                        "Return Performance",
-                                       value = FALSE)
+                                       value = TRUE)
                          
         )),
     div(id = 'sidebar_ml_clus',
@@ -244,7 +246,7 @@ sidebar <- dashboardSidebar(
                            column(width=4, numericInput("unml_trim_time_unit", "/", in.unml_trim_time_unit) )
                          ),
                          sliderInput("unml_trim_vec",
-                                     label="[ from, to )",
+                                     label="time unit [ from, to )",
                                      min = 0,  max = 100, step = 1, value = c(0, 99)),
                          fluidRow(
                            column(width=8, selectInput("unml_pctcut_num_labels",
@@ -367,18 +369,20 @@ body <- dashboardBody(
             h3(" Set Up -- Engineer"),
             tabsetPanel(type = "tabs",
                         tabPanel("Engineer",
-                                 tags$h4("--------------- Step 1 ----------------"),
+                                 hr(),
+                                 tags$h4("--- Step 1 ---"),
+                                 hr(),
                                  fluidRow(
-                                   column(4, 
+                                   column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_trim_by_label",
-                                                      label="Trim",
+                                                      label="Trim time unit by",
                                                       choices = in.setup_trim_by_label),
                                           numericInput("setup_trim_time_unit", "/", in.setup_trim_time_unit),
                                           sliderInput("setup_trim_vec",
                                                       label="[ from, to )",
                                                       min = 0,  max = 100, step = 1, value = c(0, 99))
                                    ),
-                                   column(4, 
+                                   column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_pctcut_num_labels",
                                                       label="Numeric cutoffs",
                                                       multiple = TRUE,
@@ -391,7 +395,7 @@ body <- dashboardBody(
                                                         "Coerce Outliers",
                                                         value = FALSE)
                                    ),
-                                   column(4, 
+                                   column(4,
                                           selectInput("setup_filter_tag_labels",
                                                       label="Binary filter(s)",
                                                       multiple = TRUE,
@@ -399,20 +403,24 @@ body <- dashboardBody(
                                                       selected = NULL) 
                                    )
                                  ),
-                                 tags$h4("--------------- Step 2 ----------------"),
+                                 hr(),
+                                 tags$h4("--- Step 2 ---"),
+                                 hr(),
                                  fluidRow(
-                                   column(4, 
+                                   column(4, style='border-right: 1px solid grey', 
                                           selectInput("setup_cluster_label",
                                                       label="Cluster",
                                                       choices = in.setup_cluster_label ),
-                                          checkboxInput("setup_aggregation", 
-                                                        "Aggregate", 
-                                                        value = FALSE),
+                                          selectInput("setup_aggregate_per", 
+                                                      "Aggregate by", 
+                                                      choices=c("None"="row", 
+                                                                "Time unit"="cluster_trim_by_unit", 
+                                                                "Cluster"="cluster")),
                                           checkboxInput("setup_winsorizing",
                                                         "Winsorize",
                                                         value = FALSE)
                                    ),
-                                   column(4,
+                                   column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_imputation",
                                                       "Imputation",
                                                       choices = c("Zero", "None", "Mean", "Median"),

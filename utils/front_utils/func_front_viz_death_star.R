@@ -30,8 +30,8 @@ front_viz_death_star <- function(
   
   # find columns names from input labels
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
-  pctcut_num_cols <-dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
-  filter_tag_cols <-dict_data$varname[which(dict_data$label%in%filter_tag_labels & dict_data$unit=="tag01")]
+  pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
+  filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels & dict_data$unit=="tag01")]
   
   y_col <-dict_data$varname[which(dict_data$label==y_label)]
   sort_col <-dict_data$varname[which(dict_data$label==sort_by_label)]

@@ -15,7 +15,7 @@ front_uni_heatmap <- function(
   imputation="None",
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=FALSE,
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # --- local ---
   trim_ctrl=TRUE,
   num_adjust_label=NULL, 
@@ -51,8 +51,9 @@ front_uni_heatmap <- function(
                         fct_cols = fct_cols,
                         cluster_col = cluster_col,
                         trim_by_col = trim_by_col,
-                        trim_min = trim_vec[1]*time_unit,
-                        trim_max = trim_vec[2]*time_unit,
+                        trim_min = trim_vec[1],
+                        trim_max = trim_vec[2],
+                        trim_step_size = time_unit,
                         pctcut_num_cols = pctcut_num_cols,
                         pctcut_num_vec = pctcut_num_vec,
                         pctcut_num_coerce = pctcut_num_coerce,
@@ -60,7 +61,7 @@ front_uni_heatmap <- function(
                         imputation = imputation,
                         impute_per_cluster = impute_per_cluster,
                         winsorizing = winsorizing,
-                        aggregation = aggregation)
+                        aggregate_per = aggregate_per)
   }else{
     if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
       data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -68,8 +69,9 @@ front_uni_heatmap <- function(
                              fct_cols = fct_cols,
                              cluster_col = cluster_col,
                              trim_by_col = trim_by_col,
-                             trim_min=trim_vec[1]*time_unit,
-                             trim_max=trim_vec[2]*time_unit,
+                             trim_min=trim_vec[1],
+                             trim_max=trim_vec[2],
+                             trim_step_size = time_unit,
                              pctcut_num_cols = pctcut_num_cols,
                              pctcut_num_vec = pctcut_num_vec,
                              pctcut_num_coerce = pctcut_num_coerce,
@@ -77,7 +79,7 @@ front_uni_heatmap <- function(
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
-                             aggregation = aggregation)
+                             aggregate_per = aggregate_per)
       data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                              num_cols = num_cols,
                              fct_cols = fct_cols,
@@ -86,6 +88,7 @@ front_uni_heatmap <- function(
                              trim_min=-Inf,
                              trim_max=Inf,
                              trim_keepna = TRUE,
+                             trim_step_size = time_unit,
                              pctcut_num_cols = pctcut_num_cols,
                              pctcut_num_vec = pctcut_num_vec,
                              pctcut_num_coerce = pctcut_num_coerce,
@@ -93,7 +96,7 @@ front_uni_heatmap <- function(
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
-                             aggregation = aggregation)
+                             aggregate_per = aggregate_per)
       data_in <- bind_rows(data_cntrl, data_event)
     }
   }
@@ -137,8 +140,9 @@ front_uni_heatmap <- function(
     if("c_score" %in% colnames(df_result_all_sort)){
       plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
     }
-    
   }
+  
+  
   return(plot_obj)
   
 }
@@ -154,7 +158,7 @@ front_uni_heatmap <- function(
 # imputation="None"
 # impute_per_cluster=FALSE
 # winsorizing=TRUE
-# aggregation=TRUE
+# aggregate_per==c("row", "cluster_trim_by_unit", "cluster")[2]
 # pctcut_num_labels=c()
 # pctcut_num_vec=c(0.1, 99.9)
 # pctcut_num_coerce = TRUE

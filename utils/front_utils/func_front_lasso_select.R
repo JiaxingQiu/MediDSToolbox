@@ -21,7 +21,7 @@ front_lasso_select <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=TRUE, # should set to be true
+  aggregate_per=c("cluster_trim_by_unit", "cluster")[2], # should set to be cluster wise or time unit wise
   # --- local ---
   trim_ctrl = TRUE,
   standardize=TRUE, # always set to be true
@@ -33,9 +33,6 @@ front_lasso_select <- function(
   
   x_select_mdls <- NULL
   x_select_mdls_grouped <- NULL
-  if (!aggregation){
-    warning("No repeated measures allowed, please check 'aggregation' in 'Setup' page")
-  } 
   
   # ---- pre-process ----
   x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num")]# linear numeric columns
@@ -82,8 +79,9 @@ front_lasso_select <- function(
                           fct_cols = fct_cols,
                           cluster_col = cluster_col,
                           trim_by_col = trim_by_col,
-                          trim_min = trim_vec[1]*time_unit,
-                          trim_max = trim_vec[2]*time_unit,
+                          trim_min = trim_vec[1],
+                          trim_max = trim_vec[2],
+                          trim_step_size = time_unit,
                           pctcut_num_cols = pctcut_num_cols,
                           pctcut_num_vec = pctcut_num_vec,
                           pctcut_num_coerce = pctcut_num_coerce,
@@ -91,7 +89,7 @@ front_lasso_select <- function(
                           imputation = imputation,
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
-                          aggregation = aggregation)
+                          aggregate_per = aggregate_per)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
         data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -99,8 +97,9 @@ front_lasso_select <- function(
                                fct_cols = fct_cols,
                                cluster_col = cluster_col,
                                trim_by_col = trim_by_col,
-                               trim_min=trim_vec[1]*time_unit,
-                               trim_max=trim_vec[2]*time_unit,
+                               trim_min=trim_vec[1],
+                               trim_max=trim_vec[2],
+                               trim_step_size = time_unit,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,
                                pctcut_num_coerce = pctcut_num_coerce,
@@ -108,7 +107,7 @@ front_lasso_select <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregation = aggregation)
+                               aggregate_per = aggregate_per)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
                                fct_cols = fct_cols,
@@ -116,6 +115,7 @@ front_lasso_select <- function(
                                trim_by_col = trim_by_col,
                                trim_min=-Inf,
                                trim_max=Inf,
+                               trim_step_size = time_unit,
                                trim_keepna = TRUE,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,
@@ -124,7 +124,7 @@ front_lasso_select <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregation = aggregation)
+                               aggregate_per = aggregate_per)
         data_in <- bind_rows(data_cntrl, data_event)
       }
     }
@@ -159,8 +159,9 @@ front_lasso_select <- function(
                             fct_cols = fct_cols,
                             cluster_col = cluster_col,
                             trim_by_col = trim_by_col,
-                            trim_min=trim_vec[1]*time_unit,
-                            trim_max=trim_vec[2]*time_unit,
+                            trim_min=trim_vec[1],
+                            trim_max=trim_vec[2],
+                            trim_step_size = time_unit,
                             pctcut_num_cols = pctcut_num_cols,
                             pctcut_num_vec = pctcut_num_vec,
                             pctcut_num_coerce = pctcut_num_coerce,
@@ -168,7 +169,7 @@ front_lasso_select <- function(
                             imputation = imputation,
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
-                            aggregation = aggregation)
+                            aggregate_per = aggregate_per)
       }else{
         if (all(unique(as.character(test_data[,y_col])) %in% c(1,0,NA))){
           data_event <- engineer(data = test_data[which(test_data[,y_col]==1),],
@@ -176,8 +177,9 @@ front_lasso_select <- function(
                                  fct_cols = fct_cols,
                                  cluster_col = cluster_col,
                                  trim_by_col = trim_by_col,
-                                 trim_min=trim_vec[1]*time_unit,
-                                 trim_max=trim_vec[2]*time_unit,
+                                 trim_min=trim_vec[1],
+                                 trim_max=trim_vec[2],
+                                 trim_step_size = time_unit,
                                  pctcut_num_cols = pctcut_num_cols,
                                  pctcut_num_vec = pctcut_num_vec,
                                  pctcut_num_coerce = pctcut_num_coerce,
@@ -185,7 +187,7 @@ front_lasso_select <- function(
                                  imputation = imputation,
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
-                                 aggregation = aggregation)
+                                 aggregate_per = aggregate_per)
           data_cntrl <- engineer(data = test_data[which(test_data[,y_col]==0),],
                                  num_cols = num_cols,
                                  fct_cols = fct_cols,
@@ -193,6 +195,7 @@ front_lasso_select <- function(
                                  trim_by_col = trim_by_col,
                                  trim_min=-Inf,
                                  trim_max=Inf,
+                                 trim_step_size = time_unit,
                                  trim_keepna = TRUE,
                                  pctcut_num_cols = pctcut_num_cols,
                                  pctcut_num_vec = pctcut_num_vec,
@@ -201,7 +204,7 @@ front_lasso_select <- function(
                                  imputation = imputation,
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
-                                 aggregation = aggregation)
+                                 aggregate_per = aggregate_per)
           data_ex <- bind_rows(data_cntrl, data_event)
         }
       }
@@ -407,7 +410,7 @@ front_lasso_select <- function(
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=FALSE
-# aggregation=TRUE # should set to be true
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[2] # should set to be true
 # # --- local ---
 # trim_ctrl = TRUE
 # standardize=TRUE # always set to be true

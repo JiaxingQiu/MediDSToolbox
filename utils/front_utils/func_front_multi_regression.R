@@ -21,7 +21,7 @@ front_multi_regression <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=TRUE,
-  aggregation=FALSE,
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # --- local ---
   trim_ctrl = TRUE,
   r2=0.9,
@@ -100,8 +100,9 @@ front_multi_regression <- function(
                           fct_cols = fct_cols,
                           cluster_col = cluster_col,
                           trim_by_col = trim_by_col,
-                          trim_min = trim_vec[1]*time_unit,
-                          trim_max = trim_vec[2]*time_unit,
+                          trim_min = trim_vec[1],
+                          trim_max = trim_vec[2],
+                          trim_step_size = time_unit,
                           pctcut_num_cols = pctcut_num_cols,
                           pctcut_num_vec = pctcut_num_vec,
                           pctcut_num_coerce = pctcut_num_coerce,
@@ -109,7 +110,7 @@ front_multi_regression <- function(
                           imputation = imputation,
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
-                          aggregation = aggregation)
+                          aggregate_per = aggregate_per)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
         data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -117,8 +118,9 @@ front_multi_regression <- function(
                                fct_cols = fct_cols,
                                cluster_col = cluster_col,
                                trim_by_col = trim_by_col,
-                               trim_min=trim_vec[1]*time_unit,
-                               trim_max=trim_vec[2]*time_unit,
+                               trim_min=trim_vec[1],
+                               trim_max=trim_vec[2],
+                               trim_step_size = time_unit,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,
                                pctcut_num_coerce = pctcut_num_coerce,
@@ -126,7 +128,7 @@ front_multi_regression <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregation = aggregation)
+                               aggregate_per = aggregate_per)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
                                fct_cols = fct_cols,
@@ -134,6 +136,7 @@ front_multi_regression <- function(
                                trim_by_col = trim_by_col,
                                trim_min=-Inf,
                                trim_max=Inf,
+                               trim_step_size = time_unit,
                                trim_keepna = TRUE,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,
@@ -142,7 +145,7 @@ front_multi_regression <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregation = aggregation)
+                               aggregate_per = aggregate_per)
         data_in <- bind_rows(data_cntrl, data_event)
       }
     }
@@ -178,8 +181,9 @@ front_multi_regression <- function(
                             fct_cols = fct_cols,
                             cluster_col = cluster_col,
                             trim_by_col = trim_by_col,
-                            trim_min=trim_vec[1]*time_unit,
-                            trim_max=trim_vec[2]*time_unit,
+                            trim_min=trim_vec[1],
+                            trim_max=trim_vec[2],
+                            trim_step_size = time_unit,
                             pctcut_num_cols = pctcut_num_cols,
                             pctcut_num_vec = pctcut_num_vec,
                             pctcut_num_coerce = pctcut_num_coerce,
@@ -187,7 +191,7 @@ front_multi_regression <- function(
                             imputation = imputation,
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
-                            aggregation = aggregation)
+                            aggregate_per = aggregate_per)
       }else{
         if (all(unique(as.character(test_data[,y_col])) %in% c(1,0,NA))){
           data_event <- engineer(data = test_data[which(test_data[,y_col]==1),],
@@ -195,8 +199,9 @@ front_multi_regression <- function(
                                  fct_cols = fct_cols,
                                  cluster_col = cluster_col,
                                  trim_by_col = trim_by_col,
-                                 trim_min=trim_vec[1]*time_unit,
-                                 trim_max=trim_vec[2]*time_unit,
+                                 trim_min=trim_vec[1],
+                                 trim_max=trim_vec[2],
+                                 trim_step_size = time_unit,
                                  pctcut_num_cols = pctcut_num_cols,
                                  pctcut_num_vec = pctcut_num_vec,
                                  pctcut_num_coerce = pctcut_num_coerce,
@@ -204,7 +209,7 @@ front_multi_regression <- function(
                                  imputation = imputation,
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
-                                 aggregation = aggregation)
+                                 aggregate_per = aggregate_per)
           data_cntrl <- engineer(data = test_data[which(test_data[,y_col]==0),],
                                  num_cols = num_cols,
                                  fct_cols = fct_cols,
@@ -212,6 +217,7 @@ front_multi_regression <- function(
                                  trim_by_col = trim_by_col,
                                  trim_min=-Inf,
                                  trim_max=Inf,
+                                 trim_step_size = time_unit,
                                  trim_keepna = TRUE,
                                  pctcut_num_cols = pctcut_num_cols,
                                  pctcut_num_vec = pctcut_num_vec,
@@ -220,7 +226,7 @@ front_multi_regression <- function(
                                  imputation = imputation,
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
-                                 aggregation = aggregation)
+                                 aggregate_per = aggregate_per)
           data_ex <- bind_rows(data_cntrl, data_event)
         }
       }
@@ -251,7 +257,7 @@ front_multi_regression <- function(
                           rcs5_low=rcs5_low,
                           rcs4_low=rcs4_low,
                           cv_nfold=cv_nfold,
-                          data_org = data_org,
+                          data_org=data_inorg,
                           test_data=data_ex, 
                           test_data_org=data_exorg,
                           na_frac_max=na_frac_max, 
@@ -375,14 +381,14 @@ front_multi_regression <- function(
 # ############################################# not run #############################################
 # data = data_ml
 # dict_data = dict_ml
-# y_label = "Primary outcome (EN)___Unfavorable"
+# y_label = "Primary outcome (EN) == Unfavorable"
 # cluster_label = "PreVent study ID"
 # x_labels_linear = c("Gestational Age", "pH associated with highest CO2 on blood gas")
 # x_labels_nonlin_rcs5 = c("Maternal age")
 # x_labels_nonlin_rcs4 = c("Gestational Age")
 # x_labels_nonlin_rcs3 = c("Birth weight")
 # x_labels_fct = c("Site (EN)")
-# x_labels_tag = c("Baby Gender (EN)___Female")
+# x_labels_tag = c("Baby Gender (EN) == Female")
 # x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag))
 # # --- engineer ---
 # trim_by_label = "Post-menstrual Age"  # reltive time info
@@ -392,11 +398,11 @@ front_multi_regression <- function(
 # pctcut_num_labels = c("PeriodicBreathing_v3 duration per day", "ABD_v3 number of events per day")
 # pctcut_num_vec = c(0.1, 99.9)
 # pctcut_num_coerce=TRUE
-# filter_tag_labels=c("On respiratory support with endotracheal tube (EN)___Yes", "Any  Doses of any medication today")
+# filter_tag_labels=c("On respiratory support with endotracheal tube (EN) == Yes", "Any  Doses of any medication today")
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=TRUE
-# aggregation=FALSE
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[2]
 # # --- local ---
 # r2=0.9
 # rcs5_low="70%"
@@ -413,5 +419,5 @@ front_multi_regression <- function(
 # fix_knots = TRUE
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
-
+# 
 

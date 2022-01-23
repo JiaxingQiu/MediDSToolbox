@@ -7,30 +7,35 @@ engineer <- function(
   #--- trim data ---
   trim_min = -Inf, # [from,
   trim_max = Inf, # to)
+  trim_step_size = 1,
   trim_keepna = FALSE, # whether or not to keep NA in relative time variable
   pctcut_num_cols=c(),
   pctcut_num_vec=c(0.1, 99.9),
   pctcut_num_coerce = TRUE,
   filter_tag_cols=c(),
   #--- decorate data ---
-  imputation=c("None","Mean", "Median", "Zero")[1],
+  imputation=c("None", "Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=FALSE
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1]
 ){
   
   # ---- validate inputs ----
+  trim_step_size <- max(1,as.numeric(trim_step_size),na.rm=TRUE)
+  trim_min <- trim_min*trim_step_size
+  trim_max <- trim_max*trim_step_size
   if (trim_max<=trim_min){
     trim_min <- -Inf
     trim_max <- Inf
   }
   trim_by_col <- intersect(colnames(data), trim_by_col)
+  cluster_col <- intersect(colnames(data), cluster_col)
   num_cols <- intersect(colnames(data), num_cols)
   num_cols <- union(num_cols, trim_by_col)
   num_cols <- union(num_cols, pctcut_num_cols)
   fct_cols <- intersect(colnames(data), fct_cols)
+  fct_cols <- union(fct_cols, cluster_col)
   fct_cols <- union(fct_cols, filter_tag_cols)
-  cluster_col <- intersect(colnames(data), cluster_col)
   
   # ---- initiate dataframe to return "data_engineered" ----
   # in the returned dataframe, only trim_by_col, num_cols, fct_cols, cluster_cols will be in the columns
@@ -87,24 +92,32 @@ engineer <- function(
     if(imputation=="Median") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., median(.,na.rm = TRUE)) ) %>% as.data.frame()
     if(imputation=="Zero")  data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., 0)) %>% as.data.frame()
   }
-  # winsorize numeric columns 
+  # winsorize numeric columns except trim by col
   if(winsorizing){
-    data[,num_cols] <- winsorize(data[,num_cols])
+    data[,setdiff(num_cols,trim_by_col)] <- winsorize(data[,setdiff(num_cols,trim_by_col)])
   }
   # aggregation if required
-  if(aggregation & length(cluster_col)>0){
+  if(aggregate_per %in% c("cluster_trim_by_unit", "cluster") ){ 
     df_key <- NULL
     df_tag <- NULL
     df_cat <- NULL
     df_num <- NULL
-    df_key <- data.frame(cluster_col = unique(data[,cluster_col]), stringsAsFactors = FALSE)
-    colnames(df_key) <- cluster_col
+    
+    if (aggregate_per=="cluster_trim_by_unit"){
+      # rounding trim by column as multiple value of trim by step size / time unit
+      data[,trim_by_col] <- floor(data[,trim_by_col]/trim_step_size)*trim_step_size
+      data$key_col <- paste0(data[,cluster_col], "___", floor(data[,trim_by_col]/trim_step_size))
+    }else if (aggregate_per=="cluster"){
+      data$key_col <- data[,cluster_col]
+    }
+    # key 
+    df_key <- data.frame(key_col = unique(data$key_col), stringsAsFactors = FALSE)
     # num - mean
     if(length(num_cols)>0){
-      df_num <- data %>% group_by(data[,cluster_col]) %>% 
+      df_num <- data %>% group_by(key_col) %>% 
         summarise_at(vars(all_of(num_cols)), ~mean(.,na.rm = TRUE)) %>% 
         as.data.frame()
-      colnames(df_num) <- c(cluster_col, num_cols)
+      colnames(df_num) <- c("key_col", num_cols)
     }
     # fct 
     if(length(fct_cols)>0){
@@ -118,15 +131,15 @@ engineer <- function(
           cat_cols <- c(cat_cols, fct_col)
         }
       }
-      df_tag <- data %>% group_by(data[,cluster_col]) %>% 
+      df_tag <- data %>% group_by(key_col) %>% 
         summarise_at(vars(all_of(tag_cols)), ~max(.)) %>%
         mutate_at(vars(all_of(tag_cols)), function(x) ifelse(is.infinite(x), NA, x)) %>%
         as.data.frame()
-      colnames(df_tag) <- c(cluster_col, tag_cols)
-      df_cat <- data %>% group_by(data[,cluster_col]) %>% 
+      colnames(df_tag) <- c("key_col", tag_cols)
+      df_cat <- data %>% group_by(key_col) %>% 
         summarise_at(vars(all_of(cat_cols)), ~unique(.)[which(!is.na(unique(.)))][1] ) %>% # use the first not na value
         as.data.frame()
-      colnames(df_cat) <- c(cluster_col, cat_cols)
+      colnames(df_cat) <- c("key_col", cat_cols)
     }
     data <- df_key
     if (!is.null(df_tag)){
@@ -139,7 +152,7 @@ engineer <- function(
       data <- merge(data, df_num)
     }
   }
-  data_engineered <- data[,unique(c(cluster_col, trim_by_col, num_cols, fct_cols))]
+  data_engineered <- data[, intersect(colnames(data),unique(c("key_col",cluster_col, trim_by_col, num_cols, fct_cols)))]
   
   
   # ---- return final engineered dataset ----
@@ -159,10 +172,11 @@ engineer <- function(
 # num_cols = c("baby_weight_lin") # vector of numeric columns
 # fct_cols = c("delivery_mode_factor", "posair_ynunk_drvd___tag_factor_Yes") # vector of factor columns
 # cluster_col = "subjectnbr" # cluster column
-# trim_by_col = NULL
+# trim_by_col = "pma_days"
 # #--- trim data ---
-# trim_min = -Inf # [from,
-# trim_max = Inf # to)
+# trim_min = 35 # [from,
+# trim_max = 37 # to)
+# trim_step_size = 7
 # trim_keepna = FALSE # whether or not to keep NA in relative time variable
 # pctcut_num_cols=c()
 # pctcut_num_vec=c(0.1, 99.9)
@@ -172,6 +186,6 @@ engineer <- function(
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=FALSE
-# aggregation=TRUE
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[2]
 
 

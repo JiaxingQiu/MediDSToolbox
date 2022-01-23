@@ -15,7 +15,7 @@ front_X_clus <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=FALSE,
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # --- local ---
   r2=0.9,
   rcs5_low="70%",
@@ -53,8 +53,9 @@ front_X_clus <- function(
                           fct_cols = fct_cols,
                           cluster_col = cluster_col,
                           trim_by_col = trim_by_col,
-                          trim_min = trim_vec[1]*time_unit,
-                          trim_max = trim_vec[2]*time_unit,
+                          trim_min = trim_vec[1],
+                          trim_max = trim_vec[2],
+                          trim_step_size = time_unit,
                           pctcut_num_cols = pctcut_num_cols,
                           pctcut_num_vec = pctcut_num_vec,
                           pctcut_num_coerce = pctcut_num_coerce,
@@ -62,7 +63,7 @@ front_X_clus <- function(
                           imputation = imputation,
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
-                          aggregation = aggregation)
+                          aggregate_per = aggregate_per)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
         data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -70,8 +71,9 @@ front_X_clus <- function(
                                fct_cols = fct_cols,
                                cluster_col = cluster_col,
                                trim_by_col = trim_by_col,
-                               trim_min=trim_vec[1]*time_unit,
-                               trim_max=trim_vec[2]*time_unit,
+                               trim_min=trim_vec[1],
+                               trim_max=trim_vec[2],
+                               trim_step_size = time_unit,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,
                                pctcut_num_coerce = pctcut_num_coerce,
@@ -79,7 +81,7 @@ front_X_clus <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregation = aggregation)
+                               aggregate_per = aggregate_per)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
                                fct_cols = fct_cols,
@@ -87,6 +89,7 @@ front_X_clus <- function(
                                trim_by_col = trim_by_col,
                                trim_min=-Inf,
                                trim_max=Inf,
+                               trim_step_size = time_unit,
                                trim_keepna = TRUE,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,
@@ -95,7 +98,7 @@ front_X_clus <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregation = aggregation)
+                               aggregate_per = aggregate_per)
         data_in <- bind_rows(data_cntrl, data_event)
       }
     }

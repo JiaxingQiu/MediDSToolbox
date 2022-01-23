@@ -21,7 +21,7 @@ front_multi_regression_timely <- function(
   imputation="None",
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregation=FALSE,
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # --- local ---
   trim_ctrl = TRUE,
   r2=0.9,
@@ -99,7 +99,7 @@ front_multi_regression_timely <- function(
                                           imputation = imputation,
                                           impute_per_cluster = impute_per_cluster,
                                           winsorizing = winsorizing,
-                                          aggregation = aggregation,
+                                          aggregate_per = aggregate_per,
                                           # --- local ---
                                           r2=r2,
                                           rcs5_low=rcs5_low,
@@ -273,7 +273,7 @@ front_multi_regression_timely <- function(
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=FALSE
-# aggregation=FALSE
+# aggregate_per=FALSE
 # # --- local ---
 # r2=0.9
 # rcs5_low="100%"

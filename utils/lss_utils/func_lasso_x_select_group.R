@@ -26,6 +26,8 @@ lasso_x_select_group <- function(
   # data_final: a dataframe object with updated redundency attributes on each column
   # dict_final: updated dictionary for correspondingdata_final
   
+  print("--- response distribution ---")
+  print(table(data[,y_col]))
   
   # linear > rcs3 > rcs4 > rcs5
   # variable name population space

@@ -60,8 +60,7 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregation = input$setup_summ_aggregation,
-      #aggregation = TRUE,
+      aggregate_per = input$setup_summ_aggregate_per,
       # --- local ---
       trim_ctrl = input$setup_trim_ctrl,
       stratify_by = input$setup_strat_by
@@ -84,7 +83,7 @@ shinyServer(function(input, output, session) {
                        imputation = input$setup_imputation,
                        impute_per_cluster = input$setup_impute_per_cluster,
                        winsorizing = input$setup_winsorizing,
-                       aggregation = input$setup_aggregation,
+                       aggregate_per = input$setup_aggregate_per,
                        group_by_label = input$eda_group_by_label_stats1d
     ) 
   })
@@ -259,7 +258,7 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregation = input$setup_aggregation,
+      aggregate_per = input$setup_aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       num_adjust_label=input$ml_num_adjust_label, 
@@ -276,6 +275,8 @@ shinyServer(function(input, output, session) {
       try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
       test_data <- read.csv(input$ex_test_csv$datapath)
     }
+    aggregate_per <- ifelse(input$setup_aggregate_per%in%c("cluster_trim_by_unit", "cluster"), input$setup_aggregate_per, "cluster")
+    
     front_lasso_select(
       data = data_ml,
       dict_data = dict_ml,
@@ -298,6 +299,7 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
+      aggregate_per = aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       #standardize=input$ml_select_standardize,
@@ -326,7 +328,7 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregation = input$setup_aggregation,
+      aggregate_per = input$setup_aggregate_per,
       # --- local ---
       r2=input$ml_r2,
       rcs5_low=paste0(input$ml_rcs_vec[1],"%"),
@@ -369,7 +371,7 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregation = input$setup_aggregation,
+      aggregate_per = input$setup_aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       r2=input$ml_r2,
@@ -411,7 +413,7 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregation = input$setup_aggregation,
+      aggregate_per = input$setup_aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       r2=input$ml_r2,
@@ -466,7 +468,7 @@ shinyServer(function(input, output, session) {
       imputation = input$unml_imputation,
       impute_per_cluster=input$unml_impute_per_cluster,
       winsorizing=input$unml_winsorizing,
-      aggregation=input$unml_aggregation, # always set to be true
+      aggregate_per=input$unml_aggregation, # always set to be true
       # local parameters
       input_labels=input$unml_input_labels,
       nc_vec = input$unml_nc_vec,
