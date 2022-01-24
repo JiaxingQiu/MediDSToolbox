@@ -40,7 +40,8 @@ sidebar <- dashboardSidebar(
                                      "Aggregate by", 
                                      choices=c("None"="row", 
                                                "Time unit"="cluster_trim_by_unit", 
-                                               "Cluster"="cluster")),
+                                               "Cluster"="cluster")
+                                     selected = "cluster"),
                          checkboxInput("setup_trim_ctrl",
                                        "Trim Control Group",
                                        TRUE)
