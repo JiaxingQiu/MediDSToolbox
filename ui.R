@@ -299,7 +299,7 @@ body <- dashboardBody(
                    )),
             tags$hr(),
             tags$h3("Unsupervised Machine Learning"),
-            tags$p("Unsupervise machine learning --",
+            tags$p("Use unsupervised learning methods, such as K-means --",
                    tags$ul(
                      tags$li("to cluster row-wise record, i.e. infant daily records, by optimizing the objective functions of a given mothed such as k-means, 
                              based on customized high-dimensional input variables"), 
