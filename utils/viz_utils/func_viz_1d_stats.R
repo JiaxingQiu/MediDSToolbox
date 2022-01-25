@@ -19,7 +19,7 @@ viz_1d_stats <- function(
   }else{
     data$group <- as.character(data[,group_by_col])
   }
-  for ( g_level in intersect(unique(as.character(data$group)),c("Unknown","NA"))  ){
+  for ( g_level in intersect(unique(as.character(data$group)),c("NA","Unknown"))  ){ #
     data$group[which(as.character(data$group)==g_level)] <- NA
   }
   data$x <- as.character(data[,x_col])
@@ -74,7 +74,7 @@ viz_1d_stats <- function(
       ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       #ylim(min(data$y,na.rm=TRUE)*0.9, max(as.numeric(quantile(data$y, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Mean") +
-      facet_wrap(~ group, ncol = 3) 
+      facet_wrap(~ group, ncol = 5) 
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
       x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
@@ -94,7 +94,7 @@ viz_1d_stats <- function(
       ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       #ylim(min(data$y,na.rm=TRUE)*0.9, max(as.numeric(quantile(data$y, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Violin + Box")+
-      facet_wrap(~ group, ncol = 3)
+      facet_wrap(~ group, ncol = 5)
     
   }
   
@@ -142,7 +142,7 @@ viz_1d_stats <- function(
       ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       ylim(min(df$q_val,na.rm=TRUE)*0.9, max(as.numeric(quantile(df$q_val, 0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Percentile") +
-      facet_wrap(~ group, ncol = 3) 
+      facet_wrap(~ group, ncol = 5) 
     
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
@@ -169,7 +169,7 @@ viz_1d_stats <- function(
   if(plot_denom) {
     p_denom <- ggplot(df_denom[!is.na(df_denom$group),], aes(x=x, y=n_sbj)) +
       geom_bar(stat="identity") + 
-      facet_wrap(~ group, ncol = 3) +
+      facet_wrap(~ group, ncol = 5) +
       xlab(paste0(dict_data[x_col,"label"], "     ", dict_data[x_col,"unit"]))+
       ylab('# sbj w/ available data') +
       ggtitle("Denominator")

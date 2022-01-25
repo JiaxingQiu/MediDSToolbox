@@ -229,59 +229,10 @@ sidebar <- dashboardSidebar(
     
     # ---- 4. unsupervised ml (unml) ----
     menuItem("ML (unsupervised)", tabName = "unml", startExpanded = FALSE,
-             menuSubItem('Engineering', tabName = 'unml_setup'),
              menuSubItem('Kmeans Clustering', tabName = 'unml_cluster')
     ),
     ## Show panel only when sidebar is selected
     useShinyjs(),
-    div(id = 'sidebar_unml_setup',
-        conditionalPanel("input.sidebar == 'unml_setup'",
-                         selectInput("unml_cluster_label",
-                                     "Cluster",
-                                     choices = in.unml_cluster_label),
-                         fluidRow(
-                           column(width=8,selectInput("unml_trim_by_label",
-                                                      label="Trim",
-                                                      choices = in.unml_trim_by_label,
-                                                      selected = in.unml_trim_by_label[1]) ),
-                           column(width=4, numericInput("unml_trim_time_unit", "/", in.unml_trim_time_unit) )
-                         ),
-                         sliderInput("unml_trim_vec",
-                                     label="time unit [ from, to )",
-                                     min = 0,  max = 100, step = 1, value = c(0, 99)),
-                         fluidRow(
-                           column(width=8, selectInput("unml_pctcut_num_labels",
-                                                       label="Numeric cutoffs",
-                                                       multiple = TRUE,
-                                                       choices = dict_ml$label_front[which(dict_ml$type=="num")],
-                                                       selected = NULL) ),
-                           column(width=4, checkboxInput("unml_coerce","coerce",value = FALSE))
-                         ),
-                         sliderInput("unml_pctcut_num_vec",
-                                     label="percentile [ from (th), to (th) ]",
-                                     min = 0,  max = 100, step = 0.1, value = c(0.1, 99.9)),
-                         
-                         selectInput("unml_filter_tag_labels",
-                                     label="Binary filter(s)",
-                                     multiple = TRUE,
-                                     choices = dict_ml$label_front[which(dict_ml$unit=="tag01")],
-                                     selected = NULL),
-                         fluidRow(
-                           column(width=5,selectInput("unml_imputation",
-                                                      "Imputation",
-                                                      choices = c("Zero", "None", "Mean", "Median"),
-                                                      selected = "None") ),
-                           column(width=6,checkboxInput("unml_impute_per_cluster", "within cluster", value = FALSE))
-                         ),
-                         fluidRow(
-                           column(width=5,checkboxInput("unml_aggregation", 
-                                                        "Aggregation", 
-                                                        value = TRUE) ),
-                           column(width=5,checkboxInput("unml_winsorizing",
-                                                        "Winsorizing",
-                                                        value = FALSE))
-                         )
-        )),
     div(id = 'sidebar_unml_cluster',
         conditionalPanel("input.sidebar == 'unml_cluster'",
                          sliderInput("unml_nc_vec",
@@ -468,7 +419,7 @@ body <- dashboardBody(
             tabsetPanel(type = "tabs",
                         tabPanel("Mean", 
                                  plotOutput("eda_1d_p_mean",
-                                            height = "600px",
+                                            height = "500px",
                                             dblclick = "eda_1d_p_mean_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_mean_brush",
@@ -476,7 +427,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Percentiles", 
                                  plotOutput("eda_1d_p_pct",
-                                            height = "600px",
+                                            height = "500px",
                                             dblclick = "eda_1d_p_pct_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_pct_brush",
@@ -484,7 +435,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Denomenator", 
                                  plotOutput("eda_1d_p_denom",
-                                            height = "600px",
+                                            height = "500px",
                                             dblclick = "eda_1d_p_denom_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_denom_brush",
@@ -492,7 +443,7 @@ body <- dashboardBody(
                         ),
                         tabPanel("Violin Box", 
                                  plotOutput("eda_1d_p_violin",
-                                            height = "600px",
+                                            height = "500px",
                                             dblclick = "eda_1d_p_violin_dblclick",
                                             brush = brushOpts(
                                               id = "eda_1d_p_violin_brush",

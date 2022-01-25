@@ -453,27 +453,28 @@ shinyServer(function(input, output, session) {
                       value = c(min_value, max_value) )
   })
   MLuns_cluster <- eventReactive(input$umml_cluster_go, {
-    front_front_uns_cluster(
+    front_uns_cluster(
       # global parameters (unsupervised setup page)
-      data = data_ml,
-      dict_data = dict_ml,
-      cluster_label = input$unml_cluster_label,
-      trim_by_label = input$unml_trim_by_label,
-      trim_vec = input$unml_trim_vec,
-      time_unit = input$unml_trim_time_unit,
-      pctcut_num_labels = input$unml_pctcut_num_labels, # cutoff by percentile of one or more numeric variable
-      pctcut_num_vec = input$unml_pctcut_num_vec,
-      pctcut_num_coerce = input$unml_pctcut_num_coerce,
-      filter_tag_labels = input$unml_filter_tag_labels, # tag columns
-      imputation = input$unml_imputation,
-      impute_per_cluster=input$unml_impute_per_cluster,
-      winsorizing=input$unml_winsorizing,
-      aggregate_per=input$unml_aggregation, # always set to be true
-      # local parameters
+      data=data_ml,
+      dict_data=dict_ml,
+      cluster_label=input$setup_cluster_label,
+      # --- engineer ---
+      trim_by_label=input$setup_trim_by_label,
+      trim_vec = input$setup_trim_vec,
+      time_unit= input$setup_trim_time_unit,
+      pctcut_num_labels = input$setup_pctcut_num_labels, # cutoff by percentile of one or more numeric variable
+      pctcut_num_vec = input$setup_pctcut_num_vec,
+      pctcut_num_coerce = input$setup_pctcut_num_coerce,
+      filter_tag_labels=input$setup_filter_tag_labels,
+      imputation=input$setup_imputation,
+      impute_per_cluster=input$setup_impute_per_cluster,
+      winsorizing=input$setup_winsorizing,
+      aggregate_per=input$setup_aggregate_per,
+      # --- local ---
       input_labels=input$unml_input_labels,
       nc_vec = input$unml_nc_vec,
-      min_nobs_per_clst = input$unml_min_nobs_per_clst,
-      max_iter = input$unml_max_iter
+      min_nobs_per_clst=input$unml_min_nobs_per_clst,
+      max_iter=input$unml_max_iter
     )
   })
   

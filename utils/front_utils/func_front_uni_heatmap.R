@@ -158,7 +158,7 @@ front_uni_heatmap <- function(
 # imputation="None"
 # impute_per_cluster=FALSE
 # winsorizing=TRUE
-# aggregate_per==c("row", "cluster_trim_by_unit", "cluster")[2]
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[2]
 # pctcut_num_labels=c()
 # pctcut_num_vec=c(0.1, 99.9)
 # pctcut_num_coerce = TRUE

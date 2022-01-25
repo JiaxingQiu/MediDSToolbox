@@ -77,17 +77,7 @@ in.unml_cluster_label <- "PreVent study ID"
 in.unml_trim_by_label <- c("Chronological Age", "Post-menstrual Age", "Gestational Age")
 in.unml_trim_time_unit <- 7
 in.unml_input_labels.choices <- dict_ml$label[which(dict_ml$type=="num"|dict_ml$unit=="tag01")]
-in.unml_input_labels.selected <- dict_ml$label[which(dict_ml$varname%in%colnames(data_ml%>%select(starts_with("cpd_"))) )]
-
-
-
-
-
-
-
-
-
-
+in.unml_input_labels.selected <- dict_ml$label[which(dict_ml$varname%in%colnames(data_ml%>%select(starts_with("ih_")&ends_with("_dur_prop"))) )]
 
 
 # -------------------------------------------------- server.R ------------------------------------------------------------------

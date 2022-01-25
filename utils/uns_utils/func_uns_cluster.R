@@ -1,10 +1,10 @@
 # This script use unsupervised machine learning methods (1. k-means 2. KNN(under construction)) to make clusters of a given dataset
 uns_cluster_kmeans <- function(
-  data=data_unml, # dataframe with one row per one observation subject (i.e. baby day / baby)
-  dict_data=dict_unml, # dictionary for data
+  data, # dataframe with one row per one observation subject (i.e. baby day / baby)
+  dict_data, # dictionary for data
   input_cols=colnames(data_ml%>%select(starts_with("cpd_"))), # input variables to be used to train clustering model
   nc_max=4, # maximum number of clusters, default 15, must be [1,20]
-  nc_min=4, # minimum number of cluster you expect kmeans to split your observations [1,20]
+  nc_min=2, # minimum number of cluster you expect kmeans to split your observations [1,20]
   plot_wss=FALSE, # whethr or not to plot trace of within group sum of squares in console
   min_nobs_per_clst=2, # mininal number of observations allowed in a cluster, if a cluster has less than this number of observation, it will be removed
   max_iter=3
