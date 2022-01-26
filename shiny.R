@@ -98,8 +98,9 @@ fct_var_label <- as.character(dict_org$label[which(dict_org$varname%in%fct_var_n
 #vars2dummy <- intersect(dict_org$varname[which(dict_org$source_file%in%c("drvd", "base", "prnt"))], fct_var_name)
 vars2dummy <- fct_var_name
 data_ml <- dummy_cols(data_org, select_columns = vars2dummy, ignore_na=TRUE) %>% 
-  select(-c(contains("_Un",ignore.case=FALSE)&!contains("primary_outcome_factor_Unfavorable",ignore.case=FALSE),
-            contains("_No",ignore.case=FALSE)&!contains("_North",ignore.case = FALSE) )) %>% 
+  select(-c(contains("_Un",ignore.case=FALSE)&!contains("primary_outcome_factor_Unfavorable",ignore.case=FALSE)
+            #,contains("_No",ignore.case=FALSE)&!contains("_North",ignore.case = FALSE) 
+            )) %>% 
   as.data.frame()
 colnames(data_ml) <- gsub("[^[:alnum:]]","_",colnames(data_ml))
 
