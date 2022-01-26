@@ -53,10 +53,18 @@ do_ols_cv <- function(df=df,
                    cluster_col = cluster_col, 
                    nfold  = cv_nfold)
     
+  fml <- cv_obj$model_info$formula
+  cluster_col <- cv_obj$model_info$cluster_col
+  dd <- datadist(df)
+  options(datadist=dd, na.action=na.omit)
+  mdl_final <- rms::robcov(rms::ols(as.formula(fml),x=TRUE, y=TRUE, data=df),cluster=df[,cluster_col])
   
     
-  return(list("fml_obj"=fml_obj,
-              "cv_obj"=cv_obj))
+  return(list("df_final"=df,
+              "dict_final"=dict_mdl,
+              "fml_obj"=fml_obj,
+              "cv_obj"=cv_obj,
+              "mdl_obj"=mdl_final))
   
 }
 

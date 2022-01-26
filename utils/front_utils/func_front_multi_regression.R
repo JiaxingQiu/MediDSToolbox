@@ -273,22 +273,22 @@ front_multi_regression <- function(
     
   }else if(dict_data[y_col, "type"]=="num"){
     print("--- do_ols_pip ---")
-    # results <- do_ols_pip(data=data, 
-    #                       dict_data=dict_data,
-    #                       x_cols=x_cols, 
-    #                       y_col=y_col, 
-    #                       cluster_col=cluster_col,
-    #                       r2=r2,
-    #                       rcs5_low=rcs5_low,
-    #                       rcs4_low=rcs4_low,
-    #                       cv_nfold=cv_nfold,
-    #                       test_data=test_data, 
-    #                       na_frac_max=na_frac_max, 
-    #                       joint_col2=joint_col2,
-    #                       stratified_cv=stratified_cv,
-    #                       r_abs=r_abs, 
-    #                       type=type,
-    #                       rank=rank)
+    results <- do_ols_pip(data=data,
+                          dict_data=dict_data,
+                          x_cols=x_cols,
+                          y_col=y_col,
+                          cluster_col=cluster_col,
+                          r2=r2,
+                          rcs5_low=rcs5_low,
+                          rcs4_low=rcs4_low,
+                          cv_nfold=cv_nfold,
+                          test_data=test_data,
+                          na_frac_max=na_frac_max,
+                          joint_col2=joint_col2,
+                          stratified_cv=stratified_cv,
+                          r_abs=r_abs,
+                          type=type,
+                          rank=rank)
     
   }
   
@@ -297,7 +297,7 @@ front_multi_regression <- function(
   #  model development reports 
   devel_model_info_tbl <- results$model_obj$cv_obj$model_info
   devel_score_summ_tbl <- results$model_obj$cv_obj$model_scores
-  devel_score_summ_tbl <- devel_score_summ_tbl[,union(c("success_nfold","train_AUROC_mean","valid_AUROC_mean","train_AUROC_se","valid_AUROC_se"), colnames(devel_score_summ_tbl))]
+  devel_score_summ_tbl <- devel_score_summ_tbl[,intersect(colnames(devel_score_summ_tbl), union(c("success_nfold","train_AUROC_mean","valid_AUROC_mean","train_AUROC_se","valid_AUROC_se"), colnames(devel_score_summ_tbl)) )]
   devel_cali_plot <- results$model_obj$cv_obj$calibration_curve
   devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace
   devel_final_model_obj <- results$model_obj$mdl_obj # for print, anova and save locally
@@ -419,5 +419,5 @@ front_multi_regression <- function(
 # fix_knots = TRUE
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
-# 
+
 

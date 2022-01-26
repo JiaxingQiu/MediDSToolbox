@@ -95,9 +95,9 @@ lrm_infer <-  function(
                                 x=TRUE, y=TRUE,
                                 data=df, 
                                 penalty = mdl_obj$penalty)
-            eff_plot_2d_list[[i]] <- rms::bplot(rms::Predict(mdl_tmp, joint_col1, joint_col2, fun=ymap),
-                                                xlab = label(df$joint_col1),
-                                                ylab = label(df$joint_col2),
+            eff_plot_2d_list[[i]] <- rms::bplot(rms::Predict(mdl_tmp, joint_col2, joint_col1, fun=ymap),
+                                                xlab = label(df$joint_col2),
+                                                ylab = label(df$joint_col1),
                                                 ylabrot=90,adj.subtitle=FALSE)
           },error=function(e){print(e)})
         }
@@ -111,8 +111,8 @@ lrm_infer <-  function(
   }
   
   
-  return(list(eff_plot_1d=eff_plot_1d,
-              eff_plot_2d=eff_plot_2d,
+  return(list(eff_plot_1d=eff_plot_1d, # all in one
+              eff_plot_2d=eff_plot_2d, # all in one
               eff_plot = eff_plot,
               eff_plot_diy = eff_plot_diy))
   

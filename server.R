@@ -995,20 +995,27 @@ shinyServer(function(input, output, session) {
   )
   output$infer_effect_plot_1d_continuous <- renderPlot({
     MLreports <- MLreports()
-    tryCatch({
+    infer_effect_plot_1d_continuous <- NULL
+    if(is.null(infer_effect_plot_1d_continuous)){
       infer_effect_plot_1d_continuous <- MLreports$infer_effect_plot_diy_list$continuous
-    },error=function(e){
+    }
+    if(is.null(infer_effect_plot_1d_continuous)) {
+      infer_effect_plot_1d_continuous <- MLreports$infer_effect_plot_1d
+    }
+    if(is.null(infer_effect_plot_1d_continuous)) {
       infer_effect_plot_1d_continuous <- MLreports$infer_effect_plot_list$continuous
-    })
+    }
     infer_effect_plot_1d_continuous
   })
   output$infer_effect_plot_1d_discrete <- renderPlot({
     MLreports <- MLreports()
-    tryCatch({
+    infer_effect_plot_1d_discrete <- NULL
+    if(is.null(infer_effect_plot_1d_discrete)){
       infer_effect_plot_1d_discrete <- MLreports$infer_effect_plot_diy_list$discrete
-    },error=function(e){
+    }
+    if(is.null(infer_effect_plot_1d_discrete)) {
       infer_effect_plot_1d_discrete <- MLreports$infer_effect_plot_list$discrete
-    })
+    }
     infer_effect_plot_1d_discrete
   })
   output$infer_effect_plot_2d <- renderPlot({
