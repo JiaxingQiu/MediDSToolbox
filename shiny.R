@@ -65,7 +65,7 @@ if(length(flst)>0){
 }
 
 dict_org <- read.csv("./data/dict_deid_data_final.csv", stringsAsFactors = FALSE)
-data_org <- read.csv("./data/deid_data_final.csv", stringsAsFactors = FALSE, nrows = 1000) 
+data_org <- read.csv("./data/deid_data_final.csv", stringsAsFactors = FALSE) 
 dict_org$label <- gsub("_v[0-9]", "", dict_org$label)
 
 # key / cluster name and labels

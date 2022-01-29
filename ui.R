@@ -321,7 +321,6 @@ body <- dashboardBody(
             h3(" Set Up -- Engineer"),
             tabsetPanel(type = "tabs", selected = "Data",
                         tabPanel("Dictionary",
-                                 actionButton("setup_source_file_go", "Go",icon=icon("play-circle")),
                                  selectInput("setup_source_file",
                                              label="Include source(s)",
                                              choices = unique(dict_ml$source_file),

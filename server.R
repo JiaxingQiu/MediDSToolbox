@@ -8,7 +8,8 @@ shinyServer(function(input, output, session) {
   
   #-------------------------------------------- Event control --------------------------------------------
   # ---- 1. setup ----'
-  observeEvent(input$setup_source_file_go,{
+  
+  observeEvent(input$setup_source_file,{
     if(length(input$setup_source_file)<1) {
       updateSelectInput(inputId = "setup_source_file",
                         choices = unique(dict_ml$source_file),
@@ -17,9 +18,7 @@ shinyServer(function(input, output, session) {
     }else{
       dict_ml_org <- dict_ml
       dict_ml <- dict_ml_org[which(dict_ml_org$source_file%in%input$setup_source_file),]
-      output$dictionary_setup  <- renderDataTable(
-        dict_ml[which(dict_ml$source_file%in%input$setup_source_file),c("source_file","varname","label","type","unit","unique_per_sbj")]
-      )
+      
     }
     updateSelectInput(inputId = "setup_pctcut_num_labels",
                       choices = dict_ml$label[which(dict_ml$type=="num")])
@@ -550,8 +549,8 @@ shinyServer(function(input, output, session) {
   
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 1. setup ----
-  output$dictionary_setup <- renderDataTable(
-    dict_ml[which(dict_ml$type!=""),c("source_file","varname","label","type","unit","unique_per_sbj")]
+  output$dictionary_setup  <- renderDataTable(
+    dict_ml[which(dict_ml$source_file%in%input$setup_source_file),c("source_file","varname","label","type","unit","unique_per_sbj")]
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({
