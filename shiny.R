@@ -184,11 +184,7 @@ dict_ml <- bind_rows(dict_ml,
 
 data_ml <- assign.dict(data_ml, dict_ml)
 dict_ml <- get.dict(data_ml)
-data_ml <- subset_df(data_ml, "40w", exclude_list=c("1073","1076","2008","2043","3026",
-                                                  "4042","4053","4054","5007","5008",
-                                                  "5014","2139","2140","3050","3059",
-                                                  "3078","3097","3144","5004","5030",
-                                                  "2069"))
+data_ml <- subset_df(data_ml, "40w")
 
 # ----- for ml tool ----
 tag_var_name <- union(tag_var_name, fct2tag_var_name)

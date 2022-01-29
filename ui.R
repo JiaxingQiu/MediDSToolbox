@@ -261,7 +261,7 @@ body <- dashboardBody(
             tags$h1("Medical Data Science Toolbox"),
             tags$blockquote("For tools in the box, we think outside the box. ", cite = "Jiaxing Qiu"),
             
-            tags$p(tags$b("Inventor: "),"Jiaxing (Joy) Qiu, M.S in Data Science, University of Virginia"),
+            tags$p(tags$b("Author: "),"Jiaxing (Joy) Qiu, M.S in Data Science, University of Virginia"),
             tags$p("Thanks to the Center for Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia."),
             
             

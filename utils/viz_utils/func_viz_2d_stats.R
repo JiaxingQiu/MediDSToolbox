@@ -8,7 +8,7 @@ viz_2d_stats<- function(
 ){
   
   
-  # max cluster population 1000, under sample if surpassed 
+  # max cluster population 800, under sample if surpassed 
   if(n_distinct(data[,cluster_col])>800){
     cluster_list <- sample(unique(data[,cluster_col]), size=800, replace = FALSE)
     data <- data[which(data[,cluster_col]%in%cluster_list),]
@@ -19,7 +19,7 @@ viz_2d_stats<- function(
     data <- dplyr::distinct(data[,c(x_col1, x_col2, y_col)])
   }
   fml <- formula(paste0("as.numeric(as.character(",y_col,")) ~ ",paste0("as.numeric(",x_col1,")+as.numeric(",x_col2,")")))
-  mdl <- loess(fml, data, degree = 2)
+  mdl <- loess(fml, data, degree = 2, span=0.2)
   dd <- merge(data.frame(x_col1=seq(min(as.numeric(data[,x_col1]),na.rm=TRUE),max(as.numeric(data[,x_col1]),na.rm=TRUE),1)), 
               data.frame(x_col2=seq(min(as.numeric(data[,x_col2]),na.rm=TRUE),max(as.numeric(data[,x_col2]),na.rm=TRUE),1)))
   colnames(dd) <- c(x_col1, x_col2)

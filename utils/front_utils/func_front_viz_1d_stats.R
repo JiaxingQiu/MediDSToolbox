@@ -17,8 +17,8 @@ front_viz_1d_stats <- function(
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # distributions
-  group_by_label="None" # fct
-  
+  group_by_label="None", # fct
+  optimized_smoother=FALSE
 ){
   # ---- Usage ----
   # uni eda: visualize detailed information of response against one X variable(uni)
@@ -83,12 +83,21 @@ front_viz_1d_stats <- function(
   # --- conditional distribution plots ----
   plot_1d_stats_obj <- NULL
   try({
-    plot_1d_stats_obj <- viz_1d_stats(data=data,
-                                  dict_data = dict_data,
-                                  x_col = x_col,
-                                  y_col = y_col,
-                                  cluster_col = cluster_col,
-                                  group_by_col = group_by_col)
+    if(!optimized_smoother){
+      plot_1d_stats_obj <- viz_1d_stats(data=data,
+                                        dict_data = dict_data,
+                                        x_col = x_col,
+                                        y_col = y_col,
+                                        cluster_col = cluster_col,
+                                        group_by_col = group_by_col)
+    }else{
+      plot_1d_stats_obj <- viz_1d_stats_optimize(data=data,
+                                                 dict_data = dict_data,
+                                                 x_col = x_col,
+                                                 y_col = y_col,
+                                                 cluster_col = cluster_col,
+                                                 group_by_col = group_by_col)
+    }
     
     if (length(group_by_col)>=1){
       plot_1d_stats_obj$p_pct <-  plot_1d_stats_obj$p_pct + ggtitle(paste0("Percentile (group by ", group_by_label,")"))
