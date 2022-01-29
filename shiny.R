@@ -65,7 +65,7 @@ if(length(flst)>0){
 }
 
 dict_org <- read.csv("./data/dict_deid_data_final.csv", stringsAsFactors = FALSE)
-data_org <- read.csv("./data/deid_data_final.csv", stringsAsFactors = FALSE) 
+data_org <- read.csv("./data/deid_data_final.csv", stringsAsFactors = FALSE, nrows = 1000) 
 dict_org$label <- gsub("_v[0-9]", "", dict_org$label)
 
 # key / cluster name and labels
@@ -98,9 +98,6 @@ fct_var_label <- as.character(dict_org$label[which(dict_org$varname%in%fct_var_n
 #vars2dummy <- intersect(dict_org$varname[which(dict_org$source_file%in%c("drvd", "base", "prnt"))], fct_var_name)
 vars2dummy <- fct_var_name
 data_ml <- dummy_cols(data_org, select_columns = vars2dummy, ignore_na=TRUE) %>% 
-  select(-c(contains("_Un",ignore.case=FALSE)&!contains("primary_outcome_factor_Unfavorable",ignore.case=FALSE)
-            #,contains("_No",ignore.case=FALSE)&!contains("_North",ignore.case = FALSE) 
-            )) %>% 
   as.data.frame()
 colnames(data_ml) <- gsub("[^[:alnum:]]","_",colnames(data_ml))
 
@@ -114,7 +111,7 @@ for (var in fct2tag_var_name){
   var_level <- strsplit(var,"_factor_")[[1]][2]
   var_label <- paste0(as.character(dict_org$label[dict_org$varname==var_dict])," == ",var_level)
   var_unique <- dict_org$unique_per_sbj[dict_org$varname==var_dict]
-  var_source_file <- "dummy drvd" #dict_org$source_file[dict_org$varname==var_dict]
+  var_source_file <- dict_org$source_file[dict_org$varname==var_dict] #paste0(dict_org$source_file[dict_org$varname==var_dict]," dummy")
   fct2tag_var_label <- c(fct2tag_var_label, var_label)
   fct2tag_var_unique <- c(fct2tag_var_unique, var_unique)
   fct2tag_var_source_file <- c(fct2tag_var_source_file, var_source_file)
@@ -179,18 +176,17 @@ dict_ml <- bind_rows(dict_ml,
                                  type="fct", 
                                  unit="", 
                                  unique_per_sbj=TRUE, 
-                                 source_file="base",
+                                 source_file="drvd",
                                  stringsAsFactors = FALSE))
 
 data_ml <- assign.dict(data_ml, dict_ml)
+data_ml <- assign.dict(data_ml, dict_org, overwrite = FALSE)
 dict_ml <- get.dict(data_ml)
+stopifnot(all(!dict_ml$source_file==""))
 data_ml <- subset_df(data_ml, "40w")
 
 # ----- for ml tool ----
 tag_var_name <- union(tag_var_name, fct2tag_var_name)
-
-data_ml <-  data_ml
-dict_ml <- dict_ml
 
 # refine / select variables for ml
 output_varname_list <- c("primary_outcome_factor_Unfavorable", 
@@ -254,6 +250,7 @@ attr(data_ml$baby_weight_lin, "label") <-"Birth weight (<=1000)"
 attr(data_ml$baby_weight_lin, "type") <- "num"
 attr(data_ml$baby_weight_lin, "unit") <- "grams"
 attr(data_ml$baby_weight_lin, "unique_per_sbj") <- TRUE
+attr(data_ml$baby_weight_lin, "source_file") <- "drvd"
 attr(data_ml$baby_weight_lin, "mlrole") <- "input"
 
 data_ml$nondod_unfav <- ifelse(data_ml$primary_outcome_factor_Unfavorable==1&data_ml$dod___tag!=1, 1, 0)
@@ -263,11 +260,14 @@ attr(data_ml$nondod_unfav, "label") <-"Unfavorable outcome excluding death"
 attr(data_ml$nondod_unfav, "type") <-"fct"
 attr(data_ml$nondod_unfav, "unit") <-"tag01"
 attr(data_ml$nondod_unfav, "unique_per_sbj") <- TRUE
+attr(data_ml$nondod_unfav, "source_file") <- "drvd"
 attr(data_ml$nondod_unfav, "mlrole") <- "output"
 
 
 dict_ml <- get.dict(data_ml)
 data_ml <- assign.dict(data_ml, dict_ml)
-dict_ml <- merge(dict_ml,dict_org[,c("varname", "from_cols")])
-
+data_ml <- assign.dict(data_ml, dict_org, overwrite = FALSE)
+dict_ml <- get.dict(data_ml)
+dict_ml <- merge(dict_ml, dict_org[,c("varname", "from_cols")])
+stopifnot(all(!dict_ml$source_file==""))
 

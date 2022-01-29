@@ -319,8 +319,17 @@ body <- dashboardBody(
     # ---- 1. setup ----
     tabItem(tabName = "setup_engineer",
             h3(" Set Up -- Engineer"),
-            tabsetPanel(type = "tabs",
-                        tabPanel("Engineer",
+            tabsetPanel(type = "tabs", selected = "Data",
+                        tabPanel("Dictionary",
+                                 actionButton("setup_source_file_go", "Go",icon=icon("play-circle")),
+                                 selectInput("setup_source_file",
+                                             label="Include source(s)",
+                                             choices = unique(dict_ml$source_file),
+                                             selected = unique(dict_ml$source_file),
+                                             multiple = TRUE),
+                                 dataTableOutput("dictionary_setup")
+                        ),
+                        tabPanel("Data",
                                  hr(),
                                  tags$h4("--- Step 1 ---"),
                                  hr(),
@@ -382,10 +391,8 @@ body <- dashboardBody(
                                                         value = FALSE)
                                    )
                                  )
-                        ),
-                        tabPanel("Dictionary",
-                                 dataTableOutput("dictionary_setup")
                         )
+                        
             )
     ),
     tabItem(tabName = "setup_summ",

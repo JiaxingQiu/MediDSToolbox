@@ -8,6 +8,75 @@ shinyServer(function(input, output, session) {
   
   #-------------------------------------------- Event control --------------------------------------------
   # ---- 1. setup ----'
+  observeEvent(input$setup_source_file_go,{
+    if(length(input$setup_source_file)<1) {
+      updateSelectInput(inputId = "setup_source_file",
+                        choices = unique(dict_ml$source_file),
+                        selected = unique(dict_ml$source_file) )
+      dict_ml_org <- dict_ml
+    }else{
+      dict_ml_org <- dict_ml
+      dict_ml <- dict_ml_org[which(dict_ml_org$source_file%in%input$setup_source_file),]
+      output$dictionary_setup  <- renderDataTable(
+        dict_ml[which(dict_ml$source_file%in%input$setup_source_file),c("source_file","varname","label","type","unit","unique_per_sbj")]
+      )
+    }
+    updateSelectInput(inputId = "setup_pctcut_num_labels",
+                      choices = dict_ml$label[which(dict_ml$type=="num")])
+    updateSelectInput(inputId = "setup_filter_tag_labels",
+                      choices = dict_ml$label[which(dict_ml$unit=="tag01")])
+    updateSelectInput(inputId = "setup_strat_by",
+                      choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]))
+    updateSelectInput(inputId = "eda_y_label_stats1d",
+                      choices = dict_ml$label[which(dict_ml$type=="num"|(dict_ml$unit=="tag01") )])
+    updateSelectInput(inputId = "eda_x_label_stats1d",
+                      choices = dict_ml$label[which(dict_ml$type!="")] )
+    updateSelectInput(inputId = "eda_group_by_label_stats1d",
+                      choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]) )
+    updateSelectInput(inputId = "eda_y_label_stats2d",
+                      choices = dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )] )
+    updateSelectInput(inputId = "eda_x_label1_stats2d",
+                      choices = dict_ml$label[which(dict_ml$type=="num")] )
+    updateSelectInput(inputId = "eda_x_label2_stats2d",
+                      choices = dict_ml$label[which(dict_ml$type=="num")] )
+    updateSelectInput(inputId = "eda_y_label_star",
+                      choices = dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )] )
+    updateSelectInput(inputId = "eda_group_by_label_star",
+                      choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]) )
+    updateSelectInput(inputId = "eda_tag_label",
+                      choices = c("None", dict_ml$label[which(dict_ml$unit=="tag01")]) )
+    updateSelectInput(inputId = "eda_y_label_allu",
+                      choices = c("None", dict_ml$label[which(dict_ml$type=="num")]) )
+    updateSelectInput(inputId = "eda_tag_labels_allu",
+                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")] )
+    updateSelectInput(inputId = "ml_y_label",
+                      choices = dict_ml$label[which( (dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01") | dict_ml$type=="num")],
+                      selected = dict_ml$label[which( (dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01") | dict_ml$type=="num")][1] )
+    updateSelectInput(inputId = "ml_num_labels",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_nonlin_rcs5_labels",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_nonlin_rcs4_labels",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_nonlin_rcs3_labels",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_linear_num_labels",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_fct_labels_mdl",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit!="tag01")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_tag_labels_mdl",
+                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit=="tag01")],
+                      selected = NULL )
+    updateSelectInput(inputId = "unml_input_labels",
+                      choices = dict_ml$label[which(dict_ml$type=="num"|dict_ml$unit=="tag01")],
+                      selected = NULL )
+  })
   observeEvent(input$setup_trim_by_label, {
     trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
     min_value = min(data_ml[,trim_by_col],na.rm=TRUE)
