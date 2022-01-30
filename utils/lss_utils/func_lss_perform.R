@@ -257,10 +257,13 @@ lss_perform <- function(
 
 
 reconstructX <- function(lasso_optimal_mdl_obj, df){
+  
   df_org <- df
   x_cols_org <- names(attr(lasso_optimal_mdl_obj$x,"scaled:center"))
   df[,x_cols_org] <- scale(df[,x_cols_org], center = attr(lasso_optimal_mdl_obj$x,"scaled:center"), scale = attr(lasso_optimal_mdl_obj$x,"scaled:scale") )
-  
+  # overwrite tag columns
+  x_cols_tag <- lasso_optimal_mdl_obj$group_info$x_colname[which(endsWith( lasso_optimal_mdl_obj$group_info$x_group, "_tag01") )]
+  df[,x_cols_tag] <- df_org[,x_cols_tag]
   
   # find column name for response variable and predictor variables
   y_col <- colnames(lasso_optimal_mdl_obj$y)
@@ -291,7 +294,8 @@ reconstructX <- function(lasso_optimal_mdl_obj, df){
     if(gname == "level"){
       levels <- unique(as.character(df[,col]))
       for(l in levels){
-        df[,paste0(col,"___",l)] <- ifelse(df[,col]==l,1,0)
+        l_fix <- gsub("[^[:alnum:]]","_",l)
+        df[,paste0(col,"___",l_fix)] <- ifelse(df[,col]==l,1,0)
       }
     }
   }

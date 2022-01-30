@@ -50,6 +50,7 @@ lasso_x_select_group <- function(
   
   if(standardize) {
     data[,x_cols] <- scale(data_org[,x_cols])
+    data[,x_cols_tag] <- data_org[,x_cols_tag] # overwrite dummy columns, they should not be scaled
   }
   
   # add transformations to predictor variables and save grouping info in a dataframe object
@@ -114,10 +115,11 @@ lasso_x_select_group <- function(
     # dummy the variable
     levels <- unique(as.character(data[,col]))
     for(l in levels){
-      data[,paste0(col,"___",l)] <- ifelse(data[,col]==l,1,0)
+      l_fix <- gsub("[^[:alnum:]]","_",l)
+      data[,paste0(col,"___",l_fix)] <- ifelse(data[,col]==l,1,0)
       # append this varname and group info as a data frame to overall column info
       x_col_df <- data.frame(
-        x_colname = c(paste0(col,"___",l)),
+        x_colname = c(paste0(col,"___",l_fix)),
         x_group = paste0(col,"_level")
       )
       x_col_df_all <- bind_rows(x_col_df_all, x_col_df)

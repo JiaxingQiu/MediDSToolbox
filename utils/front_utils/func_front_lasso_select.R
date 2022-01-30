@@ -388,16 +388,63 @@ front_lasso_select <- function(
 
 
 # ##################### not run #############################
+# # variable to use
+# x_vars_linear = c("baby_weight",
+#                   "baby_length",
+#                   "baby_head",
+#                   "ga_days",
+#                   "demog_mage",
+#                   "apgar1min",
+#                   "apgar5min",
+#                   "baby_temp"
+#                   #"ca_fullpo",
+#                   #"ca_enteralfeeds_date"
+# )
+# x_vars_tag <- c("baby_weight_under_fenton_10pct_factor_Yes",
+#                 "baby_gender_factor_Male",
+#                 "baby_multiple_factor_Yes",
+#                 "baby_birthloc_factor_Born_outside_the_study_center",
+#                 "chorio_clnc_factor_Yes",
+#                 "chorio_hist_factor_Yes",
+#                 "ld_membranes_factor_Yes",
+#                 "membrane18hr_factor_Yes",
+#                 "membrane7d_factor_Yes",
+#                 "steroids_admin_factor_No",
+#                 "any_antenatal_comp_factor_Yes",
+#                 "antibio_admin_factor_Yes",
+#                 "antibio_reason___2_factor_Yes",
+#                 "antibio_reason___1_factor_Yes",
+#                 "demog_mrace_baby_check_factor_Black_African_American",
+#                 "demog_methnicity_baby_check_factor_Hispanic_or_Latino",
+#                 "htn_hx_factor_Yes",
+#                 "htn_priorpg_factor_Yes",
+#                 "asthmahx_factor_Yes",
+#                 "ant_hx_factor_Yes",
+#                 "asthmapgprolong_factor_Yes",
+#                 "m_smokehx_factor_Yes",
+#                 "m_drugs_factor_Yes",
+#                 "resuscit_options___1_factor_Yes",
+#                 "resuscit_options___2_factor_Yes",
+#                 "resuscit_options___3_factor_Yes",
+#                 "resuscit_options___4_factor_Yes",
+#                 "resuscit_options___5_factor_Yes",
+#                 "resuscit_options___6_factor_Yes",
+#                 "resuscit_options___7_factor_Yes",
+#                 "indomethacin_admin_factor_Yes"
+# )
+# x_vars_fct <- c("baby_insurance_factor")
+# 
+# 
 # data = data_ml
 # dict_data = dict_ml
-# y_label = "Primary outcome (EN) == Unfavorable"
-# cluster_label = "PreVent study ID"
-# x_labels_linear = c("Gestational Age", "pH associated with highest CO2 on blood gas")
+# y_label = dict_ml[which(dict_ml$varname=="primary_outcome_factor_Unfavorable"),"label"]
+# cluster_label = dict_ml[which(dict_ml$varname=="subjectnbr"),"label"]
+# x_labels_linear = dict_ml$label[which(dict_ml$varname%in%x_vars_linear)]
 # x_labels_nonlin_rcs5 = c("Maternal age")
 # x_labels_nonlin_rcs4 = c("Gestational Age")
 # x_labels_nonlin_rcs3 = c("Birth weight")
-# x_labels_fct = c("Site (EN)")
-# x_labels_tag = c("Baby Gender (EN)___Female")
+# x_labels_fct = dict_ml$label[which(dict_ml$varname%in%x_vars_fct)]
+# x_labels_tag = dict_ml$label[which(dict_ml$varname%in%x_vars_tag)]
 # x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag))
 # # --- engineer ---
 # trim_by_label = "Post-menstrual Age"
@@ -410,12 +457,12 @@ front_lasso_select <- function(
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=FALSE
-# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[2] # should set to be true
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[3] 
 # # --- local ---
 # trim_ctrl = TRUE
 # standardize=TRUE # always set to be true
 # test_data = data_ml[c(20000:40000),]
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
-
-
+# return_performance = FALSE
+# 

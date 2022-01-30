@@ -18,7 +18,6 @@ shinyServer(function(input, output, session) {
     }else{
       dict_ml_org <- dict_ml
       dict_ml <- dict_ml_org[which(dict_ml_org$source_file%in%input$setup_source_file),]
-      
     }
     updateSelectInput(inputId = "setup_pctcut_num_labels",
                       choices = dict_ml$label[which(dict_ml$type=="num")])
@@ -113,8 +112,20 @@ shinyServer(function(input, output, session) {
                         value = setup_trim_ctrl)
   })
   summReport <- eventReactive(input$setup_summ_go, {
+    source_list <- input$setup_source_file
+    if(length(input$setup_source_file)<1) {
+      source_list <- unique(dict_ml$source_file)
+    }
+    cols_selected <- dict_ml$varname[which(dict_ml$source_file %in% c(source_list))]
+    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label==input$setup_cluster_label)]) 
+    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]) 
+    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label%in%input$setup_pctcut_num_labels)]) 
+    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label%in%input$setup_filter_tag_labels)]) 
+    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label==input$setup_strat_by)]) 
+    cols_selected <- unique(cols_selected)
+    data_ml_sub <- data_ml[,cols_selected]
     front_summary_tbl(
-      data=data_ml,
+      data=data_ml_sub,
       dict_data=dict_ml,
       cluster_label=input$setup_cluster_label, 
       # --- engineer ---
