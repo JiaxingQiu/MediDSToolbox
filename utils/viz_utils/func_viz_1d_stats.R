@@ -76,8 +76,8 @@ viz_1d_stats <- function(
       ggtitle("Mean") +
       facet_wrap(~ group, ncol = 5) 
     if(grepl("_days",x_col)){
-      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
-      x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
+      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
+      x_labels <- floor(x_breaks/7)
       p_mean <- p_mean + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                             breaks = x_breaks,
                                             labels = x_labels)
@@ -145,8 +145,8 @@ viz_1d_stats <- function(
       facet_wrap(~ group, ncol = 5) 
     
     if(grepl("_days",x_col)){
-      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
-      x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
+      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
+      x_labels <- floor(x_breaks/7)
       p_pct <- p_pct + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                             breaks = x_breaks,
                                             labels = x_labels)
@@ -175,8 +175,8 @@ viz_1d_stats <- function(
       ggtitle("Denominator")
     
     if(grepl("_days",x_col)){
-      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
-      x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
+      x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
+      x_labels <- floor(x_breaks/7)
       p_denom <- p_denom + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                               breaks = x_breaks,
                                               labels = x_labels)
@@ -257,8 +257,8 @@ viz_1d_stats <- function(
         scale_fill_discrete(name=group_by_string) + 
         ggtitle("Data Availability") 
       if(grepl("_days",x_col)){
-        x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 7)
-        x_labels <- seq(round(min(data[,x_col], na.rm=TRUE)/7), round(max(data[,x_col], na.rm = TRUE)/7),1)[1:length(x_breaks)]
+        x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
+        x_labels <- floor(x_breaks/7)
         
         p_1stat <- p_1stat + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                                 breaks = x_breaks,

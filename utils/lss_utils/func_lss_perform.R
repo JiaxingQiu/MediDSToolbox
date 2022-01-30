@@ -229,10 +229,10 @@ lss_perform <- function(
       df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores)
     }
 
-    scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=tidytext::reorder_within(removed_variable, score_value, score_by) )) +
+    scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=tidytext::reorder_within(removed_variable, score_value, score_by, sep="_________") )) +
       geom_point()+
       geom_vline(data=df_plot_scores_all[which(df_plot_scores_all$removed_variable=="none"),], aes(xintercept=score_value))+
-      tidytext::scale_y_reordered() +
+      tidytext::scale_y_reordered(sep="_________") +
       facet_wrap(~score_by, scales = "free", ncol = 2)+
       theme(axis.title.x=element_blank(),
             axis.title.y=element_blank())

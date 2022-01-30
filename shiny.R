@@ -107,6 +107,8 @@ fct2tag_var_label <- c()
 fct2tag_var_unique <- c()
 fct2tag_var_source_file <- c()
 for (var in fct2tag_var_name){
+  # fill na with 0 in tag 01 type variable
+  data_ml[which(is.na(data_ml[,var])),var] <- 0
   var_dict <- paste0(strsplit(var,"_factor_")[[1]][1],"_factor") # variable name in the dict_org
   var_level <- strsplit(var,"_factor_")[[1]][2]
   var_label <- paste0(as.character(dict_org$label[dict_org$varname==var_dict])," == ",var_level)
@@ -268,6 +270,6 @@ dict_ml <- get.dict(data_ml)
 data_ml <- assign.dict(data_ml, dict_ml)
 data_ml <- assign.dict(data_ml, dict_org, overwrite = FALSE)
 dict_ml <- get.dict(data_ml)
-dict_ml <- merge(dict_ml, dict_org[,c("varname", "from_cols")])
+dict_ml <- merge(dict_ml, dict_org[,c("varname", "from_cols")], all.x = TRUE)
 stopifnot(all(!dict_ml$source_file==""))
 
