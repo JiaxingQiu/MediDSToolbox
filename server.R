@@ -181,7 +181,8 @@ shinyServer(function(input, output, session) {
                        pctcut_num_labels = input$setup_pctcut_num_labels,
                        pctcut_num_vec = as.numeric(input$setup_pctcut_num_vec),
                        pctcut_num_coerce = input$setup_pctcut_num_coerce,
-                       filter_tag_labels = input$setup_filter_tag_labels
+                       filter_tag_labels = input$setup_filter_tag_labels,
+                       group_by_label = input$eda_group_by_label_stats2d
                       
     ) 
   })

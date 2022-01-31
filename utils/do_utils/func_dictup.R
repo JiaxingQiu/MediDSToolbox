@@ -90,7 +90,8 @@ assign.dict <- function(data, dict_new, multi_assign=FALSE, overwrite=TRUE){
   stopifnot(!is.null(dict_new$varname))
   dict_new$varname[which(dict_new$varname=="")] <-NA
   dict_new <- dict_new %>% filter(!is.na(varname)) %>% as.data.frame()
-  
+  dict_new <- dplyr::distinct(dict_new)
+    
   colnames(data) <- gsub("[^[:alnum:]]","_",colnames(data))
   dict_new$varname <- gsub("[^[:alnum:]]","_",dict_new$varname)
   if ("varname_dict" %in% colnames(dict_new)) dict_new$varname_dict <- gsub("[^[:alnum:]]","_",dict_new$varname_dict)

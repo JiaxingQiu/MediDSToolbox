@@ -1,5 +1,9 @@
 ols_infer <-  function(df, df_org, dict_df, fml, cluster_col, num_col2="ga_days"){
   
+  eff_plot_1d <- NULL
+  eff_plot_2d <- NULL
+  eff_plot <- NULL
+  
   df <- assign.dict(df, dict_df)
   dd <- datadist(df)
   options(datadist=dd, na.action=na.omit)

@@ -76,7 +76,10 @@ sidebar <- dashboardSidebar(
                                      choices = in.eda_x_label1_stats2d),
                          selectInput("eda_x_label2_stats2d",
                                      "Explainer 2 (y)",
-                                     choices = in.eda_x_label2_stats2d)
+                                     choices = in.eda_x_label2_stats2d),
+                         selectInput("eda_group_by_label_stats2d",
+                                     "Group by",
+                                     choices = in.eda_group_by_label_stats1d)
         )),
     div(id = 'sidebar_eda_star',
         conditionalPanel("input.sidebar == 'eda_star'",
