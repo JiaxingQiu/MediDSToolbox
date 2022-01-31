@@ -24,6 +24,8 @@ library(pROC)
 library(tableone)
 library(ggfortify)
 
+
+
 # ---- source global functions -----
 path = paste0("./utils/lrm_utils")
 flst = list.files( path)
@@ -273,3 +275,6 @@ dict_ml <- get.dict(data_ml)
 dict_ml <- merge(dict_ml, dict_org[,c("varname", "from_cols")], all.x = TRUE)
 stopifnot(all(!dict_ml$source_file==""))
 
+prj_name <- "Pre-Vent"
+prj_link <- "https://github.com/JiaxingQiu/FAIRStream/wiki"
+time_over_labels <- c("Post-menstrual Age", "Chronological Age")

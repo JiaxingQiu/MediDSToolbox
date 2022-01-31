@@ -37,8 +37,14 @@ shinyServer(function(input, output, session) {
                       choices = dict_ml$label[which(dict_ml$type=="num")] )
     updateSelectInput(inputId = "eda_x_label2_stats2d",
                       choices = dict_ml$label[which(dict_ml$type=="num")] )
+    updateSelectInput(inputId = "eda_group_by_label_stats2d",
+                      choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_star",
                       choices = dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )] )
+    updateSelectInput(inputId = "eda_sort_by_label",
+                      choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
+    updateSelectInput(inputId = "eda_align_by_label",
+                      choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
     updateSelectInput(inputId = "eda_group_by_label_star",
                       choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_tag_label",
@@ -50,6 +56,9 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "ml_y_label",
                       choices = dict_ml$label[which( (dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01") | dict_ml$type=="num")],
                       selected = dict_ml$label[which( (dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01") | dict_ml$type=="num")][1] )
+    updateSelectInput(inputId = "ml_num_adjust_label",
+                      choices = c("None",dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]),
+                      selected = "None" )
     updateSelectInput(inputId = "ml_num_labels",
                       choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
                       selected = NULL )
@@ -268,7 +277,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_linear_num_labels", 
-                      choices = setdiff(in.ml_linear_num_labels.choices, X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_linear_num_labels)
   })
   # --- ml_nonlin_rcs3_labels ---
@@ -284,7 +293,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs3_labels", 
-                      choices = setdiff(in.ml_nonlin_rcs3_labels.choices, X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs3_labels)
   })
   # --- ml_nonlin_rcs4_labels ---
@@ -300,7 +309,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs4_labels", 
-                      choices = setdiff(in.ml_nonlin_rcs4_labels.choices, X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs4_labels)
   })
   # --- ml_nonlin_rcs5_labels ---
@@ -316,7 +325,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs4_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs5_labels", 
-                      choices = setdiff(in.ml_nonlin_rcs5_labels.choices, X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs5_labels)
   })
   
