@@ -353,7 +353,29 @@ front_lasso_select <- function(
   perform_exorg_scores_tbl <- lss_perform_exorg$scores_all_final
   
   
-  return( list(x_select_mdls = x_select_mdls,
+  # selected coef df
+  vars_selected_df <- NULL
+  x_select_obj <- x_select_mdls_grouped # grouped lasso regression
+  if (!is.null(x_select_obj)){
+    lasso_optimal <- x_select_obj$lasso_optimal
+    coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
+    coef_df$vars <- as.character(rownames(lasso_optimal$beta))
+    coef_df$coef_abs <- abs(coef_df$coef)
+    coef_df_all <- coef_df
+    vars_selected_df <- data.frame(vars_selected = coef_df_all$vars[which(coef_df_all$coef!=0)])
+  }
+  group_df <- x_select_obj$lasso_optimal$group_info
+  colnames(group_df)[which(colnames(group_df) =="x_colname")] <- "vars_selected"
+  vars_selected_df <- merge(vars_selected_df, group_df, all.x=TRUE)
+  vars_selected_df$var_type <- gsub("^.*_", "", vars_selected_df$x_group)
+  vars_selected_df$raw_vars_selected <- NA
+  for (i in 1:nrow(vars_selected_df)){
+    vars_selected_df$raw_vars_selected[i] <- gsub(paste0("_",vars_selected_df$var_type[i]),"",vars_selected_df$x_group[i])
+  }
+  group_lasso_vars_selected <- distinct( vars_selected_df[,c("raw_vars_selected", "var_type")] )
+  
+  return( list(group_lasso_vars_selected=group_lasso_vars_selected,
+               x_select_mdls = x_select_mdls,
                x_select_mdls_grouped = x_select_mdls_grouped,
                score10fold = x_select_mdls_grouped$scores_final_10fold,
                perform_in_df_hat = perform_in_df_hat,
@@ -457,7 +479,7 @@ front_lasso_select <- function(
 # imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=FALSE
-# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[3] 
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[3]
 # # --- local ---
 # trim_ctrl = TRUE
 # standardize=TRUE # always set to be true
@@ -465,4 +487,4 @@ front_lasso_select <- function(
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
 # return_performance = FALSE
-# 
+

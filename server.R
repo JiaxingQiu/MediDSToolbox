@@ -849,23 +849,14 @@ shinyServer(function(input, output, session) {
       coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
       coef_df$vars <- as.character(rownames(lasso_optimal$beta))
       coef_df$coef_abs <- abs(coef_df$coef)
-      coef_df_all <- coef_df
-      coef_df_all
+      coef_df
     }
   })
   output$ml_select_group_lasso_vars_selected <- renderTable({
     vars_selected_df <- NULL
     x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
-    if (!is.null(x_select_obj)){
-      lasso_optimal <- x_select_obj$lasso_optimal
-      coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
-      coef_df$vars <- as.character(rownames(lasso_optimal$beta))
-      coef_df$coef_abs <- abs(coef_df$coef)
-      coef_df_all <- coef_df
-      vars_selected_df <- data.frame(vars_selected = unique(gsub("'","",coef_df_all$vars[which(coef_df_all$coef!=0)])))
-    }
-    vars_selected_df
+    vars_selected_df <- x_select_report$group_lasso_vars_selected
+    
   })
   output$ml_select_group_lasso_score10fold <- renderTable({
     x_select_report <- XselectReports()
