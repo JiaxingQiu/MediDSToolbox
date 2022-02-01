@@ -215,8 +215,8 @@ shinyServer(function(input, output, session) {
                          tag_label = input$eda_tag_label, 
                          scale = input$eda_scale,
                          # --- developer control ---
-                         offset_label = sv.offset_label, 
-                         default_tag_labels = sv.default_tag_labels
+                         offset_label = NULL, 
+                         default_tag_labels = c()
     ) 
   })
   
@@ -261,6 +261,9 @@ shinyServer(function(input, output, session) {
     ))
     updateSelectInput(inputId = "ml_joint_col2_label", 
                       choices = union("None", X_labels))
+    updateSelectInput(inputId = "ml_num_adjust_label",
+                      choices = c("None",unique(X_labels)),
+                      selected = "None" )
     updateSelectInput(inputId = "ml_num_labels", 
                       selected = unique(X_labels))
   })
