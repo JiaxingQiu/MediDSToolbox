@@ -41,10 +41,10 @@ shinyServer(function(input, output, session) {
                       choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_star",
                       choices = dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )] )
-    updateSelectInput(inputId = "eda_sort_by_label",
-                      choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
-    updateSelectInput(inputId = "eda_align_by_label",
-                      choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
+    # updateSelectInput(inputId = "eda_sort_by_label",
+    #                   choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
+    # updateSelectInput(inputId = "eda_align_by_label",
+    #                   choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
     updateSelectInput(inputId = "eda_group_by_label_star",
                       choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_tag_label",
@@ -210,7 +210,7 @@ shinyServer(function(input, output, session) {
                          # --- user interface ----
                          y_label = input$eda_y_label_star,
                          sort_by_label = input$eda_sort_by_label, 
-                         align_by_label = input$eda_align_by_label, 
+                         align_by_label = input$setup_trim_by_label, 
                          group_by_label = input$eda_group_by_label_star,
                          tag_label = input$eda_tag_label, 
                          scale = input$eda_scale,

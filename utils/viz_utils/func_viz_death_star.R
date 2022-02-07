@@ -105,9 +105,9 @@ viz_death_star <- function(
     geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
     geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='black',size=0.5, shape=4) +
     geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='red',size=0.5, shape=3) +
-    xlab(paste0(ifelse(dict_data[align_col,"label"]=="", align_col,dict_data[align_col,"label"]), 
+    xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
                 " by ",
-                ifelse(dict_data[align_col,"unit"]=="", align_col,dict_data[align_col,"unit"]),
+                ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),
                 ifelse(time_unit>1, paste0("/",time_unit),"") ))+
     ylab('subject / cluster index')+
     labs(fill=y_label) +

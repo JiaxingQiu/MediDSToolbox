@@ -59,7 +59,6 @@ path = paste0("./utils/front_utils")
 flst = list.files(path)
 sapply(c(paste(path,flst,sep="/")), source, .GlobalEnv)
 
-# project utils that takes care of project unique funcitonalities 
 path = paste0("./prj_utils")
 flst = list.files(path)
 if(length(flst)>0){
