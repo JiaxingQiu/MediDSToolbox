@@ -578,7 +578,12 @@ shinyServer(function(input, output, session) {
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({
-    summ_obj <- summReport()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   summ_obj <- summReport()
+                   setProgress(1)
+                 })
     summ_obj$summ_df_reformat
   })
   output$download_summary_table <- downloadHandler(
@@ -591,7 +596,12 @@ shinyServer(function(input, output, session) {
     }
   )
   output$num_detail_table <- renderDataTable({
-    summ_obj <- summReport()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   summ_obj <- summReport()
+                   setProgress(1)
+                 })
     summ_obj$num_detail_df
   })
   output$download_num_detail_table <- downloadHandler(
@@ -604,7 +614,12 @@ shinyServer(function(input, output, session) {
     }
   )
   output$fct_detail_table <- renderDataTable({
-    summ_obj <- summReport()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   summ_obj <- summReport()
+                   setProgress(1)
+                 })
     summ_obj$fct_detail_df
   })
   output$download_fct_detail_table <- downloadHandler(
@@ -617,7 +632,12 @@ shinyServer(function(input, output, session) {
     }
   )
   output$rsps_table <- renderDataTable({
-    summ_obj <- summReport()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   summ_obj <- summReport()
+                   setProgress(1)
+                 })
     summ_obj$rsps_df
   })
   # output$na_plot <- renderPlot({
@@ -628,7 +648,12 @@ shinyServer(function(input, output, session) {
   # })
   # ---- 2. eda ----
   output$eda_1d_p_violin <- renderPlot({
-    eda_1d_obj <- stats1dViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   eda_1d_obj <- stats1dViz()
+                   setProgress(1)
+                 })
     eda_1d_obj$p_violin+
       coord_cartesian(xlim = ranges_eda_1d_p_violin$x, ylim = ranges_eda_1d_p_violin$y, expand = FALSE)
   })
@@ -645,7 +670,12 @@ shinyServer(function(input, output, session) {
     }
   })
   output$eda_1d_p_mean <- renderPlot({
-    eda_1d_obj <- stats1dViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   eda_1d_obj <- stats1dViz()
+                   setProgress(1)
+                 })
     eda_1d_obj$p_mean+
       coord_cartesian(xlim = ranges_eda_1d_p_mean$x, ylim = ranges_eda_1d_p_mean$y, expand = FALSE)
   })
@@ -662,7 +692,12 @@ shinyServer(function(input, output, session) {
     }
   })
   output$eda_1d_p_pct <- renderPlot({
-    eda_1d_obj <- stats1dViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   eda_1d_obj <- stats1dViz()
+                   setProgress(1)
+                 })
     eda_1d_obj$p_pct+
       coord_cartesian(xlim = ranges_eda_1d_p_pct$x, ylim = ranges_eda_1d_p_pct$y, expand = FALSE)
   })
@@ -679,7 +714,12 @@ shinyServer(function(input, output, session) {
     }
   })
   output$eda_1d_p_denom <- renderPlot({
-    eda_1d_obj <- stats1dViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   eda_1d_obj <- stats1dViz()
+                   setProgress(1)
+                 })
     eda_1d_obj$p_denom+
       coord_cartesian(xlim = ranges_eda_1d_p_denom$x, ylim = ranges_eda_1d_p_denom$y, expand = FALSE)
   })
@@ -696,7 +736,12 @@ shinyServer(function(input, output, session) {
     }
   })
   output$eda_1d_df_summ <- renderDataTable({
-    eda_1d_obj <- stats1dViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   eda_1d_obj <- stats1dViz()
+                   setProgress(1)
+                 })
     eda_1d_obj$df_summ
   })
   output$eda_1d_p_1stat_stt <- renderPlot({
@@ -722,11 +767,23 @@ shinyServer(function(input, output, session) {
   )
   
   output$plot_2d_stats <- renderPlot({
-    stats2dViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   plot_obj <- stats2dViz()
+                   setProgress(1)
+                 })
+    plot_obj
   })
   
   output$plot_death_star <- renderPlot({
-    starViz()+
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   plot_obj <- starViz()
+                   setProgress(1)
+                 })
+    plot_obj +
       coord_cartesian(xlim = ranges_star$x, ylim = ranges_star$y, expand = FALSE)
   })
   ranges_star <- reactiveValues(x = NULL, y = NULL)# Single zoomable plot (on left)
@@ -743,7 +800,13 @@ shinyServer(function(input, output, session) {
   })
   
   output$plot_alluvial <- renderPlot({
-    alluvialViz()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   plot_obj <- alluvialViz()
+                   setProgress(1)
+                 })
+    plot_obj
   })
   
   # ---- 3. supervised ml ----
@@ -753,12 +816,24 @@ shinyServer(function(input, output, session) {
   )
   # Univariate Heatmap ----
   output$plot_uniheat <- renderPlot({
-    uniHeatmap()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   plot_obj <- uniHeatmap()
+                   setProgress(1)
+                 })
+    plot_obj
   })
   # Feature Selection ----
   output$ml_select_lasso_tuning_plot <- renderPlot({
-    x_select_report <- XselectReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   x_select_report <- XselectReports()
+                   setProgress(1)
+                 })
     x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
+    
     if (!is.null(x_select_obj)){
       lasso_cv <- x_select_obj$cv_mdls$lasso_cv
       ridge_cv <- x_select_obj$cv_mdls$ridge_cv
@@ -826,7 +901,12 @@ shinyServer(function(input, output, session) {
     }
   })
   output$ml_select_group_lasso_tuning_plot <- renderPlot({
-    x_select_report <- XselectReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   x_select_report <- XselectReports()
+                   setProgress(1)
+                 })
     x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
     if (!is.null(x_select_obj)){
       lasso_cv <- x_select_obj$lasso_cv
@@ -923,7 +1003,12 @@ shinyServer(function(input, output, session) {
     }
   )
   output$perform_cali_plot_lasso <- renderPlot({
-    x_select_report <- XselectReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   x_select_report <- XselectReports()
+                   setProgress(1)
+                 })
     cali_plot <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
@@ -1016,16 +1101,31 @@ shinyServer(function(input, output, session) {
   
   # Variable Clus ----
   output$dof_plot <- renderPlot({
-    XclusReports <- XclusReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   XclusReports <- XclusReports()
+                   setProgress(1)
+                 })
     plot(XclusReports$dof_obj$rho, cex=0.7, main="Quadratic Spearman Rank")
     abline(v=c(XclusReports$dof_obj$rcs5_cut,XclusReports$dof_obj$rcs4_cut), col=c("blue", "red"))
   })
   output$x_redun_obj <- renderPrint({
-    XclusReports <- XclusReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   XclusReports <- XclusReports()
+                   setProgress(1)
+                 })
     print(XclusReports$x_redun_obj)
   })
   output$x_corre_in <- renderText({
-    XclusReports <- XclusReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   XclusReports <- XclusReports()
+                   setProgress(1)
+                 })
     print(XclusReports$x_corre_obj$keep)
   })
   output$x_corre_out <- renderText({
@@ -1045,13 +1145,24 @@ shinyServer(function(input, output, session) {
     XclusReports$ml_summ_obj$summ_df_reformat
   })
   output$ml_na_plot <- renderPlot({
-    XclusReports <- XclusReports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   XclusReports <- XclusReports()
+                   setProgress(1)
+                 })
     plot(XclusReports$ml_summ_obj$na_obj)
   })
   # Regression ----
   ## development
   output$devel_cali_plot <- renderPlot({
-    MLreports <- MLreports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports <- MLreports()
+                   setProgress(1)
+                 })
+    
     MLreports$devel_cali_plot #MLreports$time_pred_plot
   })
   output$devel_model_info_tbl <- renderTable({
@@ -1077,7 +1188,12 @@ shinyServer(function(input, output, session) {
     }
   )
   output$infer_effect_plot_1d_continuous <- renderPlot({
-    MLreports <- MLreports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports <- MLreports()
+                   setProgress(1)
+                 })
     infer_effect_plot_1d_continuous <- NULL
     if(is.null(infer_effect_plot_1d_continuous)){
       infer_effect_plot_1d_continuous <- MLreports$infer_effect_plot_diy_list$continuous
@@ -1162,7 +1278,12 @@ shinyServer(function(input, output, session) {
     }
   )
   output$perform_cali_plot <- renderPlot({
-    MLreports <- MLreports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports <- MLreports()
+                   setProgress(1)
+                 })
     cali_plot <- NULL
     if(input$perform_from=="Internal"){
       if(input$perform_dataset=="Engineered"){
@@ -1255,19 +1376,39 @@ shinyServer(function(input, output, session) {
   
   # Timely Models ----
   output$timely_freq_plot <- renderPlot({
-    MLreports_timely <- MLreports_timely()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports_timely <- MLreports_timely()
+                   setProgress(1)
+                 })
     MLreports_timely$timely_freq_plot 
   })
   output$timely_score_plot <- renderPlot({
-    MLreports_timely <- MLreports_timely()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports_timely <- MLreports_timely()
+                   setProgress(1)
+                 })
     MLreports_timely$timely_score_plot 
   })
   output$timely_infer_plot <- renderPlot({
-    MLreports_timely <- MLreports_timely()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports_timely <- MLreports_timely()
+                   setProgress(1)
+                 })
     MLreports_timely$timely_infer_plot 
   })
   output$timely_test_plot <- renderPlot({
-    MLreports_timely <- MLreports_timely()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports_timely <- MLreports_timely()
+                   setProgress(1)
+                 })
     MLreports_timely$timely_test_plot 
   })
   output$timely_freq_table <- renderTable({
