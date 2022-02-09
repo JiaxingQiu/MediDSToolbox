@@ -266,8 +266,12 @@ body <- dashboardBody(
             
             
             tags$h2("Objectives"),
-            tags$p("The objectives of this toolbox include but not limited to --"),
+            tags$p("The objectives of this toolbox include --"),
             tags$ol(
+              tags$li("conduct statistical learning in ",
+                      tags$b("medical"),
+                      " context ",
+                      tags$b("ethically and correctly")),
               tags$li("facilitate medical research hypothesis generation"),
               tags$li("bridge communitations between clinicians and technicians interactively"),
               tags$li("visualize biomedical research data and especially longitudinal datasets"),
