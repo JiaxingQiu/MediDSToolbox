@@ -140,7 +140,7 @@ viz_1d_stats <- function(
       scale_linetype_manual(values=c(5,1,2,3,4)) +
       xlab(paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]))+
       ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
-      ylim(min(df$q_val,na.rm=TRUE)*0.9, max(as.numeric(quantile(df$q_val,0.9,na.rm = TRUE)),na.rm=TRUE)) + 
+      ylim(min(df$q_val,na.rm=TRUE)*0.9, max(as.numeric(quantile(df$q_val,0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Percentile") +
       facet_wrap(~ group, ncol = 5) 
     
