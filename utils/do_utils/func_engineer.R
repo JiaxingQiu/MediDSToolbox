@@ -55,11 +55,11 @@ engineer <- function(
     tryCatch({
       quantiles <- quantile( data[,pctcut_num_col], c(as.numeric(pctcut_num_vec[1])/100, as.numeric(pctcut_num_vec[2])/100 ), na.rm =TRUE)
       if(pctcut_num_coerce){
-        # if coerce extremum
+        # if coerce extrema
         data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] < quantiles[1], quantiles[1], data[,pctcut_num_col])
         data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], quantiles[2], data[,pctcut_num_col])
       }else{
-        # otherwise remove extremum
+        # otherwise remove extrema
         data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] < quantiles[1], NA, data[,pctcut_num_col])
         data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], NA, data[,pctcut_num_col])
       }
@@ -68,6 +68,8 @@ engineer <- function(
       print(e)
     })
   }
+  # filter data with complete numeric cutoffs
+  data <- data[which(complete.cases(data[,pctcut_num_cols])),]
   
   # ---- subset / filter dataset when all given tag columns == 1 ----
   if(length(filter_tag_cols)>0){
