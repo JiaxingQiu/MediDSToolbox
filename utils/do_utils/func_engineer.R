@@ -3,7 +3,7 @@ engineer <- function(
   num_cols = c(), # vector of numeric columns
   fct_cols = c(), # vector of factor columns
   cluster_col, # cluster column
-  trim_by_col,
+  trim_by_col = NULL,
   #--- trim data ---
   trim_min = -Inf, # [from,
   trim_max = Inf, # to)
