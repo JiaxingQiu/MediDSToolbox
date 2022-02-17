@@ -920,7 +920,7 @@ shinyServer(function(input, output, session) {
   })
   output$ml_select_group_lasso_vip <- renderPlot({
     x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls_grouped # raw lasso regression
+    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression vip/coef plot
     if (!is.null(x_select_obj)){
       lasso_optimal <- x_select_obj$lasso_optimal
       coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))

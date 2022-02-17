@@ -11,7 +11,7 @@ front_multi_regression <- function(
   x_labels_tag = c(), 
   x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
   # --- engineer ---
-  trim_by_label, # reltive time info
+  trim_by_label=NULL, # reltive time info
   trim_vec = c(-Inf, Inf), # trim relative time [from, to)
   time_unit = 1, # the increment scale of relative time
   pctcut_num_labels = c(),
