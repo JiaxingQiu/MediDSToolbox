@@ -28,7 +28,8 @@ front_lasso_select <- function(
   test_data=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
-  return_performance = TRUE
+  return_performance = TRUE,
+  lambda=c("auto","min","1se")[1]
 ){
   
   x_select_mdls <- NULL
@@ -233,7 +234,8 @@ front_lasso_select <- function(
                                     x_cols_fct = x_cols_fct,
                                     x_cols_tag = x_cols_tag,
                                     standardize = standardize,
-                                    dict_data = dict_data)
+                                    dict_data = dict_data,
+                                    lambda = lambda)
   },error=function(e){
     print("Error!")
     print(e)
@@ -251,7 +253,8 @@ front_lasso_select <- function(
                                                   x_cols_fct = x_cols_fct,
                                                   x_cols_tag = x_cols_tag,
                                                   standardize = standardize,
-                                                  dict_data = dict_data)
+                                                  dict_data = dict_data,
+                                                  lambda = lambda)
     
   },error=function(e){
     print("Error!")

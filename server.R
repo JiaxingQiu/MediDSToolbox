@@ -398,7 +398,8 @@ shinyServer(function(input, output, session) {
       test_data=test_data,
       y_map_func=input$ml_y_map_func,
       y_map_max=input$ml_y_max,
-      return_performance=input$ml_select_return_performance
+      return_performance=input$ml_select_return_performance,
+      lambda = input$ml_select_lambda
     )
   })
   

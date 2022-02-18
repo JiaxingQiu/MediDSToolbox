@@ -170,7 +170,15 @@ sidebar <- dashboardSidebar(
         conditionalPanel("input.sidebar == 'ml_select'",
                          checkboxInput("ml_select_return_performance",
                                        "Return Performance",
-                                       value = TRUE)
+                                       value = FALSE),
+                         selectInput("ml_select_lambda",
+                                     "Optimal penalty",
+                                     choices = c(
+                                       "Automated" = "auto",
+                                       "lambda.min" = "min",
+                                       "lambda.1se" = "1se"
+                                     ),
+                                     selected="auto")
                          
         )),
     div(id = 'sidebar_ml_clus',

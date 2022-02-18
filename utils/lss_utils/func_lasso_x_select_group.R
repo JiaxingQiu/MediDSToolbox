@@ -11,7 +11,8 @@ lasso_x_select_group <- function(
   x_cols_tag=x_cols_tag,
   family = c("binomial", "multinomial", "gaussian")[1],
   standardize = TRUE,
-  dict_data=NULL # dictionary table is optional
+  dict_data=NULL, # dictionary table is optional
+  lambda=c("auto","1se","min")[1]
 ){
   
   # ---- Description ----
@@ -167,6 +168,13 @@ lasso_x_select_group <- function(
   opt_lambda <- lasso_cv$lambda.1se
   if (lasso_cv$cvm[which(lasso_cv$lambda==lasso_cv$lambda.min)] == min(lasso_cv$cvm) ){
     opt_lambda <- lasso_cv$lambda.min
+  }
+  if(lambda %in% c("min","1se")){
+    if(lambda=="min") {
+      opt_lambda <- lasso_cv$lambda.min
+    }else{
+      opt_lambda <- lasso_cv$lambda.1se
+    }
   }
   lasso_optimal <- gglasso::gglasso(x=x, 
                                     y=y, 
