@@ -13,7 +13,8 @@ lasso_x_select <- function(
   family = c("binomial", "multinomial", "gaussian")[1],
   standardize = TRUE,
   dict_data=NULL, # dictionary table is optional
-  lambda=c("auto","1se","min")[1]
+  lambda=c("auto","1se","min")[1],
+  lambda_value = NULL # external specified lasso lambda value 
 ){
   
   # ---- Description ----
@@ -111,6 +112,9 @@ lasso_x_select <- function(
       opt_lambda_lasso <- lasso_cv$lambda.1se
       opt_lambda_ridge <- ridge_cv$lambda.min
     }
+  }
+  if(!is.null(lambda_value)){
+    opt_lambda_lasso <- lambda_value
   }
   lasso_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE, lambda = opt_lambda_lasso)
   ridge_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE, lambda = opt_lambda_ridge)

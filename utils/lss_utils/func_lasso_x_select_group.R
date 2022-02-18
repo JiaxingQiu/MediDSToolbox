@@ -12,7 +12,8 @@ lasso_x_select_group <- function(
   family = c("binomial", "multinomial", "gaussian")[1],
   standardize = TRUE,
   dict_data=NULL, # dictionary table is optional
-  lambda=c("auto","1se","min")[1]
+  lambda=c("auto","1se","min")[1],
+  lambda_value = NULL # external specified lasso lambda value
 ){
   
   # ---- Description ----
@@ -175,6 +176,9 @@ lasso_x_select_group <- function(
     }else{
       opt_lambda <- lasso_cv$lambda.1se
     }
+  }
+  if(!is.null(lambda_value)){
+    opt_lambda <- lambda_value
   }
   lasso_optimal <- gglasso::gglasso(x=x, 
                                     y=y, 
