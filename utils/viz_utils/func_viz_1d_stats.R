@@ -60,6 +60,7 @@ viz_1d_stats <- function(
   p_pct <- NULL
   p_denom <- NULL
   p_1stat_set <- NULL
+  p_1stat_set_raw <- NULL
   
   data_all <- data
   data_all$group <- "All"
@@ -203,7 +204,7 @@ viz_1d_stats <- function(
     df_summ_grouped <- data %>% 
       group_by(group, x) %>% 
       summarise(n_sbj = n_distinct(cluster), # how many babies have the data
-                n_sbj_avail = n_distinct(cluster[!is.na(y)]), # how many babies have responce data available
+                n_sbj_avail = n_distinct(cluster[!is.na(y)]), # how many babies have response data available
                 q25 = quantile(y, probs = 0.25, na.rm=TRUE), # quantiles
                 q50 = quantile(y, probs = 0.50, na.rm=TRUE), # quantiles
                 q75 = quantile(y, probs = 0.75, na.rm=TRUE), # quantiles
@@ -242,7 +243,7 @@ viz_1d_stats <- function(
       colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value", "n_sbj_avail")
       
       p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value, color=group))+
-        geom_smooth(se = FALSE,span=0.6) + #se=TRUE, fill="#F5F5F5"
+        geom_smooth(se = FALSE,span=0.5) + #se=TRUE, fill="#F5F5F5"
         theme_bw() +
         ylab(y_lab_string) +
         xlab(x_lab_string) +
@@ -252,7 +253,7 @@ viz_1d_stats <- function(
       p_1stat_denom <- ggplot(df_summ_grouped_plot, aes(x=x, y=n_sbj_avail, fill=group))+
         geom_bar(stat="identity", position="stack") +
         theme_bw() +
-        ylab("Number of enrolled subjects") +
+        ylab("Number of subjects") +
         xlab(x_lab_string) +
         scale_fill_discrete(name=group_by_string) + 
         ggtitle("Data Availability") 
@@ -267,41 +268,35 @@ viz_1d_stats <- function(
                                                             breaks = x_breaks,
                                                             labels = x_labels)
       }
-      # p_1stat_pctall <- NULL
-      # if(!is.null(p_pct)){
-      #   p_1stat_pctall <- p_pct + 
-      #     theme_bw() +
-      #     ylab(y_lab_string) +
-      #     xlab(x_lab_string) +
-      #     theme(legend.position = "top") +
-      #     ggtitle(NULL)
-      #   p_1stat_pctall$data <- p_1stat_pctall$data %>% filter(group =="All") 
-      #   if(grepl("_days",x_col)){
-      #     p_1stat_pctall <- p_1stat_pctall + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
-      #                                                           breaks = x_breaks,
-      #                                                           labels = x_labels)
-      #   }
-      #   p_1stat <- p_1stat + 
-      #     ylim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_y[[1]]$range$range) +
-      #     xlim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_x[[1]]$range$range)
-      # }
+      p_1stat_pctall <- NULL
+      if(!is.null(p_pct)){
+        p_1stat_pctall <- p_pct +
+          theme_bw() +
+          ylab(y_lab_string) +
+          xlab(x_lab_string) +
+          theme(legend.position = "top") +
+          ggtitle(NULL)
+        p_1stat_pctall$data <- p_1stat_pctall$data %>% filter(group =="All")
+        if(grepl("_days",x_col)){
+          p_1stat_pctall <- p_1stat_pctall + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
+                                                                breaks = x_breaks,
+                                                                labels = x_labels)
+        }
+        # coerce ylim of numerator and pct all
+        # p_1stat <- p_1stat +
+        #   ylim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_y[[1]]$range$range) +
+        #   xlim(ggplot2::ggplot_build(p_1stat_pctall)$layout$panel_scales_x[[1]]$range$range)
+      }
       
-      p_1stat_set[[i]] <- ggpubr::ggarrange(p_1stat, 
-                                            p_1stat_denom, 
-                                            nrow=1, 
-                                            common.legend = TRUE,
-                                            legend = "top")
-      # if(!is.null(p_1stat_pctall)){
-      #   p_1stat_set[[i]] <-  ggpubr::ggarrange(p_1stat_pctall,
-      #                                        p_1stat_set[[i]],
-      #                                        nrow=1,
-      #                                        widths = c(1,2),
-      #                                        common.legend = FALSE,
-      #                                        legend = "top")
-      # }
+      # return set of figures by pieces
+      p_1stat_set[[i]] <- list(pctall = p_1stat_pctall,
+                               numer = p_1stat, 
+                               denom = p_1stat_denom)
+      
       
     }
     names(p_1stat_set) <- c( "avg", "q25" , "q50", "q75", "q90", "q95")
+    
     
   },error=function(e){
     print("skip 1d stat plot")

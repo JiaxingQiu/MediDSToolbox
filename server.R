@@ -747,7 +747,18 @@ shinyServer(function(input, output, session) {
   })
   output$eda_1d_p_1stat_stt <- renderPlot({
     eda_1d_obj <- stats1dViz()
-    eda_1d_obj$p_1stat_set[[as.character( input$eda_1d_p_1stat_sttname )]]
+    p_1stat_set <- eda_1d_obj$p_1stat_set[[as.character( input$eda_1d_p_1stat_sttname )]]
+    p1 <- ggpubr::ggarrange(p_1stat_set$numer,
+                            p_1stat_set$denom,
+                            nrow=1,
+                            common.legend = TRUE,
+                            legend = "top")
+    ggpubr::ggarrange(p_1stat_set$pctall,
+                      p1,
+                      nrow=1,
+                      widths = c(1,2),
+                      common.legend = FALSE,
+                      legend = "top")
   })
   output$download_eda_1d_df_summ <- downloadHandler(
     filename = function() {
