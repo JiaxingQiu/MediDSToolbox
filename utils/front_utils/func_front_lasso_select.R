@@ -28,7 +28,7 @@ front_lasso_select <- function(
   test_data=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
-  return_performance = TRUE,
+  return_performance = FALSE,
   lambda=c("auto","min","1se")[1],
   lambda_value = NULL
 ){
@@ -358,6 +358,10 @@ front_lasso_select <- function(
   perform_ex_scores_tbl <- lss_perform_ex$scores_all_final
   perform_exorg_scores_tbl <- lss_perform_exorg$scores_all_final
   
+  perform_in_tradeoff_plot <- lss_perform_in$tradeoff_plot
+  perform_inorg_tradeoff_plot <- lss_perform_inorg$tradeoff_plot
+  perform_ex_tradeoff_plot <- lss_perform_ex$tradeoff_plot
+  perform_exorg_tradeoff_plot <- lss_perform_exorg$tradeoff_plot
   
   # selected coef df
   vars_selected_df <- NULL
@@ -407,7 +411,11 @@ front_lasso_select <- function(
                perform_in_scores_tbl = perform_in_scores_tbl,
                perform_inorg_scores_tbl = perform_inorg_scores_tbl,
                perform_ex_scores_tbl = perform_ex_scores_tbl,
-               perform_exorg_scores_tbl = perform_exorg_scores_tbl
+               perform_exorg_scores_tbl = perform_exorg_scores_tbl,
+               perform_in_tradeoff_plot = perform_in_tradeoff_plot,
+               perform_inorg_tradeoff_plot = perform_inorg_tradeoff_plot,
+               perform_ex_tradeoff_plot = perform_ex_tradeoff_plot,
+               perform_exorg_tradeoff_plot = perform_exorg_tradeoff_plot
                ))
 }
 

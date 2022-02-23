@@ -1055,6 +1055,24 @@ shinyServer(function(input, output, session) {
     }
     fitted_eff_plot
   })
+  output$perform_tradeoff_plot_lasso <- renderPlot({
+    x_select_report <- XselectReports()
+    tradeoff_plot <- NULL
+    if(input$perform_from_lasso=="Internal"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        tradeoff_plot <- x_select_report$perform_in_tradeoff_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        tradeoff_plot <- x_select_report$perform_inorg_tradeoff_plot
+      }
+    }else if(input$perform_from_lasso=="External"){
+      if(input$perform_dataset_lasso=="Engineered"){
+        tradeoff_plot <- x_select_report$perform_ex_tradeoff_plot
+      }else if(input$perform_dataset_lasso=="Original"){
+        tradeoff_plot <- x_select_report$perform_exorg_tradeoff_plot
+      }
+    }
+    tradeoff_plot
+  })
   output$perform_tte_plot_lasso <- renderPlot({
     x_select_report <- XselectReports()
     tte_plot <- NULL
@@ -1329,6 +1347,24 @@ shinyServer(function(input, output, session) {
       }
     }
     tte_plot
+  })
+  output$perform_tradeoff_plot <- renderPlot({
+    MLreports <- MLreports()
+    tradeoff_plot <- NULL
+    if(input$perform_from=="Internal"){
+      if(input$perform_dataset=="Engineered"){
+        tradeoff_plot <- MLreports$perform_in_tradeoff_plot
+      }else if(input$perform_dataset=="Original"){
+        tradeoff_plot <- MLreports$perform_inorg_tradeoff_plot
+      }
+    }else if(input$perform_from=="External"){
+      if(input$perform_dataset=="Engineered"){
+        tradeoff_plot <- MLreports$perform_ex_tradeoff_plot
+      }else if(input$perform_dataset=="Original"){
+        tradeoff_plot <- MLreports$perform_exorg_tradeoff_plot
+      }
+    }
+    tradeoff_plot
   })
   output$perform_fitted_eff_plot<- renderPlot({
     MLreports <- MLreports()

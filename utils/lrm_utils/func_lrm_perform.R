@@ -57,6 +57,11 @@ lrm_perform <- function(
   df$y_true <- as.factor(df[,y_col])
   df_hat <- df
   
+  # ------------- tradeoff curves ------------
+  df_hat$y_true01 <- ifelse(as.numeric(as.character(df[,y_col]))==1, 1, 0)
+  curves_obj <- mdl_tradeoffs(y_true=df_hat$y_true01, y_hat=df_hat$y_pred)
+  tradeoff_plot <- ggpubr::ggarrange(plotlist=curves_obj, nrow=1)
+  
   # ------------- calibration plot -------------
   df_hat$y_cali_groups <- cut(est_pctl( df_hat$y_pred ), 10)
   df_hat$y_true01 <- ifelse(as.numeric(as.character(df[,y_col]))==1, 1, 0)
@@ -228,15 +233,14 @@ lrm_perform <- function(
   },error=function(e){print(e)})
   
   
-  
-  
   return(list(
     df_hat = df_hat,
     fitted_eff_plot = fitted_eff_plot,
     scores_plot = scores_plot,
     scores_all_final = scores_all_final,
     cali_plot = cali_plot,
-    tte_plot = tte_plot
+    tte_plot = tte_plot,
+    tradeoff_plot = tradeoff_plot
   ))
   
 }

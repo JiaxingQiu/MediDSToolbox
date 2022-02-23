@@ -339,6 +339,10 @@ front_multi_regression <- function(
   perform_ex_scores_tbl <- results$perform_obj$external$scores_all_final
   perform_exorg_scores_tbl <- results$perform_obj$external_org$scores_all_final
   
+  perform_in_tradeoff_plot <- results$perform_obj$internal$tradeoff_plot
+  perform_inorg_tradeoff_plot <- results$perform_obj$internal_org$tradeoff_plot
+  perform_ex_tradeoff_plot <- results$perform_obj$external$tradeoff_plot
+  perform_exorg_tradeoff_plot <- results$perform_obj$external_org$tradeoff_plot
   
   return(list( devel_model_info_tbl = devel_model_info_tbl,
                devel_score_summ_tbl = devel_score_summ_tbl,
@@ -372,7 +376,11 @@ front_multi_regression <- function(
                perform_in_scores_tbl = perform_in_scores_tbl,
                perform_inorg_scores_tbl = perform_inorg_scores_tbl,
                perform_ex_scores_tbl = perform_ex_scores_tbl,
-               perform_exorg_scores_tbl = perform_exorg_scores_tbl))
+               perform_exorg_scores_tbl = perform_exorg_scores_tbl,
+               perform_in_tradeoff_plot = perform_in_tradeoff_plot,
+               perform_inorg_tradeoff_plot = perform_inorg_tradeoff_plot,
+               perform_ex_tradeoff_plot = perform_ex_tradeoff_plot,
+               perform_exorg_tradeoff_plot = perform_exorg_tradeoff_plot))
 
 }
 

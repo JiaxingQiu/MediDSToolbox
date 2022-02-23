@@ -587,6 +587,7 @@ body <- dashboardBody(
                                  fluidRow(column(6, plotOutput("perform_cali_plot_lasso",height = "400px")),
                                           column(6, plotOutput("perform_tte_plot_lasso",height = "400px"))
                                           ),
+                                 plotOutput("perform_tradeoff_plot_lasso", height = "300px"),
                                  plotOutput("perform_scores_plot_lasso",height = "600px"),
                                  tableOutput("perform_scores_tbl_lasso"),
                                  plotOutput("perform_fitted_eff_plot_lasso",height = "1000px")
@@ -639,6 +640,7 @@ body <- dashboardBody(
                                  fluidRow(column(6, plotOutput("perform_cali_plot",height = "400px")),
                                           column(6, plotOutput("perform_tte_plot",height = "400px"))
                                  ),
+                                 plotOutput("perform_tradeoff_plot", height = "300px"),
                                  plotOutput("perform_scores_plot",height = "600px"),
                                  tableOutput("perform_scores_tbl"),
                                  plotOutput("perform_fitted_eff_plot",height = "1000px")

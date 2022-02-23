@@ -104,14 +104,11 @@ lasso_x_select <- function(
   # abline(v = log(ridge_cv$lambda.1se), col = "blue", lty = "dashed")
   # 
   #  ----- train optimal lambda models ----
-  if(lambda %in% c("min","1se")){
-    if(lambda=="min") {
-      opt_lambda_lasso <- lasso_cv$lambda.min
-      opt_lambda_ridge <- ridge_cv$lambda.min
-    }else{
-      opt_lambda_lasso <- lasso_cv$lambda.1se
-      opt_lambda_ridge <- ridge_cv$lambda.min
-    }
+  opt_lambda_lasso <- lasso_cv$lambda.1se
+  opt_lambda_ridge <- ridge_cv$lambda.1se
+  if(lambda=="min") {
+    opt_lambda_lasso <- lasso_cv$lambda.min
+    opt_lambda_ridge <- ridge_cv$lambda.min
   }
   if(!is.null(lambda_value)){
     opt_lambda_lasso <- lambda_value
