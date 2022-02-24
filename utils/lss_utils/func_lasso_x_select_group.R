@@ -148,17 +148,17 @@ lasso_x_select_group <- function(
   lasso_cv <- gglasso::cv.gglasso(x=x, 
                                   y=y, 
                                   group=v.group, 
-                                  loss="logit",
-                                  pred.loss = "loss",
+                                  loss="logit", # deviance function for regular logistic function
+                                  pred.loss = "misclass", #"misclass"
                                   nfolds = 10)
-  # ----- show panalization trace -----
+  # ----- show penalization trace -----
   # par(mfrow = c(1, 1))
   # plot(lasso_cv, main = "Lasso penalty\n\n")
   # abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
   # abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
   # 
   
-  # ----- show panalization trace -----
+  # ----- show penalization trace -----
   lasso_trace <- gglasso::gglasso(x=x, 
                                     y=y, 
                                     group=v.group, 
