@@ -1,6 +1,7 @@
 mdl_tradeoffs <- function(
   y_true, # vector of y_true values
   y_hat # vector of predicted y_hat, it can be probability, log odds, fold risk
+  #rel_time = NULL # vector of continuous relative time from episodes
 ){
   y_hat_min <- min(y_hat, na.rm = TRUE)
   y_hat_max <- max(y_hat, na.rm = TRUE)
@@ -12,10 +13,10 @@ mdl_tradeoffs <- function(
     # calculate TP, TN, FP, FN
     confusion_df <- data.frame(
       threshold = t,
-      TP = sum(y_hat>=t&y_true>=t_true),
-      TN = sum(y_hat<t&y_true<t_true),
-      FP = sum(y_hat>=t&y_true<t_true),
-      FN = sum(y_hat<t&y_true>=t_true)
+      TP = sum(y_hat>=t&y_true>=t_true, na.rm = TRUE),
+      TN = sum(y_hat<t&y_true<t_true, na.rm = TRUE),
+      FP = sum(y_hat>=t&y_true<t_true, na.rm = TRUE),
+      FN = sum(y_hat<t&y_true>=t_true, na.rm = TRUE)
     )
     confusion_df_all <- bind_rows(confusion_df_all,confusion_df)
   }
