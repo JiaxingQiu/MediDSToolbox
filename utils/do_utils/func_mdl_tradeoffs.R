@@ -25,7 +25,7 @@ mdl_tradeoffs <- function(
                                                   precision = TP/(TP+FP),
                                                   specificity = FP/(FP+TN),
                                                   sensitivity = TP/(TP+FN),
-                                                  alarm_rate = TP/(TP+TN+FP+FN)) %>%
+                                                  alarm_rate = (TP+FP)/(TP+TN+FP+FN)) %>%
     as.data.frame()
   # add ending points for plotting
   confusion_df_all <- bind_rows(confusion_df_all,
