@@ -11,7 +11,7 @@ front_multi_regression_timely <- function(
   x_labels_tag = c(), 
   x_labels = unique(c(x_labels_linear,x_labels_nonlin_rcs5,x_labels_nonlin_rcs4,x_labels_nonlin_rcs3,x_labels_fct,x_labels_tag)), 
   # --- engineer ---
-  trim_by_label,
+  trim_by_label=NULL,
   trim_vec = c(-Inf, Inf), # trim vec controls the beginning and the end of models
   time_unit = 1,
   pctcut_num_labels = c(),

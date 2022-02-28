@@ -5,7 +5,7 @@ front_uni_heatmap <- function(
   y_label, 
   cluster_label,
   # --- engineer ---
-  trim_by_label,
+  trim_by_label=NULL,
   trim_vec = c(-Inf, Inf),
   time_unit=1,
   pctcut_num_labels=c(),
