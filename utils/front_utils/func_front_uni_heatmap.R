@@ -22,7 +22,8 @@ front_uni_heatmap <- function(
   method="logit_rcs", 
   pct=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=3
+  y_map_max=3,
+  label_y=FALSE
 ){
   
   tryCatch({
@@ -137,6 +138,18 @@ front_uni_heatmap <- function(
       theme(axis.title.y=element_blank()) + 
       scale_fill_gradientn(colours = rev(rainbow(7))) +
       scale_y_discrete(limits=var_order$var_name)
+    if(label_y){
+      tryCatch({
+        dict_data <- get.dict(assign.dict(data,dict_data))
+        label_list <- dict_data[var_order$var_name,"label"]
+        label_list <- gsub("[^[:alnum:]]+"," ",label_list)
+        label_list <- stringr::str_wrap(label_list, width=20)
+        plot_obj <- plot_obj + scale_y_discrete(limits=var_order$var_name,labels=label_list)
+      },error=function(e){
+        print('Failed to use labels for y axis in uni heatmap')
+        print(e)
+      })
+    }
     if("c_score" %in% colnames(df_result_all_sort)){
       plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
     }
