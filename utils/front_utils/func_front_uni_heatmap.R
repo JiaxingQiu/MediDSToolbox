@@ -23,7 +23,7 @@ front_uni_heatmap <- function(
   pct=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
-  label_y=FALSE
+  label_y=TRUE
 ){
   
   tryCatch({

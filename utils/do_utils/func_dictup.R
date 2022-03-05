@@ -74,7 +74,10 @@ get.dict <- function(data, attr_list=c() ){
   return(dict_df)
 }
 
-
+remove.dict <- function(data){
+  for (col in colnames(data)) attributes(data[[col]]) <- NULL
+  return(data)
+}
 
 assign.dict <- function(data, dict_new, multi_assign=FALSE, overwrite=TRUE){
   # ---- inputs ----
