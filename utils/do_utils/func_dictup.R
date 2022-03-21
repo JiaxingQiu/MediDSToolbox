@@ -18,7 +18,7 @@ dict_json2df <- function(dict) {
       var_type<- "num"
       var_unit <- dict[[var]]$numeric$unit
     }else if(var_type=="factor"){
-      var_type<- "fct"
+      var_type <- "fct"
       var_unit <- "tag01"
     }else if(var_type=="key"){
       var_unit <- ""
@@ -41,9 +41,19 @@ dict_json2df <- function(dict) {
     } else {
       var_mlrole <- ""
     }
-    dict_df <- bind_rows(dict_df, data.frame(varname=var_name, label=var_label, type=var_type, unit=var_unit, mlrole=var_mlrole, unique=var_unique, stringsAsFactors = FALSE))
+    dict_df <- bind_rows(dict_df, data.frame(varname=var_name, label=var_label, type=var_type, unit=var_unit, mlrole=var_mlrole, unique_per_sbj=var_unique, stringsAsFactors = FALSE))
+  }
+  
+  # expand factor variables with their levels
+  for (var in dict_df$varname[which(dict_df$type=="fct")]){
+    fct_df <- data.frame(varname=var, varname_levels=paste0(var,"___",names(dict[[var]]$factor$levels)))
+    fct_df <- merge(fct_df, dict_df, all.x=TRUE)
+    fct_df <- fct_df[,setdiff(colnames(fct_df), "varname")]
+    colnames(fct_df)[which(colnames(fct_df)=="varname_levels")] <- "varname"
+    dict_df <- bind_rows(dict_df, fct_df)
   }
   rownames(dict_df) <- dict_df$varname
+  
   return(dict_df)
 }
 

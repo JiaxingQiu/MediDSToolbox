@@ -59,6 +59,9 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "ml_num_adjust_label",
                       choices = c("None",dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]),
                       selected = "None" )
+    updateSelectInput(inputId = "ml_uni_group_label",
+                      choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]),#dict_ml$mlrole=="input"&
+                      selected = "None" )
     updateSelectInput(inputId = "ml_num_labels",
                       choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
                       selected = NULL )
@@ -333,7 +336,7 @@ shinyServer(function(input, output, session) {
   })
   
   uniHeatmap <- eventReactive(input$ml_uni_go, {
-    front_uni_heatmap(
+    uni_obj <- front_uni_heatmap_group(
       data=data_ml,
       dict_data=dict_ml,
       num_labels=input$ml_num_labels, 
@@ -356,8 +359,11 @@ shinyServer(function(input, output, session) {
       num_adjust_label=input$ml_num_adjust_label, 
       method=input$ml_method, 
       y_map_func = input$ml_y_map_func,
-      y_map_max = input$ml_y_max
+      y_map_max = input$ml_y_max,
+      group_label = input$ml_uni_group_label
     )
+    uni_obj$plot_obj
+    
   })
   XselectReports <- eventReactive(input$ml_select_go, {
     test_data <- NULL

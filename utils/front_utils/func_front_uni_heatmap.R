@@ -156,7 +156,8 @@ front_uni_heatmap <- function(
   }
   
   
-  return(plot_obj)
+  return(list(plot_obj = plot_obj,
+              df_result_all_sort = df_result_all_sort))
   
 }
 
