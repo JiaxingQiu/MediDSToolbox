@@ -59,57 +59,94 @@ lasso_x_select_group <- function(
   x_col_df_all <- data.frame()
   # --- rcs5 ---
   for (col in x_cols_nonlin_rcs5){
-    # additional columns
-    data[,col] <- as.numeric(rcs(data[,col],5)[,1])
-    data[,paste0(col,"'")] <- as.numeric(rcs(data[,col],5)[,2])
-    data[,paste0(col,"''")] <- as.numeric(rcs(data[,col],5)[,3])
-    data[,paste0(col,"'''")] <- as.numeric(rcs(data[,col],5)[,4])
-    
-    # append this varname and group info as a data frame to overall column info
-    x_col_df <- data.frame(
-      x_colname = c(col, paste0(col,"'"), paste0(col,"''"),paste0(col,"'''")),
-      x_group = paste0(col,"_rcs5")
-    )
-    x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+    success <- FALSE
+    tryCatch({
+      # additional columns
+      data[,col] <- as.numeric(rcs(data[,col],5)[,1])
+      data[,paste0(col,"'")] <- as.numeric(rcs(data[,col],5)[,2])
+      data[,paste0(col,"''")] <- as.numeric(rcs(data[,col],5)[,3])
+      data[,paste0(col,"'''")] <- as.numeric(rcs(data[,col],5)[,4])
+      
+      # append this varname and group info as a data frame to overall column info
+      x_col_df <- data.frame(
+        x_colname = c(col, paste0(col,"'"), paste0(col,"''"),paste0(col,"'''")),
+        x_group = paste0(col,"_rcs5")
+      )
+      x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+      success <- TRUE
+    },error=function(e){
+      print(paste0("failed to assign rcs 4 for ", col, ", using linear instead"))
+    })
+    if(!success){
+      x_cols_linear <- c(x_cols_linear, col)
+      x_cols_nonlin_rcs5 <- setdiff(x_cols_nonlin_rcs5, col)
+    }
   }
   
   # --- rcs4 ---
   for (col in x_cols_nonlin_rcs4){
-    # additional columns
-    data[,col] <- as.numeric(rcs(data[,col],4)[,1])
-    data[,paste0(col,"'")] <- as.numeric(rcs(data[,col],4)[,2])
-    data[,paste0(col,"''")] <- as.numeric(rcs(data[,col],4)[,3])
-    
-    # append this varname and group info as a data frame to overall column info
-    x_col_df <- data.frame(
-      x_colname = c(col, paste0(col,"'"), paste0(col,"''")),
-      x_group = paste0(col,"_rcs4")
-    )
-    x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+    success <- FALSE
+    tryCatch({
+      # additional columns
+      data[,col] <- as.numeric(rcs(data[,col],4)[,1])
+      data[,paste0(col,"'")] <- as.numeric(rcs(data[,col],4)[,2])
+      data[,paste0(col,"''")] <- as.numeric(rcs(data[,col],4)[,3])
+      
+      # append this varname and group info as a data frame to overall column info
+      x_col_df <- data.frame(
+        x_colname = c(col, paste0(col,"'"), paste0(col,"''")),
+        x_group = paste0(col,"_rcs4")
+      )
+      x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+      success <- TRUE
+    },error=function(e){
+      print(paste0("failed to assign rcs 4 for ", col, ", using linear instead"))
+    })
+    if(!success){
+      x_cols_linear <- c(x_cols_linear, col)
+      x_cols_nonlin_rcs4 <- setdiff(x_cols_nonlin_rcs4, col)
+    }
   }
   
   # --- rcs3 ---
   for (col in x_cols_nonlin_rcs3){
-    # additional columns
-    data[,col] <- as.numeric(rcs(data[,col],3)[,1])
-    data[,paste0(col,"'")] <- as.numeric(rcs(data[,col],3)[,2])
-    
-    # append this varname and group info as a data frame to overall column info
-    x_col_df <- data.frame(
-      x_colname = c(col, paste0(col,"'")),
-      x_group = paste0(col,"_rcs3")
-    )
-    x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+    success <- FALSE
+    tryCatch({
+      # additional columns
+      data[,col] <- as.numeric(rcs(data[,col],3)[,1])
+      data[,paste0(col,"'")] <- as.numeric(rcs(data[,col],3)[,2])
+      
+      # append this varname and group info as a data frame to overall column info
+      x_col_df <- data.frame(
+        x_colname = c(col, paste0(col,"'")),
+        x_group = paste0(col,"_rcs3")
+      )
+      x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+      success <- TRUE
+    },error=function(e){
+      print(paste0("failed to assign rcs 3 for ", col, ", using linear instead"))
+    })
+    if(!success){
+      x_cols_linear <- c(x_cols_linear, col)
+      x_cols_nonlin_rcs3 <- setdiff(x_cols_nonlin_rcs3, col)
+    }
   }
   
   # --- linear ---
   for (col in x_cols_linear){
-    # append this varname and group info as a data frame to overall column info
-    x_col_df <- data.frame(
-      x_colname = c(col),
-      x_group = paste0(col,"_linear")
-    )
-    x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+    success <- FALSE
+    tryCatch({
+      # append this varname and group info as a data frame to overall column info
+      x_col_df <- data.frame(
+        x_colname = c(col),
+        x_group = paste0(col,"_linear")
+      )
+      x_col_df_all <- bind_rows(x_col_df_all, x_col_df)
+      success <- TRUE
+    },error=function(e){
+      print(paste0("failed to assign linear for ", col, ", variable removed"))
+    })
+    if(!success) x_cols_linear <- setdiff(x_cols_linear, col)
   }
   
   # --- fct ---

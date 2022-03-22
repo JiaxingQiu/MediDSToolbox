@@ -22,7 +22,7 @@ front_uni_heatmap_group <- function(
   method="logit_rcs", 
   pct=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=3,
+  y_map_max=2,
   label_y=TRUE,
   group_label=NULL
 ){
@@ -113,7 +113,7 @@ front_uni_heatmap_group <- function(
       geom_tile(aes(fill=yhat)) +
       labs(fill=y_map_func,x="Percentile",y=NULL) + 
       scale_fill_gradientn(colours = rev(rainbow(7))) +
-      facet_wrap(~var_name, nrow=5, scales = "free") +
+      facet_wrap(~var_name, ncol=5, scales = "free") +
       theme_minimal()
     if("c_score" %in% colnames(plot_df_all)){
       plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)

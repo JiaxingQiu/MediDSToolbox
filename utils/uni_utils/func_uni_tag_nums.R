@@ -36,11 +36,16 @@ uni_tag_nums <- function(data,
   df_result_all = data.frame()
   for(num_col in num_cols){
     df_mdl <- data[,intersect(colnames(data), unique(c(num_cols,tag_col,cluster_col,num_adjust_col))) ]
-    try({
+    tryCatch({
       if(attr(data[,num_col],"unique")){
         df_mdl <- dplyr::distinct(df_mdl)
       }
-    },TRUE)
+    },error=function(e){print(e)})
+    tryCatch({
+      if(attr(data[,num_col],"unique_per_sbj")){
+        df_mdl <- dplyr::distinct(df_mdl)
+      }
+    },error=function(e){print(e)})
     if(pct){
       df_mdl[,num_col] <- est_pctl(df_mdl[,num_col])
     }else{
@@ -54,19 +59,28 @@ uni_tag_nums <- function(data,
     afford_dof <- n_distinct(df_mdl[which(df_mdl[,tag_col]==1), cluster_col])/15
     print(paste0("---- affordable degree of freedom ---- ", afford_dof))
     dof_list <- c(3,4,5,6)
-    dof <- max(5, max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)) # at least 5 knots
+    dof <- max(3, max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)) # at least 3 knots
     
-    if (method=="bootstrap"){
-      df_result <- uni_tag_num_bootstrap(df_mdl, num_col, tag_col)
-    }else if(method=="loess"){
-      df_result <- uni_tag_num_loess(df_mdl, num_col, tag_col)
-    }else if (method=="logit_rcs"){
-      df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col)
-    }else if(method=="mean"){
-      df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
+    # loop through dof until df_result works
+    dof <- dof + 1 # initiate dof
+    df_result <- NULL
+    while( is.null(df_result) ){
+      dof <- dof - 1
+      stopifnot(dof>=3)
+      if (method=="bootstrap"){
+        df_result <- uni_tag_num_bootstrap(df_mdl, num_col, tag_col)
+      }else if(method=="loess"){
+        df_result <- uni_tag_num_loess(df_mdl, num_col, tag_col)
+      }else if (method=="logit_rcs"){
+        df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col)
+      }else if(method=="mean"){
+        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
+      }
     }
+   
     
     if (!is.null(df_result)){
+      print(paste0("final dof used: ",dof))
       df_result$var_name <- num_col
       df_result_all <- bind_rows(df_result_all, df_result)
     }
@@ -77,7 +91,7 @@ uni_tag_nums <- function(data,
 }
 
 
-uni_tag_num_rcs <- function(df_mdl,num_col,tag_col, cluster_col, dof=5, num_adjust_col=NULL){
+uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=5, num_adjust_col=NULL){
   df_mdl$num_col <- df_mdl[, num_col]
   df_mdl$tag_col <- df_mdl[, tag_col]
   df_result <- NULL
