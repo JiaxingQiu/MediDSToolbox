@@ -3,7 +3,8 @@ lss_perform <- function(
   df, # a dataset to test out performance on
   y_map_func = "fold_risk", # response type
   y_map_max = 7, # response upper cutoff
-  rel_time_col=NULL
+  rel_time_col=NULL,
+  return_effect_plots = TRUE
 ){
   
   library(stringr)
@@ -82,6 +83,7 @@ lss_perform <- function(
   # --------- fitted marginal effects -------
   # reformat plot dataframes by group
   tryCatch({
+    stopifnot(return_effect_plots)
     fit_eff_plot_list <- list()
     i=0
     df_plot_num <- data.frame()

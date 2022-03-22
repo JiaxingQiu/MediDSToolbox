@@ -29,6 +29,7 @@ front_lasso_select <- function(
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
   return_performance = FALSE,
+  return_effect_plots = TRUE,
   lambda=c("auto","min","1se")[1],
   lambda_value = NULL
 ){
@@ -273,7 +274,8 @@ front_lasso_select <- function(
       df = data_in, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
-      rel_time_col=rel_time_col
+      rel_time_col=rel_time_col,
+      return_effect_plots=return_effect_plots
     )
   },error=function(e){
     print("Error!")
@@ -289,7 +291,8 @@ front_lasso_select <- function(
       df = data_inorg, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
-      rel_time_col=rel_time_col
+      rel_time_col=rel_time_col,
+      return_effect_plots=return_effect_plots
     )
   },error=function(e){
     print("Error!")
@@ -305,7 +308,8 @@ front_lasso_select <- function(
       df = data_ex, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
-      rel_time_col=rel_time_col
+      rel_time_col=rel_time_col,
+      return_effect_plots=return_effect_plots
     )
   },error=function(e){
     print("Error!")
@@ -321,7 +325,8 @@ front_lasso_select <- function(
       df = data_exorg, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
-      rel_time_col=rel_time_col
+      rel_time_col=rel_time_col,
+      return_effect_plots=return_effect_plots
     )
   },error=function(e){
     print("Error!")
