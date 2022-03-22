@@ -25,7 +25,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                        fix_knots=FALSE,
                        y_map_func=c("fold_risk", "probability", "log_odds")[1],
                        y_map_max=3,
-                       trim_by_col=NULL # colname for relative_time
+                       trim_by_col=NULL, # colname for relative_time
+                       return_performance = TRUE
                        ){
   
   
@@ -93,6 +94,7 @@ do_lrm_pip <- function(data, # data for model training engineered
   perform_obj$external <- NULL
   perform_obj$external_org <- NULL
   tryCatch({
+    stopifnot(return_performance)
     perform_obj$internal <- lrm_perform(mdl_obj = model_obj$mdl_obj,
                                         df = data,
                                         y_map_func = y_map_func,
@@ -100,6 +102,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         rel_time_col=trim_by_col)
   },error=function(e){print(e)})
   tryCatch({
+    stopifnot(return_performance)
     perform_obj$internal_org <- lrm_perform(mdl_obj = model_obj$mdl_obj,
                                             df = data_org,
                                             y_map_func =y_map_func,
@@ -107,6 +110,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                                             rel_time_col=trim_by_col)
   },error=function(e){print(e)})
   tryCatch({
+    stopifnot(return_performance)
     perform_obj$external <- lrm_perform(mdl_obj = model_obj$mdl_obj,
                                         df = test_data,
                                         y_map_func = y_map_func,
@@ -114,6 +118,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         rel_time_col=trim_by_col)
   },error=function(e){print(e)})
   tryCatch({
+    stopifnot(return_performance)
     perform_obj$external_org <- lrm_perform(mdl_obj = model_obj$mdl_obj,
                                             df = test_data_org,
                                             y_map_func =y_map_func,

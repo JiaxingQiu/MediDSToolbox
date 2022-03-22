@@ -38,7 +38,8 @@ front_multi_regression <- function(
   seed_value=333,
   fix_knots = TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=3
+  y_map_max=3,
+  return_performance = TRUE
 ){
   
   
@@ -269,7 +270,8 @@ front_multi_regression <- function(
                           fix_knots=fix_knots,
                           y_map_func=y_map_func,
                           y_map_max=y_map_max,
-                          trim_by_col = trim_by_col)
+                          trim_by_col = trim_by_col,
+                          return_performance = return_performance)
     
   }else if(dict_data[y_col, "type"]=="num"){
     print("--- do_ols_pip ---")
