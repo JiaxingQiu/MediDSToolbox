@@ -4,7 +4,8 @@ lrm_perform <- function(
   y_map_func = "fold_risk",
   y_map_max = 7,
   rel_time_col=NULL,
-  x_cols=c() # list of predictors to see the performance 
+  x_cols=c(), # list of predictors to see the performance
+  return_fitted_effect=FALSE
 ){
   
   library(tidytext)
@@ -82,6 +83,7 @@ lrm_perform <- function(
   # --------- fitted marginal effects -------
   # reformat plot dataframes by group
   tryCatch({
+    stopifnot(return_fitted_effect)
     fit_eff_plot_list <- list()
     i=0
     df_plot_num <- data.frame()

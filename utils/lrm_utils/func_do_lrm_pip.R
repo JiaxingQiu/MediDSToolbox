@@ -26,7 +26,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                        y_map_func=c("fold_risk", "probability", "log_odds")[1],
                        y_map_max=3,
                        trim_by_col=NULL, # colname for relative_time
-                       return_performance = TRUE
+                       return_performance = TRUE,
+                       return_fitted_effect = TRUE
                        ){
   
   
@@ -99,7 +100,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         df = data,
                                         y_map_func = y_map_func,
                                         y_map_max = y_map_max,
-                                        rel_time_col=trim_by_col)
+                                        rel_time_col=trim_by_col,
+                                        return_fitted_effect=return_fitted_effect)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)
@@ -107,7 +109,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                             df = data_org,
                                             y_map_func =y_map_func,
                                             y_map_max = y_map_max,
-                                            rel_time_col=trim_by_col)
+                                            rel_time_col=trim_by_col,
+                                            return_fitted_effect=return_fitted_effect)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)
@@ -115,7 +118,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         df = test_data,
                                         y_map_func = y_map_func,
                                         y_map_max = y_map_max,
-                                        rel_time_col=trim_by_col)
+                                        rel_time_col=trim_by_col,
+                                        return_fitted_effect=return_fitted_effect)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)
@@ -123,7 +127,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                             df = test_data_org,
                                             y_map_func =y_map_func,
                                             y_map_max = y_map_max,
-                                            rel_time_col=trim_by_col)
+                                            rel_time_col=trim_by_col,
+                                            return_fitted_effect=return_fitted_effect)
   },error=function(e){print(e)})
   
   
