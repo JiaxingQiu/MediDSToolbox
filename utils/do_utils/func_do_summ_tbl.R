@@ -8,7 +8,8 @@ do_summ_tbl <- function(data,
                      y=c("primary_outcome_factor"), # stratify by y
                      overall=TRUE, 
                      test=FALSE,
-                     unknown_level_list = c("Unknown","Other/Unknown", "Unknown or declined to self-identify", "Ambiguous")
+                     unknown_level_list = c("Unknown","Other/Unknown", "Unknown or declined to self-identify", "Ambiguous"),
+                     sort_label = TRUE
                      
 ){
   
@@ -118,7 +119,12 @@ do_summ_tbl <- function(data,
   }
   # sort variable name by label alphabetically (if input variables count more than one!!)
   try({
-    label_obj <- sort(label(data[,vars]))
+    if(sort_label){
+      label_obj <- sort(label(data[,vars]))
+    }else{
+      label_obj <- label(data[,vars])
+    }
+    
     stopifnot(!is.null(attributes(label_obj)))
     vars <- attributes(label_obj)$names
   },TRUE) # error Only one variable given.

@@ -16,7 +16,8 @@ front_summary_tbl <- function(
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # --- local ---
   trim_ctrl=TRUE,
-  stratify_by=c("None")[1]
+  stratify_by=c("None")[1],
+  sort_label = TRUE
 ){
   
   res_df <- NULL
@@ -161,7 +162,8 @@ front_summary_tbl <- function(
                         num_denom = "avail", 
                         fct_denom = "known", 
                         keys=c(cluster_col),
-                        y=c(stratify_col) )
+                        y=c(stratify_col),
+                        sort_label=sort_label)
     tbl_st <- print(tbl_obj$tbl, varLabels = TRUE)
     res_df <- as.data.frame(tbl_st) %>% tibble::rownames_to_column()
     res_df <- res_df[which(res_df$rowname!="n.1"),]

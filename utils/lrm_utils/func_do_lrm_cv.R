@@ -109,12 +109,17 @@ do_lrm_cv <- function(df=df,
   options(datadist=dd, na.action=na.omit)
   mdl_final <- NULL
   # allow a gitter in penalty for final model object
+  step_size = 0.5
+  count = 0
   while(is.null(mdl_final)){
     print(penalty)
     try({
       mdl_final <- rms::robcov(rms::lrm(as.formula(fml),x=TRUE, y=TRUE, data=df, penalty=penalty),cluster=df[,cluster_col])
     },TRUE)
-    penalty <- penalty - 0.5
+    penalty <- penalty + step_size
+    count <- count + 1
+    if(count == 10) step_size <- step_size * 3
+    stopifnot(count <= 20) 
   }
   
  
