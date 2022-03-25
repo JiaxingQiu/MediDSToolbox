@@ -144,6 +144,7 @@ lss_perform <- function(
 
   # --------- relative time plot ----------
   tryCatch({
+    stopifnot(return_effect_plots)
     stopifnot(length(rel_time_col)>0)
     stopifnot(rel_time_col %in% colnames(df))
     
