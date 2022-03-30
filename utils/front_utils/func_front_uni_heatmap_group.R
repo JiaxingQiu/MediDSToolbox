@@ -25,7 +25,10 @@ front_uni_heatmap_group <- function(
   y_map_max=2,
   label_y=TRUE,
   group_label=NULL,
-  layout_ncol = 5
+  layout_ncol = 5,
+  x_raw_scale = FALSE,
+  heat_limits = NULL,
+  legend.position="right"
 ){
   # find the column name in data for the group by label
   group_col <- dict_data$varname[which(dict_data$label==group_label)]
@@ -110,15 +113,49 @@ front_uni_heatmap_group <- function(
         plot_df_all <- bind_rows(plot_df_all, plot_df)
       }
     }
-    plot_obj <- ggplot(plot_df_all, aes(x=pctl,y=level))+
-      geom_tile(aes(fill=yhat)) +
-      labs(fill=y_map_func,x="Percentile",y=NULL) + 
-      scale_fill_gradientn(colours = rev(rainbow(7))) +
-      facet_wrap(~var_name, ncol=layout_ncol, scales = "free") +
-      theme_minimal()
-    if("c_score" %in% colnames(plot_df_all)){
-      plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
+    if (!x_raw_scale){
+      plot_obj <- ggplot(plot_df_all, aes(x=pctl,y=level))+
+        geom_tile(aes(fill=yhat)) +
+        labs(fill=y_map_func,x="Percentile",y=NULL) + 
+        scale_fill_gradientn(colours = rev(rainbow(7))) +
+        facet_wrap(~var_name, ncol=layout_ncol, scales = "free") +
+        theme_minimal()
+      if("c_score" %in% colnames(plot_df_all)){
+        plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
+      }
+    }else{
+      if( length(heat_limits)<2 ){
+        heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+      }
+      x_label_map <- plot_df_all %>% group_by(var_name) %>% summarise(q0 = paste0(round(mean(raw_value[which(round(pctl,2)==0)],na.rm=TRUE),2),"\n0th"),
+                                                       q25 = paste0(round(mean(raw_value[which(round(pctl,2)==0.25)],na.rm=TRUE),2),"\n25th"),
+                                                       q50 = paste0(round(mean(raw_value[which(round(pctl,2)==0.50)],na.rm=TRUE),2),"\n50th"),
+                                                       q75 = paste0(round(mean(raw_value[which(round(pctl,2)==0.75)],na.rm=TRUE),2),"\n75th"),
+                                                       q100 = paste0(round(mean(raw_value[which(round(pctl,2)==1.0)],na.rm=TRUE),2),"\n100th") ) %>% as.data.frame()
+      plot_list <- list()
+      i=1
+      for(var_name in sort(unique(plot_df_all$var_name))){
+        plot_list[[i]] <- ggplot(plot_df_all[which(plot_df_all$var_name==var_name),], aes(x=pctl,y=level))+
+          geom_tile(aes(fill=yhat)) +
+          labs(subtitle=var_name,fill=y_map_func,x=NULL,y=NULL)+
+          scale_fill_gradientn(limits = heat_limits, colours = rev(rainbow(7)))  +
+          scale_x_continuous(breaks = c(0,0.25,0.5,0.75,1),
+                             labels = x_label_map[which(x_label_map$var_name==var_name),c("q0","q25","q50","q75","q100")] )+
+          theme(legend.position = legend.position) +
+          theme_minimal() 
+        if("c_score" %in% colnames(plot_df_all)){
+          plot_list[[i]] <- plot_list[[i]] + geom_text(data=plot_df_all[which(plot_df_all$var_name==var_name),], aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
+        }
+        i <- i + 1
+      }
+      plot_obj <- ggpubr::ggarrange(plotlist = plot_list, 
+                                    ncol=layout_ncol, 
+                                    nrow=ceiling(n_distinct(plot_df_all$var_name)/layout_ncol),
+                                    common.legend = TRUE, 
+                                    legend = legend.position)
     }
+    
+    
     return(list(plot_obj = plot_obj,
                 df_result_all_sort = plot_df_all ))
   }

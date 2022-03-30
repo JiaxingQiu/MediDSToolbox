@@ -83,6 +83,10 @@ engineer <- function(
     }
   }
   # ---- impute num_cols ----
+  # clean inf tp be NA
+  for(num_col in num_cols){
+    data[which(!is.finite(data[,num_col])), num_col] <- NA
+  }
   if(!impute_per_cluster){
     # global imputation
     if(imputation=="Mean") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()

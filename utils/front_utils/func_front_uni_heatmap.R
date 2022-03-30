@@ -132,6 +132,12 @@ front_uni_heatmap <- function(
       var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_prob=max(yhat)) %>% arrange(max_prob) %>% as.data.frame()
     }
     df_result_all_sort <- dplyr::left_join(var_order,df_result_all)
+    # add raw data quantile back 
+    df_result_all_sort$raw_value <- NA
+    for(var in unique(df_result_all_sort$var_name)){
+      df_result_all_sort$raw_value[which(df_result_all_sort$var_name==var)]<-as.numeric( quantile(data[,var],df_result_all_sort$pctl[which(df_result_all_sort$var_name==var)], na.rm=TRUE) )
+    }
+    
     plot_obj <- ggplot(df_result_all_sort, aes(x=pctl,y=var_name))+
       geom_tile(aes(fill=yhat)) +
       labs(fill=y_map_func,x="Percentile") + 
