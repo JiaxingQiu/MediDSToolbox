@@ -77,7 +77,7 @@ front_viz_death_star <- function(
     group_by_col = group_by_col,
     tag_col = tag_col, 
     offset_col = offset_col,
-    default_tag_cols= default_tag_cols,# default tags that always colored black in a death star plot
+    default_tag_cols = default_tag_cols,# default tags that always colored black in a death star plot
     scale=scale)
   
   return(plot_obj)

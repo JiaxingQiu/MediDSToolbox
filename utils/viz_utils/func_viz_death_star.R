@@ -1,7 +1,7 @@
 viz_death_star <- function(
   # data
-  data = data_viz,
-  dict_data = dict_viz,
+  data,
+  dict_data,
   # death star
   time_unit,
   y_col, # response column name as heat in heat map
@@ -9,7 +9,7 @@ viz_death_star <- function(
   align_col,
   cluster_col,
   group_by_col = NULL,
-  tag_col = "None", # color red / newly added tags 
+  tag_col = NULL, # color red / newly added tags 
   offset_col = NULL, # pma_days
   default_tag_cols = c(),# default tags that always colored black in a death star plot
   scale= c("Raw","Percentile (2D)", "Percentile (1D)")[1]
@@ -36,7 +36,7 @@ viz_death_star <- function(
     data$group <- 0
   } else {
     # check group is unique per sbj
-    if(!as.logical( dict_data[group_by_col,"unique_per_sbj"] ) ){
+    if(!as.logical( dict_data[which(dict_data$varname==group_by_col),"unique_per_sbj"] ) ){
       data$group <- 0
     }else{
       data$group <- data[,group_by_col]
@@ -93,18 +93,29 @@ viz_death_star <- function(
     summarise(sort_len = max(sort), group=unique(group))%>%
     arrange(group,desc(sort_len)) %>% as.data.frame()
   new_idx_df$new_idx <- 1:nrow(new_idx_df)
+  data <- merge(data, new_idx_df, by=intersect(colnames(new_idx_df),colnames(data)), all.x=TRUE)
   
-  data <- merge(data, new_idx_df, by=c('cluster'), all.x=TRUE)
+  # add grouping text labels 
+  data$group_text <- NA
+  for(g in unique(as.character(data$group))){
+    idx1 <- as.character(data$group)==g
+    y_loc <- round(mean(data$new_idx[which(as.character(data$group)==g)],na.rm=TRUE))
+    idx2 <- data$new_idx==y_loc
+    x_loc <- round(max(data$relative_time[which(idx1&idx2)],na.rm=TRUE))
+    idx3 <- data$relative_time==x_loc
+    data$group_text[which(idx1&idx2&idx3)] <- g
+  }
   
   # relative time is usually relative to calendar time, but if offset col is not null, set "negative" start point to a time series
-  data$init_time <-  data$relative_time - data$offset
+  # data$init_time <-  data$relative_time - data$offset # causing troubles 
   
   plot_obj <- ggplot(data, aes(x=relative_time/time_unit, y=new_idx)) +
     geom_tile(aes(fill=measure_final)) + 
     scale_fill_gradientn(colours = topo.colors(30)) +
-    geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
+    #geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
     geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='black',size=0.5, shape=4) +
     geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='red',size=0.5, shape=3) +
+    geom_text(aes(label=group_text), hjust = -2, vjust = 0) + 
     xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
                 " by ",
                 ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),

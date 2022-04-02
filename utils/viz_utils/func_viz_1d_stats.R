@@ -3,8 +3,9 @@ viz_1d_stats <- function(
   dict_data,
   y_col,
   x_col,
-  cluster_col="id",
-  group_by_col="bc_res_mix"
+  cluster_col,
+  group_by_col=NULL,
+  label_peak=FALSE
 ){
   
   # visualize distribution information given any value of x 
@@ -242,13 +243,38 @@ viz_1d_stats <- function(
       df_summ_grouped_plot <- df_summ_grouped[,c("group", "x", stt, "n_sbj_avail")]
       colnames(df_summ_grouped_plot) <- c("group", "x", "stt_value", "n_sbj_avail")
       
-      p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value, color=group))+
-        geom_smooth(se = FALSE,span=0.5) + #se=TRUE, fill="#F5F5F5"
-        theme_bw() +
-        ylab(y_lab_string) +
-        xlab(x_lab_string) +
-        scale_color_discrete(name=group_by_string) +
-        ggtitle(title_string) 
+      # smooth modeling
+      df_summ_grouped_plot$group_text <- NA
+      df_summ_grouped_plot$stt_value_smoothed <- NA
+      for(g in unique(as.character(df_summ_grouped_plot$group))){
+        idx1 <- as.character(df_summ_grouped_plot$group)==g
+        mdl <- loess("stt_value~x", data=df_summ_grouped_plot[which(idx1),], span = 0.33)
+        df_summ_grouped_plot$stt_value_smoothed[which(idx1)] <- predict(mdl, df_summ_grouped_plot[which(idx1),])
+        y_loc <- max(df_summ_grouped_plot$stt_value_smoothed[which(idx1)],na.rm=TRUE)
+        idx2 <- df_summ_grouped_plot$stt_value_smoothed==y_loc
+        x_loc <- df_summ_grouped_plot$x[which(idx1&idx2)][1]
+        idx3 <- df_summ_grouped_plot$x==x_loc
+        df_summ_grouped_plot$group_text[which(idx1&idx2&idx3)] <- g
+      }
+      if(label_peak){
+        p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value_smoothed, color=group)) + 
+          geom_line(size=1)+
+          geom_text(aes(label=group_text), vjust=-1, size=5)+
+          theme_bw() +
+          ylab(y_lab_string) +
+          xlab(x_lab_string) +
+          scale_color_discrete(name=group_by_string) +
+          ggtitle(title_string) 
+      }else{
+        p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value_smoothed, color=group)) + 
+          # geom_smooth(se = FALSE,span=0.33) + #se=TRUE, fill="#F5F5F5"
+          geom_line(size=1)+
+          theme_bw() +
+          ylab(y_lab_string) +
+          xlab(x_lab_string) +
+          scale_color_discrete(name=group_by_string) +
+          ggtitle(title_string) 
+      }
       
       p_1stat_denom <- ggplot(df_summ_grouped_plot, aes(x=x, y=n_sbj_avail, fill=group))+
         geom_bar(stat="identity", position="stack") +
@@ -260,7 +286,6 @@ viz_1d_stats <- function(
       if(grepl("_days",x_col)){
         x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
         x_labels <- floor(x_breaks/7)
-        
         p_1stat <- p_1stat + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                                 breaks = x_breaks,
                                                 labels = x_labels)
@@ -292,12 +317,8 @@ viz_1d_stats <- function(
       p_1stat_set[[i]] <- list(pctall = p_1stat_pctall,
                                numer = p_1stat, 
                                denom = p_1stat_denom)
-      
-      
     }
-    names(p_1stat_set) <- c( "avg", "q25" , "q50", "q75", "q90", "q95")
-    
-    
+    names(p_1stat_set) <- c("avg", "q25" , "q50", "q75", "q90", "q95")
   },error=function(e){
     print("skip 1d stat plot")
     print(e)

@@ -18,7 +18,8 @@ front_viz_1d_stats <- function(
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   # distributions
   group_by_label="None", # fct
-  optimized_smoother=FALSE
+  optimized_smoother=FALSE,
+  label_peak=FALSE
 ){
   # ---- Usage ----
   # uni eda: visualize detailed information of response against one X variable(uni)
@@ -89,7 +90,8 @@ front_viz_1d_stats <- function(
                                         x_col = x_col,
                                         y_col = y_col,
                                         cluster_col = cluster_col,
-                                        group_by_col = group_by_col)
+                                        group_by_col = group_by_col,
+                                        label_peak = label_peak)
     }else{
       plot_1d_stats_obj <- viz_1d_stats_optimize(data=data,
                                                  dict_data = dict_data,
