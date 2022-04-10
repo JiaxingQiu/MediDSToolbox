@@ -31,7 +31,8 @@ front_lasso_select <- function(
   return_performance = FALSE,
   return_effect_plots = TRUE,
   lambda=c("auto","min","1se")[1],
-  lambda_value = NULL
+  lambda_value = NULL,
+  fold_idx_df_ex=NULL
 ){
   
   x_select_mdls <- NULL
@@ -246,6 +247,29 @@ front_lasso_select <- function(
   
   print("---- lasso_x_select_group ----")
   tryCatch({
+    data_cv_info <- NULL
+    keep_rowname <- FALSE
+    if(!is.null(fold_idx_df_ex)){
+      warning("using external fold indicator instead!")
+      tryCatch({
+        fold_idx_df_ex <- distinct(fold_idx_df_ex)
+        stopifnot("cluster_col" %in% colnames(fold_idx_df_ex) )
+        stopifnot("fold" %in% colnames(fold_idx_df_ex) )
+        stopifnot( length(intersect(unique(as.character( fold_idx_df_ex$cluster_col)), unique(as.character( data_in[,cluster_col])) )) >0  )
+        if(n_distinct(fold_idx_df_ex$cluster_col) < n_distinct(data_in[,cluster_col])) warning("subjects in external fold map is partial to raw dataset")
+        data_in$cluster_col <- data_in[,cluster_col]
+        data_in <- merge(data_in[,setdiff(colnames(data_in), c("fold")) ],fold_idx_df_ex,all.x=TRUE)
+        data_in <- data_in[order(data_in$fold),]
+        rownames(data_in) <- 1:nrow(data_in)
+        data_cv_info <- data_in[,c("cluster_col", "fold")]
+        colnames(data_cv_info)[which(colnames(data_cv_info)=='cluster_col')] <- cluster_col
+        data_cv_info$rowid <- rownames( data_cv_info )
+        data_in <- data_in[,setdiff(colnames(data_in), c("cluster_col", "fold"))]
+        keep_rowname <- TRUE
+      },error=function(e){
+        print(e)
+      })
+    }
     x_select_mdls_grouped <- lasso_x_select_group(data = data_in,
                                                   y_col = y_col,
                                                   family = family,
@@ -258,7 +282,12 @@ front_lasso_select <- function(
                                                   standardize = standardize,
                                                   dict_data = dict_data,
                                                   lambda = lambda,
-                                                  lambda_value = lambda_value)
+                                                  lambda_value = lambda_value,
+                                                  keep_rowname = keep_rowname)
+    if(!is.null(data_cv_info)){
+      x_select_mdls_grouped$cv_yhat_df <- merge(x_select_mdls_grouped$cv_yhat_df, data_cv_info[,c(cluster_col, "rowid")], all.x = TRUE, by="rowid")
+      x_select_mdls_grouped$cv_yhat_df <- x_select_mdls_grouped$cv_yhat_df[order(x_select_mdls_grouped$cv_yhat_df$fold),] 
+    }
     
   },error=function(e){
     print("Error!")
@@ -392,7 +421,6 @@ front_lasso_select <- function(
   return( list(group_lasso_vars_selected=group_lasso_vars_selected,
                x_select_mdls = x_select_mdls,
                x_select_mdls_grouped = x_select_mdls_grouped,
-               score10fold = x_select_mdls_grouped$scores_final_10fold,
                perform_in_df_hat = perform_in_df_hat,
                perform_inorg_df_hat = perform_inorg_df_hat,
                perform_ex_df_hat = perform_ex_df_hat,
@@ -506,4 +534,6 @@ front_lasso_select <- function(
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
 # return_performance = FALSE
-
+# lambda=c("auto","min","1se")[1]
+# lambda_value = NULL
+# fold_idx_df_ex = data.frame(cluster_col=unique(data_ml$subjectnbr), fold= ceiling(c(1:n_distinct(data_ml$subjectnbr))/ round(n_distinct(data_ml$subjectnbr)/10) ) )

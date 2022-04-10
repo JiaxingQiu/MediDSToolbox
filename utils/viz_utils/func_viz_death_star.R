@@ -15,6 +15,9 @@ viz_death_star <- function(
   scale= c("Raw","Percentile (2D)", "Percentile (1D)")[1]
 ){
   
+  ### format y axis digits
+  scaleFUN <- function(x) sprintf("%1.0f", x)
+  
   # --- required arguments ---
   # heat
   stopifnot(length(y_col)>0)
@@ -95,27 +98,28 @@ viz_death_star <- function(
   new_idx_df$new_idx <- 1:nrow(new_idx_df)
   data <- merge(data, new_idx_df, by=intersect(colnames(new_idx_df),colnames(data)), all.x=TRUE)
   
+  
   # add grouping text labels 
   data$group_text <- NA
-  for(g in unique(as.character(data$group))){
-    idx1 <- as.character(data$group)==g
-    y_loc <- round(mean(data$new_idx[which(as.character(data$group)==g)],na.rm=TRUE))
+  for(g in levels(data$group)){
+    idx1 <- data$group==g
+    y_loc <- round(mean(data$new_idx[which(idx1)],na.rm=TRUE))
     idx2 <- data$new_idx==y_loc
     x_loc <- round(max(data$relative_time[which(idx1&idx2)],na.rm=TRUE))
     idx3 <- data$relative_time==x_loc
     data$group_text[which(idx1&idx2&idx3)] <- g
   }
-  
   # relative time is usually relative to calendar time, but if offset col is not null, set "negative" start point to a time series
   # data$init_time <-  data$relative_time - data$offset # causing troubles 
   
+  
   plot_obj <- ggplot(data, aes(x=relative_time/time_unit, y=new_idx)) +
     geom_tile(aes(fill=measure_final)) + 
-    scale_fill_gradientn(colours = topo.colors(30)) +
+    scale_fill_gradientn(colours = topo.colors(30),labels=scaleFUN, na.value =NA) +
     #geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
-    geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='black',size=0.5, shape=4) +
-    geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='red',size=0.5, shape=3) +
-    geom_text(aes(label=group_text), hjust = -2, vjust = 0) + 
+    geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='red',size=0.5, shape=4) +
+    geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='black', size=2, shape=19, alpha=0.5) +
+    geom_text(aes(label=group_text), hjust=-0.5, vjust = 0, size=5) + 
     xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
                 " by ",
                 ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),
@@ -124,5 +128,5 @@ viz_death_star <- function(
     labs(fill=y_label) +
     theme(legend.position = "top" ) 
   
-  
+  return(plot_obj)
 }

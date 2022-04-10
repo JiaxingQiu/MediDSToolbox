@@ -1,4 +1,12 @@
-lrm_cv <- function(df, external_df=NULL, fml, penalty, cluster_col, nfold, stratified=TRUE){
+lrm_cv <- function(df, 
+                   external_df=NULL, 
+                   fml, 
+                   penalty,
+                   cluster_col, 
+                   nfold, 
+                   stratified=TRUE,
+                   fold_idx_df_ex=NULL # given fold indicator vector to fix cross validation subjects, must have "cluster_col" and "fold" column
+){
   # ---- Usage ----
   # clustered cross validation of rms::lrm
   
@@ -72,11 +80,27 @@ lrm_cv <- function(df, external_df=NULL, fml, penalty, cluster_col, nfold, strat
     }
   }
   
+  if(!is.null(fold_idx_df_ex)){
+    warning("using external fold indicator instead!")
+    tryCatch({
+      fold_idx_df_ex <- distinct(fold_idx_df_ex)
+      stopifnot("cluster_col" %in% colnames(fold_idx_df_ex) )
+      stopifnot("fold" %in% colnames(fold_idx_df_ex) )
+      stopifnot( length(intersect(unique(as.character( fold_idx_df_ex$cluster_col)), unique(as.character( df_mdl[,cluster_col])) )) >0  )
+      if(n_distinct(fold_idx_df_ex$cluster_col) < n_distinct(df_mdl[,cluster_col])) warning("subjects in external fold map is partial to raw dataset")
+      df_mdl$cluster_col <- df_mdl[,cluster_col]
+      df_mdl <- merge(df_mdl[,setdiff(colnames(df_mdl), c("fold")) ],fold_idx_df_ex,all.x=TRUE)
+      df_mdl <- df_mdl[,setdiff(colnames(df_mdl), c("cluster_col")) ]
+    },error=function(e){
+      print(e)
+    })
+  }
   
   dd <- datadist(df_mdl)# train model nfold times
   options(datadist=dd, na.action=na.omit)
   df_mdl$y_prob <- NA
   eval_df<-c()
+  cv_yhat_df <- data.frame()
   for (N in 1:max(as.numeric(as.character( df_mdl$fold)), na.rm=TRUE) ){
     tryCatch({# train the model on training set
       
@@ -96,6 +120,9 @@ lrm_cv <- function(df, external_df=NULL, fml, penalty, cluster_col, nfold, strat
       valid_eval_df$y_pred[which(valid_eval_df$y_prob > mean(as.numeric( as.character(df_mdl[df_mdl$fold!=N,y_col]) ),na.rm=TRUE))] <- 1
       valid_eval_df <- valid_eval_df[complete.cases(valid_eval_df),]
       
+      cv_yhat_df_fold <- valid_eval_df
+      cv_yhat_df_fold$fold <- N
+      cv_yhat_df <- bind_rows(cv_yhat_df, cv_yhat_df_fold[,c("y_true","y_prob","fold")])
       eval_df <- bind_rows(eval_df, # calculate evaluation matrices
                            data.frame(fold_index = N,
                                       penalty = penalty,
@@ -146,11 +173,20 @@ lrm_cv <- function(df, external_df=NULL, fml, penalty, cluster_col, nfold, strat
   
   print(eval_df)
   
+  
+  # train a model on 100% all data
+  dd <- datadist(df_mdl)# train model nfold times
+  options(datadist=dd, na.action=na.omit)
+  mdl_all <- rms::robcov(rms::lrm(as.formula(fml),x=TRUE, y=TRUE, data=df_mdl, penalty=penalty),cluster=df_mdl[,cluster_col])
+  
+  
   return(list( "cv_eval_trace" = eval_df,
                "model_info" = model_info,
                "model_scores"=scores, 
                "model_data"=df_mdl, 
-               "calibration_curve"=cali_plot
+               "calibration_curve"=cali_plot,
+               "cv_yhat_df"=cv_yhat_df,
+               "mdl_all"=mdl_all
   ))
   
 }

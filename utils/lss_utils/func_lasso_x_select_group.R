@@ -3,17 +3,18 @@ library(gglasso)
 lasso_x_select_group <- function(
   data, 
   y_col,
-  x_cols_nonlin_rcs5,
-  x_cols_nonlin_rcs4,
-  x_cols_nonlin_rcs3,
-  x_cols_linear=x_cols_linear, 
-  x_cols_fct=x_cols_fct,
-  x_cols_tag=x_cols_tag,
+  x_cols_nonlin_rcs5=c(),
+  x_cols_nonlin_rcs4=c(),
+  x_cols_nonlin_rcs3=c(),
+  x_cols_linear=c(), 
+  x_cols_fct=c(),
+  x_cols_tag=c(),
   family = c("binomial", "multinomial", "gaussian")[1],
   standardize = TRUE,
   dict_data=NULL, # dictionary table is optional
   lambda=c("auto","1se","min")[1],
-  lambda_value = NULL # external specified lasso lambda value
+  lambda_value = NULL, # external specified lasso lambda value
+  keep_rowname=TRUE
 ){
   
   # ---- Description ----
@@ -49,7 +50,6 @@ lasso_x_select_group <- function(
   x_cols <- unique(c(x_cols_linear, x_cols_nonlin_rcs3, x_cols_nonlin_rcs4, x_cols_nonlin_rcs5,x_cols_tag))
   
   data_org <- data
-  
   if(standardize) {
     data[,x_cols] <- scale(data_org[,x_cols])
     data[,x_cols_tag] <- data_org[,x_cols_tag] # overwrite dummy columns, they should not be scaled
@@ -197,9 +197,9 @@ lasso_x_select_group <- function(
   
   # ----- show penalization trace -----
   lasso_trace <- gglasso::gglasso(x=x, 
-                                    y=y, 
-                                    group=v.group, 
-                                    loss="logit")
+                                  y=y, 
+                                  group=v.group, 
+                                  loss="logit")
   # plot(lasso_trace)
   
   #  ----- train optimal lambda models ----
@@ -237,13 +237,18 @@ lasso_x_select_group <- function(
   # ------ manually 10 fold cross validation scores ---------
   train_scores_tbl_all <- data.frame()
   valid_scores_tbl_all <- data.frame()
+  valid_yhat_df_all <- data.frame()
+  if(keep_rowname){
+    print("cross validation by external sequence")
+    row_index <- row.names(data_org)
+  }else{
+    row_index <- sample(1:nrow(data),nrow(data))# shuffle data rawname / index, if not using external fold indicator
+  }
+  rownames(data) <- row_index
+  foldsize <- round(nrow(data)/10)
+  
   for(i in c(1:10)){
     try({
-      # shuffle data rawname / index
-      row_index <- sample(1:nrow(data),nrow(data))
-      rownames(data) <- row_index
-      foldsize <- round(nrow(data)/10)
-      
       validset <- data[which( as.numeric(rownames(data)) %in% c(seq((i-1)*foldsize, i*foldsize, 1)+1) ), ]
       trainset <- data[which(!as.numeric(rownames(data)) %in% c(seq((i-1)*foldsize, i*foldsize, 1)+1) ), ]
       
@@ -269,6 +274,13 @@ lasso_x_select_group <- function(
       train_scores_tbl_all <- bind_rows(train_scores_tbl_all, train_scores_tbl)
         
       y_prob_valid <- exp(predict(lasso_fold_optimal, newx = valid_x, type="link")) / (1 + exp(predict(lasso_fold_optimal, newx = valid_x, type="link")))
+      valid_yhat_df <- data.frame( 
+        rowid = rownames( validset[complete.cases(validset[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname] ),
+        y_true = as.numeric( ifelse(valid_y<0,0,1) ),
+        y_prob =  as.numeric( y_prob_valid) ,
+        fold = i
+      )
+      valid_yhat_df_all <- bind_rows(valid_yhat_df_all, valid_yhat_df, )
       valid_scores <- mdl_test(y_true = as.numeric( ifelse(valid_y<0,0,1) ),
                                y_prob =  as.numeric( y_prob_valid) ,
                                threshold = mean(data[,y_col],na.rm=TRUE))
@@ -277,21 +289,30 @@ lasso_x_select_group <- function(
       valid_scores_tbl_all <- bind_rows(valid_scores_tbl_all, valid_scores_tbl)
     },TRUE)
   }
+  # reformat 10 AUCs (tricky one)
   train_score_final <- train_scores_tbl_all[,setdiff(colnames(train_scores_tbl_all),"data")] %>% 
     summarise_all( list(mean = ~mean(., na.rm=TRUE),
                         sd = ~sd(., na.rm=TRUE)) )
   valid_score_final <- valid_scores_tbl_all[,setdiff(colnames(valid_scores_tbl_all),"data")] %>% 
     summarise_all( list(mean = ~mean(., na.rm=TRUE),
                         sd = ~sd(., na.rm=TRUE)) )
-  
   scores_final <- bind_rows(train_score_final, valid_score_final)
   scores_final$dataset <- c("train", "valid")
   scores_final <- scores_final[,union("dataset", colnames(scores_final))]
   
+  # cross-validated labeling (yhat)
+  cv_final_scores <- mdl_test(y_true = valid_yhat_df_all$y_true,
+                              y_prob = valid_yhat_df_all$y_prob,
+                              threshold = mean(data[,y_col],na.rm=TRUE))
+  score_final_cv <- cv_final_scores$res_df
+  score_final_cv$data <- "cv_yhat_df"
+  
   return(list( lasso_cv = lasso_cv,
                lasso_trace = lasso_trace,
                lasso_optimal = lasso_optimal,
-               scores_final_10fold = scores_final))
+               scores_final_10fold = scores_final,
+               cv_yhat_df = valid_yhat_df_all,
+               score_final_cv = score_final_cv))
   
 }
 

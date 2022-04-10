@@ -61,7 +61,7 @@ front_viz_death_star <- function(
   # filter by all given tag columns 
   if(length(filter_tag_cols)>0){
     for(col in filter_tag_cols){
-      data <- data[which(data[,col]==1),]
+      data[which(data[,col]==0) ,y_col] <- NA
     }
   }
   

@@ -39,8 +39,10 @@ front_multi_regression <- function(
   fix_knots = TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
+  tune_by=c("logloss","auroc","aic","bic")[1],
   return_performance = TRUE,
-  return_fitted_effect=FALSE
+  return_fitted_effect=FALSE,
+  fold_idx_df_ex=NULL
 ){
   
   
@@ -271,9 +273,11 @@ front_multi_regression <- function(
                           fix_knots=fix_knots,
                           y_map_func=y_map_func,
                           y_map_max=y_map_max,
+                          tune_by = tune_by,
                           trim_by_col = trim_by_col,
                           return_performance = return_performance,
-                          return_fitted_effect = return_fitted_effect)
+                          return_fitted_effect = return_fitted_effect,
+                          fold_idx_df_ex = fold_idx_df_ex)
     
   }else if(dict_data[y_col, "type"]=="num"){
     print("--- do_ols_pip ---")
@@ -296,15 +300,56 @@ front_multi_regression <- function(
     
   }
   
-  # ---- return ----
-  
-  #  model development reports 
+  # reorganize dof term and x predictor name information in a table
   devel_model_info_tbl <- results$model_obj$cv_obj$model_info
+  formula_string <- devel_model_info_tbl$formula
+  y_varname <- stringr::str_split_fixed(formula_string,"\\~", 2)[,1]
+  y_varname <- gsub(" ","",y_varname)
+  x_varname_string <- stringr::str_split_fixed(formula_string,"\\~", 2)[,2]
+  x_var_list <- unlist(stringr::str_split(x_varname_string, "\\+"))
+  x_var_list <- gsub(" ","",x_var_list)
+  devel_vars_selected <- data.frame()
+  x_var_linear <- gsub("\\)","", gsub("I\\(","", x_var_list[which(startsWith( x_var_list,"I(") )]))
+  x_var_linear <- data.frame(raw_vars_selected=x_var_linear)
+  if(nrow(x_var_linear)>0){
+    x_var_linear$term <- "linear"
+    devel_vars_selected <- bind_rows(devel_vars_selected, x_var_linear)
+  }
+  x_var_rcs3 <- gsub("\\,3\\)","", gsub("rcs\\(","", x_var_list[which(startsWith( x_var_list,"rcs(") & endsWith( x_var_list,",3)") )]))
+  x_var_rcs3 <- data.frame(raw_vars_selected=x_var_rcs3)
+  if(nrow(x_var_rcs3)>0){
+    x_var_rcs3$term <- "rcs3"
+    devel_vars_selected <- bind_rows(devel_vars_selected, x_var_rcs3)
+  }
+  x_var_rcs4 <- gsub("\\,4\\)","", gsub("rcs\\(","", x_var_list[which(startsWith( x_var_list,"rcs(") & endsWith( x_var_list,",4)") )]))
+  x_var_rcs4 <- data.frame(raw_vars_selected=x_var_rcs4)
+  if(nrow(x_var_rcs4)>0){
+    x_var_rcs4$term <- "rcs4"
+    devel_vars_selected <- bind_rows(devel_vars_selected, x_var_rcs4)
+  }
+  x_var_rcs5 <- gsub("\\,5\\)","", gsub("rcs\\(","", x_var_list[which(startsWith( x_var_list,"rcs(") & endsWith( x_var_list,",5)") )]))
+  x_var_rcs5 <- data.frame(raw_vars_selected=x_var_rcs5)
+  if(nrow(x_var_rcs5)>0){
+    x_var_rcs5$term <- "rcs5"
+    devel_vars_selected <- bind_rows(devel_vars_selected, x_var_rcs5)
+  }
+  x_var_fct <- gsub("\\)","", gsub("catg\\(as.factor\\(","", x_var_list[which(startsWith( x_var_list,"catg(as.factor(") )]))
+  x_var_fct <- data.frame(raw_vars_selected=x_var_fct)
+  if(nrow(x_var_fct)>0){
+    x_var_fct$term <- "fct"
+    devel_vars_selected <- bind_rows(devel_vars_selected, x_var_fct)
+  }
+  
+  
+  # ---- return ----
+  #  model development reports 
+  devel_vars_selected_tbl <- devel_vars_selected
   devel_score_summ_tbl <- results$model_obj$cv_obj$model_scores
   devel_score_summ_tbl <- devel_score_summ_tbl[,intersect(colnames(devel_score_summ_tbl), union(c("success_nfold","train_AUROC_mean","valid_AUROC_mean","train_AUROC_se","valid_AUROC_se"), colnames(devel_score_summ_tbl)) )]
   devel_cali_plot <- results$model_obj$cv_obj$calibration_curve
-  devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace
+  devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace # trace of score per fold while cross validation
   devel_final_model_obj <- results$model_obj$mdl_obj # for print, anova and save locally
+  devel_penal_trace_tbl <- results$model_obj$score_trace_df # trace of score while tuning penalty
   
   # model inference reports
   infer_effect_plot_1d <- results$infer_obj$eff_plot_1d
@@ -349,9 +394,11 @@ front_multi_regression <- function(
   perform_exorg_tradeoff_plot <- results$perform_obj$external_org$tradeoff_plot
   
   return(list( devel_model_info_tbl = devel_model_info_tbl,
+               devel_vars_selected_tbl = devel_vars_selected_tbl,
                devel_score_summ_tbl = devel_score_summ_tbl,
                devel_cali_plot = devel_cali_plot,
                devel_cv_eval_trace_tbl = devel_cv_eval_trace_tbl,
+               devel_penal_trace_tbl = devel_penal_trace_tbl,
                devel_final_model_obj = devel_final_model_obj,
                infer_effect_plot_1d = infer_effect_plot_1d,
                infer_effect_plot_2d = infer_effect_plot_2d,
@@ -431,5 +478,6 @@ front_multi_regression <- function(
 # fix_knots = TRUE
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
+# tune_by ="auroc"
 
 

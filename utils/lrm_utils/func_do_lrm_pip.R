@@ -25,9 +25,11 @@ do_lrm_pip <- function(data, # data for model training engineered
                        fix_knots=FALSE,
                        y_map_func=c("fold_risk", "probability", "log_odds")[1],
                        y_map_max=3,
+                       tune_by=c("logloss","auroc","aic","bic")[1],
                        trim_by_col=NULL, # colname for relative_time
                        return_performance = TRUE,
-                       return_fitted_effect = TRUE
+                       return_fitted_effect = TRUE,
+                       fold_idx_df_ex=NULL
                        ){
   
   
@@ -75,7 +77,9 @@ do_lrm_pip <- function(data, # data for model training engineered
                          dict_df=dict_df, 
                          cv_nfold=cv_nfold, 
                          na_frac_max=na_frac_max, 
-                         stratified_cv=stratified_cv)
+                         stratified_cv=stratified_cv,
+                         tune_by = tune_by,
+                         fold_idx_df_ex=fold_idx_df_ex)
   
   # --- lrm_infer modeling ---
   print("--- lrm_infer ---")

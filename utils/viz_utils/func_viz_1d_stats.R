@@ -5,8 +5,11 @@ viz_1d_stats <- function(
   x_col,
   cluster_col,
   group_by_col=NULL,
-  label_peak=FALSE
+  label_peak=FALSE,
+  span=0.5
 ){
+  ### format y axis digits
+  scaleFUN <- function(x) sprintf("%4.0f", x)
   
   # visualize distribution information given any value of x 
   # x_col can be num / fct / tag
@@ -137,21 +140,22 @@ viz_1d_stats <- function(
                   size=0.5, 
                   method = smooth_method, 
                   formula = smooth_formula,
-                  span=0.3) +
+                  span=span) +
       scale_color_manual(values = c("black","red","black","black","black")) +
       scale_linetype_manual(values=c(5,1,2,3,4)) +
       xlab(paste0(dict_data[x_col,"label"], "    ", dict_data[x_col,"unit"]))+
       ylab(paste0(dict_data[y_col,"label"], "    ", dict_data[y_col,"unit"]))+
       ylim(min(df$q_val,na.rm=TRUE)*0.9, max(as.numeric(quantile(df$q_val,0.99,na.rm = TRUE)),na.rm=TRUE)) + 
       ggtitle("Percentile") +
-      facet_wrap(~ group, ncol = 5) 
+      facet_wrap(~ group, ncol = 5) + 
+      scale_y_continuous(labels=scaleFUN)
     
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
       x_labels <- floor(x_breaks/7)
       p_pct <- p_pct + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                             breaks = x_breaks,
-                                            labels = x_labels)
+                                            labels = x_labels) 
     }
   }
   
@@ -174,14 +178,16 @@ viz_1d_stats <- function(
       facet_wrap(~ group, ncol = 5) +
       xlab(paste0(dict_data[x_col,"label"], "     ", dict_data[x_col,"unit"]))+
       ylab('# sbj w/ available data') +
-      ggtitle("Denominator")
+      ggtitle("Denominator") + 
+      scale_y_continuous(labels=scaleFUN)
     
     if(grepl("_days",x_col)){
       x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
       x_labels <- floor(x_breaks/7)
-      p_denom <- p_denom + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
+      p_denom <- p_denom + 
+        scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
                                               breaks = x_breaks,
-                                              labels = x_labels)
+                                              labels = x_labels) 
     }
   }
   
@@ -248,7 +254,7 @@ viz_1d_stats <- function(
       df_summ_grouped_plot$stt_value_smoothed <- NA
       for(g in unique(as.character(df_summ_grouped_plot$group))){
         idx1 <- as.character(df_summ_grouped_plot$group)==g
-        mdl <- loess("stt_value~x", data=df_summ_grouped_plot[which(idx1),], span = 0.33)
+        mdl <- loess("stt_value~x", data=df_summ_grouped_plot[which(idx1),], span = span)
         df_summ_grouped_plot$stt_value_smoothed[which(idx1)] <- predict(mdl, df_summ_grouped_plot[which(idx1),])
         y_loc <- max(df_summ_grouped_plot$stt_value_smoothed[which(idx1)],na.rm=TRUE)
         idx2 <- df_summ_grouped_plot$stt_value_smoothed==y_loc
@@ -259,21 +265,23 @@ viz_1d_stats <- function(
       if(label_peak){
         p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value_smoothed, color=group)) + 
           geom_line(size=1)+
-          geom_text(aes(label=group_text), vjust=-1, size=5)+
+          geom_text(aes(label=group_text),size=5, color="black")+
           theme_bw() +
           ylab(y_lab_string) +
           xlab(x_lab_string) +
           scale_color_discrete(name=group_by_string) +
-          ggtitle(title_string) 
+          ggtitle(title_string) + 
+          scale_y_continuous(labels=scaleFUN)
       }else{
         p_1stat <- ggplot(df_summ_grouped_plot, aes(x=x, y=stt_value_smoothed, color=group)) + 
-          # geom_smooth(se = FALSE,span=0.33) + #se=TRUE, fill="#F5F5F5"
+          # geom_smooth(se = FALSE,span=span) + #se=TRUE, fill="#F5F5F5"
           geom_line(size=1)+
           theme_bw() +
           ylab(y_lab_string) +
           xlab(x_lab_string) +
           scale_color_discrete(name=group_by_string) +
-          ggtitle(title_string) 
+          ggtitle(title_string) + 
+          scale_y_continuous(labels=scaleFUN)
       }
       
       p_1stat_denom <- ggplot(df_summ_grouped_plot, aes(x=x, y=n_sbj_avail, fill=group))+
@@ -282,7 +290,8 @@ viz_1d_stats <- function(
         ylab("Number of subjects") +
         xlab(x_lab_string) +
         scale_fill_discrete(name=group_by_string) + 
-        ggtitle("Data Availability") 
+        ggtitle("Data Availability") + 
+        scale_y_continuous(labels=scaleFUN)
       if(grepl("_days",x_col)){
         x_breaks <- seq(min(data[,x_col], na.rm=TRUE), max(data[,x_col], na.rm = TRUE), 14)
         x_labels <- floor(x_breaks/7)
@@ -300,7 +309,8 @@ viz_1d_stats <- function(
           ylab(y_lab_string) +
           xlab(x_lab_string) +
           theme(legend.position = "top") +
-          ggtitle(NULL)
+          ggtitle(NULL) + 
+          scale_y_continuous(labels=scaleFUN)
         p_1stat_pctall$data <- p_1stat_pctall$data %>% filter(group =="All")
         if(grepl("_days",x_col)){
           p_1stat_pctall <- p_1stat_pctall + scale_x_continuous(name=paste0(dict_data[x_col,"label"], "    (week)"),
@@ -323,8 +333,6 @@ viz_1d_stats <- function(
     print("skip 1d stat plot")
     print(e)
   })
-  
-  
   
   return(list(
     "p_denom" = p_denom,

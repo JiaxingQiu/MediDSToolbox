@@ -5,7 +5,9 @@ lrm_perform <- function(
   y_map_max = 7,
   rel_time_col=NULL,
   x_cols=c(), # list of predictors to see the performance
-  return_fitted_effect=FALSE
+  return_fitted_effect=FALSE,
+  return_tte_plot = TRUE,
+  return_scores_plot = TRUE
 ){
   
   library(tidytext)
@@ -145,6 +147,7 @@ lrm_perform <- function(
   
   # --------------- relative time plot -------------------
   tryCatch({
+    stopifnot(return_tte_plot)
     stopifnot(length(rel_time_col)>0)
     stopifnot(rel_time_col %in% colnames(df))
     # zoom in relative time column by the range of event group
@@ -194,6 +197,7 @@ lrm_perform <- function(
   
   # ----------- feature permutation importance -------------
   tryCatch({
+    stopifnot(return_scores_plot)
     test_obj_raw <- lrm_test(test_data = df,
                              y_col = y_col,
                              mdl_obj = mdl_obj)

@@ -3,9 +3,10 @@ do_lrm_cv <- function(df=df,
                       na_frac_max=0.3, 
                       external_df=NULL, 
                       cv_nfold=5, 
-                      tune_by="logloss",  
+                      tune_by=c("logloss","auroc","aic","bic")[1],  
                       stratified_cv=TRUE, 
-                      samepen_patience=5){
+                      samepen_patience=5,
+                      fold_idx_df_ex=NULL){
   # ---- Usage ----
   # dictionary oriented (do) cross validation logistic regression machine learning pipeline
   
@@ -52,6 +53,7 @@ do_lrm_cv <- function(df=df,
   penalty = 0 # initiate penalty
   pen_step = 10 # initial pentalty step size
   same_pen_step_count = 0  # patience of how many same-step-size penalty has been tuned
+  score_trace_all <- data.frame() # monitor the trace of all kind of evaluation matrices while tuning the penalty
   # fine tune penalty 
   while (penalty <= penalty_max){
     cv_obj <- NULL
@@ -62,7 +64,8 @@ do_lrm_cv <- function(df=df,
                        penalty = penalty, 
                        cluster_col = cluster_col, 
                        nfold  = cv_nfold, 
-                       stratified = stratified_cv)
+                       stratified = stratified_cv,
+                       fold_idx_df_ex = fold_idx_df_ex)
     },TRUE)
     
     if (is.null(cv_obj) & failed < 3)  {# try cv for at most 3 times if current penalty tuning failed
@@ -70,14 +73,42 @@ do_lrm_cv <- function(df=df,
       failed = failed + 1
     } else{
       # get current score
+      current_score <- NULL
+      res_score_df <- mdl_test(y_true=cv_obj$cv_yhat_df$y_true, y_prob=cv_obj$cv_yhat_df$y_prob, mean(cv_obj$cv_yhat_df$y_true, na.rm=TRUE))
+      res_score_df <- res_score_df$res_df
+      mdl_all <- cv_obj$mdl_all
       if(tune_by=="logloss"){
-        current_score <- -cv_obj$model_scores$valid_logloss_mean
+        tryCatch({
+          current_score <- -res_score_df$logloss
+        },error = function(e){
+          print(e)
+        })
+        if(is.null(current_score)){
+          print("using 10 fold estimation")
+          current_score <- -cv_obj$model_scores$valid_logloss_mean
+        }
       } else if (tune_by=="auroc"){
-        current_score <- cv_obj$model_scores$valid_AUROC_mean
+        tryCatch({
+          current_score <- res_score_df$AUROC
+        },error = function(e){
+          print(e)
+        })
+        if(is.null(current_score)){
+          print("using 10 fold estimation")
+          current_score <- cv_obj$model_scores$valid_AUROC_mean
+        }
       } else if (tune_by=="aic"){
-        current_score <- -cv_obj$model_scores$model_AIC_mean
+        current_score <- -AIC(mdl_all)
+        if(is.null(current_score)){
+          print("using 10 fold estimation")
+          current_score <- -cv_obj$model_scores$model_AIC_mean
+        }
       } else if (tune_by=="bic"){
-        current_score <- -cv_obj$model_scores$model_BIC_mean
+        current_score <- -BIC(mdl_all)
+        if(is.null(current_score)){
+          print("using 10 fold estimation")
+          current_score <- -cv_obj$model_scores$model_BIC_mean
+        }
       }
       print(paste0("--- penalty --- ", penalty, " --- ",tune_by," --- ", current_score))
       if(is.null(base_score)){
@@ -96,6 +127,14 @@ do_lrm_cv <- function(df=df,
       }
     }
     penalty <- penalty + pen_step # update penalty
+    
+    score_trace <- res_score_df[,c("logloss","AUROC","AUPRC","accuracy","f1score")]
+    score_trace$penalty <- penalty
+    score_trace$AIC <- AIC(mdl_all)
+    score_trace$BIC <- BIC(mdl_all)
+    score_trace$tune_by <- tune_by
+    score_trace_all <- bind_rows(score_trace_all, score_trace)
+    
   }
   
   
@@ -127,7 +166,8 @@ do_lrm_cv <- function(df=df,
               "dict_final" = dict_mdl,
               "fml_obj"=fml_obj,
               "cv_obj"=cv_obj,
-              "mdl_obj"=mdl_final
+              "mdl_obj"=mdl_final,
+              "score_trace_df"=score_trace_all
   ))
   
 }
