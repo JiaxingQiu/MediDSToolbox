@@ -18,10 +18,14 @@ front_multi_regression <- function(
   pctcut_num_vec = c(0.1, 99.9),
   pctcut_num_coerce=TRUE,
   filter_tag_labels=c(),
-  imputation=c("None","Mean", "Median", "Zero")[1],
-  impute_per_cluster=FALSE,
   winsorizing=TRUE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  imputation=c("None","Mean", "Median", "Zero")[1],
+  imputeby_median = c(),
+  imputeby_zero = c(),
+  imputeby_mean = c(), 
+  impute_per_cluster=FALSE,
+  standardize_df = NULL, # data.frame(varname=c(), center=c(), scale=c())
   # --- local ---
   trim_ctrl = TRUE,
   r2=0.9,
@@ -42,7 +46,7 @@ front_multi_regression <- function(
   tune_by=c("logloss","auroc","aic","bic")[1],
   return_performance = TRUE,
   return_fitted_effect=FALSE,
-  fold_idx_df_ex=NULL
+  fold_idx_df_ex=NULL  # data.frame(cluster_col = c(), fold = c())
 ){
   
   
@@ -88,7 +92,8 @@ front_multi_regression <- function(
                            num_cols = num_cols,
                            fct_cols = fct_cols,
                            cluster_col = cluster_col,
-                           trim_by_col = trim_by_col) # minimum data engineering = using default settings
+                           trim_by_col = trim_by_col,
+                           standardize_df = standardize_df) # minimum data engineering = using default settings
     data_inorg <- assign.dict(data_inorg, dict_data)
   },error=function(e){
     print("Error!")
@@ -112,9 +117,13 @@ front_multi_regression <- function(
                           pctcut_num_coerce = pctcut_num_coerce,
                           filter_tag_cols = filter_tag_cols,
                           imputation = imputation,
+                          imputeby_median = imputeby_median,
+                          imputeby_zero = imputeby_zero,
+                          imputeby_mean = imputeby_mean, 
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
-                          aggregate_per = aggregate_per)
+                          aggregate_per = aggregate_per,
+                          standardize_df = standardize_df)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
         data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -130,9 +139,13 @@ front_multi_regression <- function(
                                pctcut_num_coerce = pctcut_num_coerce,
                                filter_tag_cols = filter_tag_cols,
                                imputation = imputation,
+                               imputeby_median = imputeby_median,
+                               imputeby_zero = imputeby_zero,
+                               imputeby_mean = imputeby_mean, 
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregate_per = aggregate_per)
+                               aggregate_per = aggregate_per,
+                               standardize_df = standardize_df)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
                                fct_cols = fct_cols,
@@ -147,9 +160,13 @@ front_multi_regression <- function(
                                pctcut_num_coerce = pctcut_num_coerce,
                                filter_tag_cols = filter_tag_cols,
                                imputation = imputation,
+                               imputeby_median = imputeby_median,
+                               imputeby_zero = imputeby_zero,
+                               imputeby_mean = imputeby_mean, 
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregate_per = aggregate_per)
+                               aggregate_per = aggregate_per,
+                               standardize_df = standardize_df)
         data_in <- bind_rows(data_cntrl, data_event)
       }
     }
@@ -167,7 +184,8 @@ front_multi_regression <- function(
                              num_cols = num_cols,
                              fct_cols = fct_cols,
                              cluster_col = cluster_col,
-                             trim_by_col = trim_by_col)
+                             trim_by_col = trim_by_col,
+                             standardize_df = standardize_df)
       data_exorg <- assign.dict(data_exorg, dict_data)
     }
   },error=function(e){
@@ -193,9 +211,13 @@ front_multi_regression <- function(
                             pctcut_num_coerce = pctcut_num_coerce,
                             filter_tag_cols = filter_tag_cols,
                             imputation = imputation,
+                            imputeby_median = imputeby_median,
+                            imputeby_zero = imputeby_zero,
+                            imputeby_mean = imputeby_mean, 
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
-                            aggregate_per = aggregate_per)
+                            aggregate_per = aggregate_per,
+                            standardize_df = standardize_df)
       }else{
         if (all(unique(as.character(test_data[,y_col])) %in% c(1,0,NA))){
           data_event <- engineer(data = test_data[which(test_data[,y_col]==1),],
@@ -211,9 +233,13 @@ front_multi_regression <- function(
                                  pctcut_num_coerce = pctcut_num_coerce,
                                  filter_tag_cols = filter_tag_cols,
                                  imputation = imputation,
+                                 imputeby_median = imputeby_median,
+                                 imputeby_zero = imputeby_zero,
+                                 imputeby_mean = imputeby_mean, 
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
-                                 aggregate_per = aggregate_per)
+                                 aggregate_per = aggregate_per,
+                                 standardize_df = standardize_df)
           data_cntrl <- engineer(data = test_data[which(test_data[,y_col]==0),],
                                  num_cols = num_cols,
                                  fct_cols = fct_cols,
@@ -228,9 +254,13 @@ front_multi_regression <- function(
                                  pctcut_num_coerce = pctcut_num_coerce,
                                  filter_tag_cols = filter_tag_cols,
                                  imputation = imputation,
+                                 imputeby_median = imputeby_median,
+                                 imputeby_zero = imputeby_zero,
+                                 imputeby_mean = imputeby_mean, 
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
-                                 aggregate_per = aggregate_per)
+                                 aggregate_per = aggregate_per,
+                                 standardize_df = standardize_df)
           data_ex <- bind_rows(data_cntrl, data_event)
         }
       }

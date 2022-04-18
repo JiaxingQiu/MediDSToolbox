@@ -1,3 +1,5 @@
+# validation / testing data are always standardized or engineered in the same way as the modeling data
+
 lss_perform <- function(
   mdl_obj, # a grouped lasso regression model object
   df, # a dataset to test out performance on
@@ -268,8 +270,8 @@ lss_perform <- function(
 reconstructX <- function(lasso_optimal_mdl_obj, df){
   
   df_org <- df
-  x_cols_org <- names(attr(lasso_optimal_mdl_obj$x,"scaled:center"))
-  df[,x_cols_org] <- scale(df[,x_cols_org], center = attr(lasso_optimal_mdl_obj$x,"scaled:center"), scale = attr(lasso_optimal_mdl_obj$x,"scaled:scale") )
+  #x_cols_org <- names(attr(lasso_optimal_mdl_obj$x,"scaled:center"))
+  #df[,x_cols_org] <- scale(df[,x_cols_org], center = attr(lasso_optimal_mdl_obj$x,"scaled:center"), scale = attr(lasso_optimal_mdl_obj$x,"scaled:scale") )
   # overwrite tag columns
   x_cols_tag <- lasso_optimal_mdl_obj$group_info$x_colname[which(endsWith( lasso_optimal_mdl_obj$group_info$x_group, "_tag01") )]
   df[,x_cols_tag] <- df_org[,x_cols_tag]
@@ -309,7 +311,7 @@ reconstructX <- function(lasso_optimal_mdl_obj, df){
     }
   }
   stopifnot(all(x_cols %in% colnames(df)))
-  stopifnot(all(x_cols_org %in% x_cols_raw))
+  #stopifnot(all(x_cols_org %in% x_cols_raw))
   new_x <- data.matrix(df[,x_cols])
   return(list(new_x = new_x,
               new_df = df,

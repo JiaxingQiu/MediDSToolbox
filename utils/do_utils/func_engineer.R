@@ -14,13 +14,17 @@ engineer <- function(
   pctcut_num_coerce = TRUE,
   filter_tag_cols=c(),
   #--- decorate data ---
-  imputation=c("None", "Mean", "Median", "Zero")[1],
-  impute_per_cluster=FALSE,
   winsorizing=FALSE,
-  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1]
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  imputation=c("None", "Mean", "Median", "Zero")[1], # global imputation strategy for the rest of vars not specified in imputeby_...
+  imputeby_median = c(),
+  imputeby_zero = c(),
+  imputeby_mean = c(), 
+  impute_per_cluster=FALSE,
+  standardize_df = NULL
 ){
   
-  # ---- validate inputs ----
+  #### clean up inputs ####
   trim_step_size <- max(1,as.numeric(trim_step_size),na.rm=TRUE)
   trim_min <- trim_min*trim_step_size
   trim_max <- trim_max*trim_step_size
@@ -36,13 +40,17 @@ engineer <- function(
   fct_cols <- intersect(colnames(data), fct_cols)
   fct_cols <- union(fct_cols, cluster_col)
   fct_cols <- union(fct_cols, filter_tag_cols)
+  imputeby_median_cols <- intersect(num_cols,intersect(colnames(data), imputeby_median))
+  imputeby_zero_cols <- intersect(num_cols,intersect(colnames(data), imputeby_zero))
+  imputeby_mean_cols <- intersect(num_cols,intersect(colnames(data), imputeby_mean))
   
-  # ---- initiate dataframe to return "data_engineered" ----
-  # in the returned dataframe, only trim_by_col, num_cols, fct_cols, cluster_cols will be in the columns
+  # initiate dataframe to return "data_engineered"
+  # in the returned dataframe, only trim_by_col, num_cols, fct_cols, cluster_col will be in the columns
+  data <- data[,unique(c(trim_by_col, num_cols, fct_cols, cluster_col)) ]
   data_engineered <- data
   
-  print("---- Engineering ----")
-  # ---- trim data by trim_by_col(relative time indicator)  ----
+  print("------ Engineering ------")
+  #### trim data by trim_by_col(relative time indicator) ####
   if (length(trim_by_col)>0){
     if (trim_keepna){
       data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
@@ -50,7 +58,8 @@ engineer <- function(
       data <- data[which(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max),]
     }
   }
-  # ---- cutoff numeric variables by percentiles ----
+  #### cutoff numeric variables by percentiles ####
+  print(paste0("--- Cutting following variables by percentiles and keep rows within range --- ",paste0(pctcut_num_cols,collapse = ", ")))
   for(pctcut_num_col in pctcut_num_cols){
     tryCatch({
       quantiles <- quantile( data[,pctcut_num_col], c(as.numeric(pctcut_num_vec[1])/100, as.numeric(pctcut_num_vec[2])/100 ), na.rm =TRUE)
@@ -68,47 +77,34 @@ engineer <- function(
       print(e)
     })
   }
-  # filter data with complete numeric cutoffs
-  data <- data[which(complete.cases(data[,pctcut_num_cols])),]
+  data <- data[which(complete.cases(data[,pctcut_num_cols])),]# filter data with complete numeric cutoffs
   
-  # ---- subset / filter dataset when all given tag columns == 1 ----
+  
+  #### winsorize numeric columns except trim by col ####
+  if(winsorizing){
+    print("--- Winsorize all the numeric variables ---")
+    data[,setdiff(num_cols,trim_by_col)] <- winsorize(data[,setdiff(num_cols,trim_by_col)])
+  }
+  
+  #### subset data by binary filters ####
   if(length(filter_tag_cols)>0){
     for(col in filter_tag_cols){
       tryCatch({
-        data <- data[which(data[,col]==1),]
+        print(paste0("--- filter data where ",col,"==1 ---"))
+        data <- data[which(as.numeric( data[,col] )==1),]
       },error=function(e){
-        print(paste0("--- Skip one-hot filter for tag varibale", col, " ---"))
+        print(paste0("--- Skip one-hot filter for tag variable", col, " ---"))
         print(e)
       })
     }
   }
-  # ---- impute num_cols ----
-  # clean inf tp be NA
-  for(num_col in num_cols){
-    data[which(!is.finite(data[,num_col])), num_col] <- NA
-  }
-  if(!impute_per_cluster){
-    # global imputation
-    if(imputation=="Mean") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
-    if(imputation=="Median") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
-    if(imputation=="Zero") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
-  }else{
-    # cluster-wise imputation
-    if(imputation=="Mean") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., mean(.,na.rm = TRUE)) ) %>% as.data.frame()
-    if(imputation=="Median") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., median(.,na.rm = TRUE)) ) %>% as.data.frame()
-    if(imputation=="Zero")  data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., 0)) %>% as.data.frame()
-  }
-  # winsorize numeric columns except trim by col
-  if(winsorizing){
-    data[,setdiff(num_cols,trim_by_col)] <- winsorize(data[,setdiff(num_cols,trim_by_col)])
-  }
-  # aggregation if required
+  #### aggregation ####
   if(aggregate_per %in% c("cluster_trim_by_unit", "cluster") ){ 
+    print(paste0("--- Aggregate data by ", aggregate_per," ---"))
     df_key <- NULL
     df_tag <- NULL
     df_cat <- NULL
     df_num <- NULL
-    
     if (aggregate_per=="cluster_trim_by_unit"){
       # rounding trim by column as multiple value of trim by step size / time unit
       data[,trim_by_col] <- floor(data[,trim_by_col]/trim_step_size)*trim_step_size
@@ -159,6 +155,56 @@ engineer <- function(
     }
   }
   data_engineered <- data[, intersect(colnames(data),unique(c("key_col",cluster_col, trim_by_col, num_cols, fct_cols)))]
+  
+  
+  #### imputation ####
+  for(num_col in num_cols){ data[which(!is.finite(data[,num_col])), num_col] <- NA } # clean inf to NA
+  print("--- Imputation ---")
+  data <- data_engineered
+  if(!impute_per_cluster){
+    print("---- by cohort ----")
+    # special imputation
+    data <- data %>% mutate_at(vars(all_of(imputeby_median_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+    data <- data %>% mutate_at(vars(all_of(imputeby_mean_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+    data <- data %>% mutate_at(vars(all_of(imputeby_zero_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+    # global imputation
+    if(imputation=="Mean") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+    if(imputation=="Median") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+    if(imputation=="Zero") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+  }else{
+    print("---- by cluster ----")
+    data <- data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(imputeby_median_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+    data <- data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(imputeby_mean_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+    data <- data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(imputeby_zero_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+    # cluster-wise imputation
+    if(imputation=="Mean") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., mean(.,na.rm = TRUE)) ) %>% as.data.frame()
+    if(imputation=="Median") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., median(.,na.rm = TRUE)) ) %>% as.data.frame()
+    if(imputation=="Zero")  data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., 0)) %>% as.data.frame()
+  }
+  data_engineered <- data
+  
+  #### standardization ####
+  if(!is.null(standardize_df)){
+    print("--- Standardize by external dataframe ---")
+    tryCatch({
+      stopifnot(all(c("varname", "center", "scale")%in%colnames(standardize_df)))
+      for(col in unique(standardize_df$varname) ){
+        tryCatch({
+          data_engineered[,col] <- as.numeric(scale(data_engineered[,col], 
+                                         center = standardize_df$center[which(standardize_df$varname==col)],
+                                         scale = standardize_df$scale[which(standardize_df$varname==col)]))
+          data_engineered[which(!is.finite(data_engineered[,col] )),col]<-NA
+        },error = function(e){
+          print(e)
+          print(paste0("skip standardize -- ", col))
+        })
+      }
+    },error=function(e){
+      print(e)
+      print("skip standardization -- error in input standardize dataframe ")
+    })
+  }
+  
   
   
   # ---- return final engineered dataset ----

@@ -10,7 +10,6 @@ lasso_x_select_group <- function(
   x_cols_fct=c(),
   x_cols_tag=c(),
   family = c("binomial", "multinomial", "gaussian")[1],
-  standardize = TRUE,
   dict_data=NULL, # dictionary table is optional
   lambda=c("auto","1se","min")[1],
   lambda_value = NULL, # external specified lasso lambda value
@@ -50,10 +49,9 @@ lasso_x_select_group <- function(
   x_cols <- unique(c(x_cols_linear, x_cols_nonlin_rcs3, x_cols_nonlin_rcs4, x_cols_nonlin_rcs5,x_cols_tag))
   
   data_org <- data
-  if(standardize) {
-    data[,x_cols] <- scale(data_org[,x_cols])
-    data[,x_cols_tag] <- data_org[,x_cols_tag] # overwrite dummy columns, they should not be scaled
-  }
+  #data[,x_cols] <- scale(data_org[,x_cols], center = standardize, scale = standardize)
+  data[,x_cols_tag] <- data_org[,x_cols_tag] # overwrite dummy columns, they should not be scaled
+  
   
   # add transformations to predictor variables and save grouping info in a dataframe object
   x_col_df_all <- data.frame()
@@ -222,9 +220,13 @@ lasso_x_select_group <- function(
                                     group=v.group, 
                                     loss="logit",
                                     lambda = opt_lambda)
-  
-  attr(x,"scaled:center") <- attr(scale(data_org[,x_cols]),"scaled:center")
-  attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols]),"scaled:scale")
+  # if(standardize){
+  #   attr(x,"scaled:center") <- attr(scale(data_org[,x_cols]), "scaled:center")
+  #   attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols]), "scaled:scale")
+  # }else{
+  #   attr(x,"scaled:center") <- attr(scale(data_org[,x_cols], center = rep(0, length(x_cols)), scale = rep(1, length(x_cols)) ), "scaled:center")
+  #   attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols], center = rep(0, length(x_cols)), scale = rep(1, length(x_cols))), "scaled:scale")
+  # }
   
   lasso_optimal$x <- x
   lasso_optimal$y <- ifelse(y<0,0,1)

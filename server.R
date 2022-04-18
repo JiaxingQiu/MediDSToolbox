@@ -400,7 +400,7 @@ shinyServer(function(input, output, session) {
       aggregate_per = aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
-      #standardize=input$ml_select_standardize,
+      standardize=TRUE,
       test_data=test_data,
       y_map_func=input$ml_y_map_func,
       y_map_max=input$ml_y_max,
