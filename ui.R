@@ -170,7 +170,7 @@ sidebar <- dashboardSidebar(
                                      choices = c()),
                          sliderInput("ml_uni_sample_per_cluster",
                                      label = "Sample per cluster",
-                                     min = 2,  max = 2000, step = 20, value = 200)
+                                     min = 2,  max = 200, step = 10, value = 20)
                          
         )),
     div(id = 'sidebar_ml_select',

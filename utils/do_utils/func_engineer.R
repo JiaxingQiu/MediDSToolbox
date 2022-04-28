@@ -208,10 +208,10 @@ engineer <- function(
   
   if(!is.null(sample_per_cluster)){
     tryCatch({
-      library(dplyr)
       data_engineered$cluster <- data_engineered[,cluster_col]
       data_engineered_sampled <- data_engineered %>% group_by(cluster) %>% 
-        dplyr::slice_sample(n=sample_per_cluster, replace=TRUE)
+        dplyr::slice_sample(n=sample_per_cluster, replace=TRUE) %>%
+        as.data.frame()
       data_engineered <- data_engineered_sampled[,setdiff(colnames(data_engineered_sampled),c("cluster"))]
     },error=function(e){
       print(e)
