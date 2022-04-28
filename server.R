@@ -360,7 +360,8 @@ shinyServer(function(input, output, session) {
       method=input$ml_method, 
       y_map_func = input$ml_y_map_func,
       y_map_max = input$ml_y_max,
-      group_label = input$ml_uni_group_label
+      group_label = input$ml_uni_group_label,
+      sample_per_cluster = input$ml_uni_sample_per_cluster
     )
     uni_obj$plot_obj
     

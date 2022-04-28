@@ -23,7 +23,8 @@ front_uni_heatmap <- function(
   pct=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
-  label_y=TRUE
+  label_y=TRUE,
+  sample_per_cluster = NULL
 ){
   
   tryCatch({
@@ -62,7 +63,8 @@ front_uni_heatmap <- function(
                         imputation = imputation,
                         impute_per_cluster = impute_per_cluster,
                         winsorizing = winsorizing,
-                        aggregate_per = aggregate_per)
+                        aggregate_per = aggregate_per,
+                        sample_per_cluster=sample_per_cluster)
   }else{
     if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
       data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -80,7 +82,8 @@ front_uni_heatmap <- function(
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
-                             aggregate_per = aggregate_per)
+                             aggregate_per = aggregate_per,
+                             sample_per_cluster=sample_per_cluster)
       data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                              num_cols = num_cols,
                              fct_cols = fct_cols,
@@ -97,7 +100,8 @@ front_uni_heatmap <- function(
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
-                             aggregate_per = aggregate_per)
+                             aggregate_per = aggregate_per,
+                             sample_per_cluster=sample_per_cluster)
       data_in <- bind_rows(data_cntrl, data_event)
     }
   }
@@ -184,7 +188,7 @@ front_uni_heatmap <- function(
 # pctcut_num_coerce = TRUE
 # filter_tag_labels=c("On respiratory support with endotracheal tube (EN) == Yes", "Any  Doses of any medication today")
 # # --- local ---
-# num_labels = dict_data$label[which(dict_data$type=="num")][c(1:20)]
+# num_labels = dict_data$label[which(dict_data$type=="num")][c(1:5)]
 # y_label = "Primary outcome (EN) == Unfavorable"
 # cluster_label = "PreVent study ID"
 # num_adjust_label = NULL

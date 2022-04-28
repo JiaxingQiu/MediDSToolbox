@@ -28,7 +28,8 @@ front_uni_heatmap_group <- function(
   layout_ncol = 5,
   x_raw_scale = FALSE,
   heat_limits = NULL,
-  legend.position="right"
+  legend.position="right",
+  sample_per_cluster = NULL
 ){
   # find the column name in data for the group by label
   group_col <- dict_data$varname[which(dict_data$label==group_label)]
@@ -57,7 +58,8 @@ front_uni_heatmap_group <- function(
                                      pct=pct,
                                      y_map_func=y_map_func,
                                      y_map_max=y_map_max,
-                                     label_y=label_y)
+                                     label_y=label_y,
+                                     sample_per_cluster=sample_per_cluster)
     
     return(list(plot_obj = heatmap_obj$plot_obj,
                 df_result_all_sort = heatmap_obj$df_result_all_sort))
@@ -93,7 +95,8 @@ front_uni_heatmap_group <- function(
                                          pct=pct,
                                          y_map_func=y_map_func,
                                          y_map_max=y_map_max,
-                                         label_y=label_y)
+                                         label_y=label_y,
+                                         sample_per_cluster=sample_per_cluster)
         plot_df <- heatmap_obj$df_result_all_sort
       },error=function(e){
         print(e)

@@ -21,7 +21,8 @@ engineer <- function(
   imputeby_zero = c(),
   imputeby_mean = c(), 
   impute_per_cluster=FALSE,
-  standardize_df = NULL
+  standardize_df = NULL,
+  sample_per_cluster = NULL
 ){
   
   #### clean up inputs ####
@@ -205,6 +206,18 @@ engineer <- function(
     })
   }
   
+  if(!is.null(sample_per_cluster)){
+    tryCatch({
+      library(dplyr)
+      data_engineered$cluster <- data_engineered[,cluster_col]
+      data_engineered_sampled <- data_engineered %>% group_by(cluster) %>% 
+        dplyr::slice_sample(n=sample_per_cluster, replace=TRUE)
+      data_engineered <- data_engineered_sampled[,setdiff(colnames(data_engineered_sampled),c("cluster"))]
+    },error=function(e){
+      print(e)
+    })
+    
+  }
   
   
   # ---- return final engineered dataset ----
