@@ -118,7 +118,7 @@ viz_death_star <- function(
     scale_fill_gradientn(colours = topo.colors(30),labels=scaleFUN, na.value =NA) +
     #geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
     geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='red',size=0.5, shape=4) +
-    geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='black', size=2, shape=19, alpha=0.5) +
+    geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='red', size=1, shape=19, alpha=0.7) +
     geom_text(aes(label=group_text), hjust=-0.5, vjust = 0, size=5) + 
     xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
                 " by ",

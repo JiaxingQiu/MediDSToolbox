@@ -308,6 +308,7 @@ lasso_x_select_group <- function(
                               threshold = mean(data[,y_col],na.rm=TRUE))
   score_final_cv <- cv_final_scores$res_df
   score_final_cv$data <- "cv_yhat_df"
+  score_final_cv$AUROC <- ifelse(score_final_cv$AUROC>0.5, score_final_cv$AUROC, 1-score_final_cv$AUROC)
   
   return(list( lasso_cv = lasso_cv,
                lasso_trace = lasso_trace,
