@@ -51,8 +51,10 @@ uni_tag_nums <- function(data,
       df_mdl[[num_col]] <- est_pctl(df_mdl[[num_col]])
     }else{
       # num_col might be estimated percentile already
-      df_mdl[[num_col]] <- (df_mdl[[num_col]]-min(df_mdl[[num_col]],na.rm=TRUE))/(max(df_mdl[[num_col]],na.rm=TRUE)-min(df_mdl[[num_col]],na.rm=TRUE))
-      df_mdl[which( df_mdl[[num_col]]<0 | df_mdl[[num_col]]>1),num_col]<- NA
+      # df_mdl[[num_col]] <- (df_mdl[[num_col]]-min(df_mdl[[num_col]],na.rm=TRUE))/(max(df_mdl[[num_col]],na.rm=TRUE)-min(df_mdl[[num_col]],na.rm=TRUE))
+      # df_mdl[which( df_mdl[[num_col]]<0 | df_mdl[[num_col]]>1),num_col]<- NA
+      print("-- using raw scale --")
+      df_mdl[[num_col]] <- as.numeric(df_mdl[[num_col]])
     }
     
     df_mdl <- df_mdl[complete.cases(df_mdl[[tag_col]]),]

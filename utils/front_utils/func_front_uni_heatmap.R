@@ -19,13 +19,16 @@ front_uni_heatmap <- function(
   # --- local ---
   trim_ctrl=TRUE,
   num_adjust_label=NULL, 
-  method="logit_rcs", 
+  method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
   pct=TRUE,
+  layout_ncol = 5,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
   label_y=TRUE,
   sample_per_cluster = NULL
 ){
+  library(RColorBrewer)
+  palette_diy <- colorRampPalette(brewer.pal(10, "Spectral"))
   
   tryCatch({
     data <- assign.dict(data, dict_data, overwrite = TRUE)
@@ -118,7 +121,7 @@ front_uni_heatmap <- function(
   }else{
     df_result_all <- uni_tag_nums(data, 
                                   num_cols, 
-                                  y_col, 
+                                  tag_col=y_col, 
                                   cluster_col, 
                                   num_adjust_col, 
                                   method=method, 
@@ -136,33 +139,83 @@ front_uni_heatmap <- function(
       var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_prob=max(yhat)) %>% arrange(max_prob) %>% as.data.frame()
     }
     df_result_all_sort <- dplyr::left_join(var_order,df_result_all)
-    # add raw data quantile back 
-    df_result_all_sort$raw_value <- NA
-    for(var in unique(df_result_all_sort$var_name)){
-      df_result_all_sort$raw_value[which(df_result_all_sort$var_name==var)]<-as.numeric( quantile(data[,var],df_result_all_sort$pctl[which(df_result_all_sort$var_name==var)], na.rm=TRUE) )
+    if(pct){
+      # add raw data quantile back 
+      df_result_all_sort$raw_value <- NA
+      for(var in unique(df_result_all_sort$var_name)){
+        df_result_all_sort$raw_value[which(df_result_all_sort$var_name==var)]<-as.numeric( quantile(data[,var],df_result_all_sort$pctl[which(df_result_all_sort$var_name==var)], na.rm=TRUE) )
+      }
+      plot_obj <- ggplot(df_result_all_sort, aes(x=pctl,y=var_name))+
+        geom_tile(aes(fill=yhat)) +
+        labs(fill=y_map_func,x="Percentile") + 
+        theme(axis.title.y=element_blank()) + 
+        scale_fill_gradientn(colours = rev(palette_diy(8)),
+                             na.value =NA) +
+        scale_y_discrete(limits=var_order$var_name)
+      if(label_y){
+        tryCatch({
+          dict_data <- get.dict(assign.dict(data,dict_data))
+          label_list <- dict_data[var_order$var_name,"label"]
+          label_list <- gsub("[^[:alnum:]]+"," ",label_list)
+          label_list <- stringr::str_wrap(label_list, width=20)
+          plot_obj <- plot_obj + scale_y_discrete(limits=var_order$var_name,labels=label_list)
+        },error=function(e){
+          print('Failed to use labels for y axis in uni heatmap')
+          print(e)
+        })
+      }
+      if("c_score" %in% colnames(df_result_all_sort)){
+        plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
+      }
+    }else{
+      # add raw data back 
+      df_result_all_sort$raw_value <- NA
+      for(var in unique(df_result_all_sort$var_name)){
+        low <- as.numeric(gsub("\\]","" ,gsub("\\(","" ,stringr::str_split_fixed( cut(df_result_all_sort$pctl[which(df_result_all_sort$var_name==var)], 20, right=TRUE), ",", 2)[,1])))
+        up <- as.numeric(gsub("\\]","" ,gsub("\\(","" ,stringr::str_split_fixed( cut(df_result_all_sort$pctl[which(df_result_all_sort$var_name==var)], 20, right=TRUE), ",", 2)[,2])))
+        df_result_all_sort$raw_value[which(df_result_all_sort$var_name==var)]<-floor((low + up)/2)
+      }
+      plot_list <- list()
+      i=1
+      plot_df_all_return <- data.frame()
+      plot_df_all <- df_result_all_sort
+      plot_df_all$level <- ""
+      heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+      for(var_name in sort(unique(plot_df_all$var_name))){
+        tryCatch({
+          plot_df_all_var <- plot_df_all[which(plot_df_all$var_name==var_name),]
+          plot_df_all_final <- data.frame(approx(plot_df_all_var$raw_value, round(plot_df_all_var$yhat,2), n=15))
+          colnames( plot_df_all_final ) <- c("raw_value","yhat")
+          plot_df_all_final$level <- unique(plot_df_all_var$level)
+          plot_df_all_final$var_name <- var_name
+          plot_list[[i]] <- ggplot(plot_df_all_final, aes(x=raw_value,y=level))+
+            geom_tile(aes(fill=yhat)) +
+            labs(subtitle=var_name,fill=y_map_func,x=NULL,y=NULL)+
+            scale_fill_gradientn(limits = heat_limits,
+                                 colours = rev(palette_diy(8)),
+                                 na.value =NA)  +
+            theme_minimal() 
+          if("c_score" %in% colnames(plot_df_all)){
+            plot_df_all_final$c_label <- NA
+            plot_df_all_final$c_label[which(plot_df_all_final$raw_value==min(plot_df_all_final$raw_value,na.rm=TRUE))] <- unique(plot_df_all_var$c_label[which(!is.na(plot_df_all_var$c_label))])
+            plot_list[[i]] <- plot_list[[i]] + geom_text(data=plot_df_all_final, aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
+          }
+          i <- i + 1
+          plot_df_all_return <- bind_rows(plot_df_all_return, plot_df_all_final)
+        },error=function(e){
+          print(e)
+          print(paste0("skip ", var_name))
+        })
+      }
+      layout_ncol <- min(length(plot_list), layout_ncol)
+      plot_obj <- ggpubr::ggarrange(plotlist = plot_list, 
+                                    ncol=layout_ncol, 
+                                    nrow=ceiling(n_distinct(plot_df_all$var_name)/layout_ncol),
+                                    common.legend = TRUE, 
+                                    legend = "right")
+      df_result_all_sort <- plot_df_all_return
     }
     
-    plot_obj <- ggplot(df_result_all_sort, aes(x=pctl,y=var_name))+
-      geom_tile(aes(fill=yhat)) +
-      labs(fill=y_map_func,x="Percentile") + 
-      theme(axis.title.y=element_blank()) + 
-      scale_fill_gradientn(colours = rev(rainbow(7))) +
-      scale_y_discrete(limits=var_order$var_name)
-    if(label_y){
-      tryCatch({
-        dict_data <- get.dict(assign.dict(data,dict_data))
-        label_list <- dict_data[var_order$var_name,"label"]
-        label_list <- gsub("[^[:alnum:]]+"," ",label_list)
-        label_list <- stringr::str_wrap(label_list, width=20)
-        plot_obj <- plot_obj + scale_y_discrete(limits=var_order$var_name,labels=label_list)
-      },error=function(e){
-        print('Failed to use labels for y axis in uni heatmap')
-        print(e)
-      })
-    }
-    if("c_score" %in% colnames(df_result_all_sort)){
-      plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
-    }
   }
   
   
@@ -171,7 +224,7 @@ front_uni_heatmap <- function(
   
 }
 
-# ############################################ not run #############################################
+############################################ not run #############################################
 # data = data_ml
 # dict_data = dict_ml
 # # --- setup ---
@@ -193,6 +246,10 @@ front_uni_heatmap <- function(
 # cluster_label = "PreVent study ID"
 # num_adjust_label = NULL
 # method="logit_rcs"
-# pct = TRUE
+# pct = FALSE
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
 # y_map_max=3
+# sample_per_cluster = NULL
+
+
+

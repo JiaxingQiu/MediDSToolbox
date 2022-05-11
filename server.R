@@ -86,6 +86,7 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "unml_input_labels",
                       choices = dict_ml$label[which(dict_ml$type=="num"|dict_ml$unit=="tag01")],
                       selected = NULL )
+    
   })
   observeEvent(input$setup_trim_by_label, {
     trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
@@ -97,6 +98,7 @@ shinyServer(function(input, output, session) {
                       value = c(min_value, max_value) )
     updateNumericInput(inputId = "setup_trim_time_unit",
                        value = 1)
+    
   })  
   observeEvent(input$setup_trim_time_unit, {
     trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
@@ -116,6 +118,20 @@ shinyServer(function(input, output, session) {
                              choices = time_breaks,
                              label = input$setup_trim_by_label,
                              inline = TRUE)
+    # calculate min and max number of observations per cluster
+    cluster_col <- dict_ml$varname[which(dict_ml$label==input$setup_cluster_label)]
+    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
+    data_tmp <- data_ml[which(data_ml[,trim_by_col]>=input$setup_trim_vec[1]*input$setup_trim_time_unit & data_ml[,trim_by_col]<input$setup_trim_vec[2]*input$setup_trim_time_unit ),]
+    data_tmp$cluster_col_tmp <- data_tmp[,cluster_col]
+    data_nrow <- data_tmp %>% group_by(cluster_col_tmp) %>% summarise(nobs = n()) %>% as.data.frame()
+    min_value = min(data_nrow$nobs,na.rm=TRUE)
+    max_value = max(data_nrow$nobs,na.rm=TRUE)
+    updateSliderInput(inputId = "ml_uni_sample_per_cluster", 
+                      min = min_value,
+                      max = max_value,
+                      value = round((min_value+max_value)/2) )
+    rm(data_tmp)
+    rm(data_nrow)
   })  
   observeEvent(input$setup_strat_by, {
     setup_trim_ctrl <- input$setup_trim_ctrl
@@ -361,7 +377,8 @@ shinyServer(function(input, output, session) {
       y_map_func = input$ml_y_map_func,
       y_map_max = input$ml_y_max,
       group_label = input$ml_uni_group_label,
-      sample_per_cluster = input$ml_uni_sample_per_cluster
+      sample_per_cluster = input$ml_uni_sample_per_cluster,
+      pct = input$ml_uni_pct
     )
     uni_obj$plot_obj
     
@@ -928,13 +945,36 @@ shinyServer(function(input, output, session) {
                  })
     x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
     if (!is.null(x_select_obj)){
+      # lasso trace df
       lasso_cv <- x_select_obj$lasso_cv
       lasso_trace <- x_select_obj$lasso_trace
+      # coef zero lambda df
+      lasso_coef <- as.data.frame( lasso_trace$beta)
+      lasso_coef <- as.data.frame( t(lasso_coef) )
+      lasso_coef$s <- as.numeric( gsub("s","", rownames(lasso_coef)))
+      lmd_s <- c()
+      var_s <- c()
+      for (var in setdiff(colnames(lasso_coef),"s") ){
+        lmd_s <- c(lmd_s, max(lasso_coef$s[which(lasso_coef[,var]==0)]) )
+        var_s <- c(var_s, var)
+      }
+      lambda_zero_coef <- data.frame(varname = var_s, 
+                                     lambda = lasso_trace$lambda[lmd_s+1],
+                                     log_lambda = log(lasso_trace$lambda[lmd_s+1]))
+      lambda_zero_coef <- lambda_zero_coef[order(lambda_zero_coef$log_lambda),]
+      rownames( lambda_zero_coef ) <- NULL
+      # plot results
       par(mfrow = c(2, 1))
-      plot(lasso_cv, main = "Lasso penalty\n\n")
-      plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n")
+      plot(lasso_cv, main = "Lasso penalty\n\n", 
+           xlab=NULL,
+           xlim=rev(c(min(log(lasso_cv$lambda)),max(log(lasso_cv$lambda))))) 
+      plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n", 
+           xlab="log lambda",
+           xlim=rev(c(min(log(lasso_trace$lambda)),max(log(lasso_trace$lambda)))) )
       abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
       abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
+      text(lambda_zero_coef[,'log_lambda'], 0, lambda_zero_coef[,'varname'], 
+           cex=0.7, col="black",srt=90)
     }
   })
   output$ml_select_group_lasso_vip <- renderPlot({
