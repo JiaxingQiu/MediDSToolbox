@@ -123,7 +123,6 @@ front_uni_heatmap_group <- function(
     }
     if(pct){
       if (!x_raw_scale){
-        
         plot_obj <- ggplot(plot_df_all, aes(x=pctl,y=level))+
           geom_tile(aes(fill=yhat)) +
           labs(fill=y_map_func,x="Percentile",y=NULL) + 
@@ -151,7 +150,7 @@ front_uni_heatmap_group <- function(
             labs(subtitle=var_name,fill=y_map_func,x=NULL,y=NULL)+
             scale_fill_gradientn(limits = heat_limits, 
                                  colours = rev(palette_diy(8)),
-                                 na.value =NA)  +
+                                 na.value = NA)  +
             scale_x_continuous(breaks = c(0,0.25,0.5,0.75,1),
                                labels = #c("0th","25th","50th","75th","100th")
                                  x_label_map[which(x_label_map$var_name==var_name),c("q0","q25","q50","q75","q100")] 
@@ -168,7 +167,6 @@ front_uni_heatmap_group <- function(
                                       nrow=ceiling(n_distinct(plot_df_all$var_name)/layout_ncol),
                                       common.legend = TRUE, 
                                       legend = legend.position)
-        
       }
     }else{
       plot_list <- list()
@@ -176,28 +174,39 @@ front_uni_heatmap_group <- function(
       heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
       for(var_name in sort(unique(plot_df_all$var_name))){
         plot_df_all_var <- plot_df_all[which(plot_df_all$var_name==var_name),]
-        resolution <- (max(plot_df_all_var$raw_value,na.rm=TRUE)-min(plot_df_all_var$raw_value,na.rm=TRUE))/15
-        plot_df_all_var$raw_value <- floor(plot_df_all_var$raw_value/resolution)*resolution
-        # plot_df_all_final <- data.frame()
-        # for(l in unique(plot_df_all_var$level) ){
-        #   plot_df_all_var_l <- plot_df_all_var[which(plot_df_all_var$level==l),]
-        #   plot_df_all_final_l <- data.frame(approx(plot_df_all_var_l$raw_value, round(plot_df_all_var_l$yhat,2), n=20))
-        #   colnames(plot_df_all_final_l) <- c("raw_value","yhat")
-        #   plot_df_all_final_l$level <- l
-        #   if("c_label" %in% colnames(plot_df_all)){
-        #     plot_df_all_final_l$c_label <- NA
-        #     plot_df_all_final_l$c_label[which(plot_df_all_final_l$raw_value==min(plot_df_all_final_l$raw_value,na.rm=TRUE))] <- unique(plot_df_all_var_l$c_label[which(!is.na(plot_df_all_var_l$c_label))])
-        #   }
-        #   plot_df_all_final <- bind_rows(plot_df_all_final, plot_df_all_final_l)
-        # }
-        plot_df_all_final <- plot_df_all_var
+        plot_df_all_var$raw_value <- as.numeric(sub("\\(", "", stringr::str_split_fixed(cut(plot_df_all_var$raw_value, 15),",",2)[,1]))
+        plot_df_all_var$raw_value_rank <- cut(plot_df_all_var$raw_value, 15, labels = FALSE)
+        x_map_label <- as.data.frame(distinct(plot_df_all_var[,c("raw_value_rank","raw_value")]))
+        x_map_label <- x_map_label[which(x_map_label$raw_value_rank%in%c(1,5,10,15)),]
+        if(max(x_map_label$raw_value,na.rm=TRUE)<=1){
+          x_map_label$raw_value <- round(x_map_label$raw_value,1)
+        }else{
+          x_map_label$raw_value <- round(x_map_label$raw_value)
+        }
+        # resolution <- (max(plot_df_all_var$raw_value,na.rm=TRUE)-min(plot_df_all_var$raw_value,na.rm=TRUE))/15
+        # plot_df_all_var$raw_value <- floor(plot_df_all_var$raw_value/resolution)*resolution
+        plot_df_all_final <- data.frame()
+        for(l in unique(plot_df_all_var$level) ){
+          plot_df_all_var_l <- plot_df_all_var[which(plot_df_all_var$level==l),]
+          plot_df_all_final_l <- data.frame(approx(plot_df_all_var_l$raw_value_rank, plot_df_all_var_l$yhat, n=max(plot_df_all_var_l$raw_value_rank,na.rm=TRUE)))
+          colnames(plot_df_all_final_l) <- c("raw_value_rank","yhat")
+          plot_df_all_final_l$level <- l
+          if("c_label" %in% colnames(plot_df_all)){
+            plot_df_all_final_l$c_label <- NA
+            plot_df_all_final_l$c_label[which(plot_df_all_final_l$raw_value==min(plot_df_all_final_l$raw_value,na.rm=TRUE))] <- unique(plot_df_all_var_l$c_label[which(!is.na(plot_df_all_var_l$c_label))])
+          }
+          plot_df_all_final <- bind_rows(plot_df_all_final, plot_df_all_final_l)
+        }
+        #plot_df_all_final <- plot_df_all_var
         plot_df_all_final$level <- stringr::str_wrap(plot_df_all_final$level, width=10)
-        plot_list[[i]] <- ggplot(plot_df_all_final, aes(x=raw_value,y=level))+
+        plot_list[[i]] <- ggplot(plot_df_all_final, aes(x=raw_value_rank,y=level))+
           geom_tile(aes(fill=yhat)) +
-          labs(subtitle=var_name,fill=y_map_func,x=NULL,y=NULL)+
+          labs(subtitle=gsub("[^[:alnum:]]+"," ",var_name),fill=gsub("[^[:alnum:]]+"," ",y_map_func),x=NULL,y=NULL)+
           scale_fill_gradientn(limits = heat_limits, 
                                colours = rev(palette_diy(8)),
-                               na.value =NA)  +
+                               #colours = rev(rainbow(7)),
+                               na.value = NA)  +
+          scale_x_continuous(breaks=x_map_label$raw_value_rank,labels=x_map_label$raw_value) +
           theme_minimal() 
         if("c_label" %in% colnames(plot_df_all)){
           plot_list[[i]] <- plot_list[[i]] + geom_text(data=plot_df_all_final, aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)

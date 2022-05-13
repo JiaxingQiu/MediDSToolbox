@@ -150,7 +150,7 @@ front_uni_heatmap <- function(
         labs(fill=y_map_func,x="Percentile") + 
         theme(axis.title.y=element_blank()) + 
         scale_fill_gradientn(colours = rev(palette_diy(8)),
-                             na.value =NA) +
+                             na.value = NA) +
         scale_y_discrete(limits=var_order$var_name)
       if(label_y){
         tryCatch({
@@ -193,7 +193,7 @@ front_uni_heatmap <- function(
             labs(subtitle=var_name,fill=y_map_func,x=NULL,y=NULL)+
             scale_fill_gradientn(limits = heat_limits,
                                  colours = rev(palette_diy(8)),
-                                 na.value =NA)  +
+                                 na.value = NA)  +
             theme_minimal() 
           if("c_score" %in% colnames(plot_df_all)){
             plot_df_all_final$c_label <- NA
