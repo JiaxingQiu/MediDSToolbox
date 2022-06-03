@@ -24,6 +24,7 @@ front_uni_heatmap_group <- function(
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=2,
   label_y=TRUE,
+  label_y_order = c(), # order of the levels of y
   group_label=NULL,
   layout_ncol = 5,
   x_raw_scale = FALSE,
@@ -186,9 +187,9 @@ front_uni_heatmap_group <- function(
         # resolution <- (max(plot_df_all_var$raw_value,na.rm=TRUE)-min(plot_df_all_var$raw_value,na.rm=TRUE))/15
         # plot_df_all_var$raw_value <- floor(plot_df_all_var$raw_value/resolution)*resolution
         plot_df_all_final <- data.frame()
-        for(l in unique(plot_df_all_var$level) ){
+        for(l in unique(plot_df_all_var$level)){
           plot_df_all_var_l <- plot_df_all_var[which(plot_df_all_var$level==l),]
-          plot_df_all_final_l <- data.frame(approx(plot_df_all_var_l$raw_value_rank, plot_df_all_var_l$yhat, n=max(plot_df_all_var_l$raw_value_rank,na.rm=TRUE)))
+          plot_df_all_final_l <- plot_df_all_var_l[,c("raw_value_rank","yhat")]#data.frame(approx(plot_df_all_var_l$raw_value_rank, plot_df_all_var_l$yhat, n=max(plot_df_all_var_l$raw_value_rank,na.rm=TRUE)))
           colnames(plot_df_all_final_l) <- c("raw_value_rank","yhat")
           plot_df_all_final_l$level <- l
           if("c_label" %in% colnames(plot_df_all)){
@@ -199,6 +200,10 @@ front_uni_heatmap_group <- function(
         }
         #plot_df_all_final <- plot_df_all_var
         plot_df_all_final$level <- stringr::str_wrap(plot_df_all_final$level, width=10)
+        if(length(label_y_order)>0){
+          plot_df_all_final$level <- factor(plot_df_all_final$level, levels = rev(stringr::str_wrap(label_y_order, width=10)))
+        }
+        plot_df_all_final <- plot_df_all_final[which(!is.na(plot_df_all_final$level)),]
         plot_list[[i]] <- ggplot(plot_df_all_final, aes(x=raw_value_rank,y=level))+
           geom_tile(aes(fill=yhat)) +
           labs(subtitle=gsub("[^[:alnum:]]+"," ",var_name),fill=gsub("[^[:alnum:]]+"," ",y_map_func),x=NULL,y=NULL)+
@@ -231,15 +236,15 @@ front_uni_heatmap_group <- function(
 
 
 # ############################################ not run #############################################
-# data = data_ml
-# dict_data = dict_ml
-# num_labels = dict_data$label[which(dict_data$type=="num")][c(1:5)]
-# y_label = "Primary outcome (EN) == Unfavorable"
-# cluster_label = "PreVent study ID"
+# data = data_txp_final
+# dict_data = dict_txp_final
+# num_labels = dict_txp_final$label[which(dict_txp_final$type=="num")][1]
+# y_label = "Positive culture VS Negative culture and No blood culture"
+# cluster_label = "Subject ID"
 # # --- setup ---
-# trim_by_label = "Post-menstrual Age"
-# trim_vec = c(22, 40)
-# time_unit= 7
+# trim_by_label = "Time to infection"
+# trim_vec = c(-12,24)
+# time_unit= 1
 # pctcut_num_labels=c()
 # pctcut_num_vec=c(0.1, 99.9)
 # pctcut_num_coerce = TRUE
@@ -247,17 +252,17 @@ front_uni_heatmap_group <- function(
 # imputation="None"
 # impute_per_cluster=FALSE
 # winsorizing=TRUE
-# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[2]
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1]
 # # --- local ---
 # trim_ctrl=FALSE
 # num_adjust_label = NULL
 # method=c("logit_rcs", "loess", "mean", "bootstrap")[1]
 # pct = FALSE
 # y_map_func=c("fold_risk", "probability", "log_odds")[1]
-# y_map_max=3
+# y_map_max=10
 # label_y=TRUE
-# group_label="ETT Status (EN)"
-# layout_ncol = 5
+# group_label="Transplant Type"
+# layout_ncol = 1
 # x_raw_scale = FALSE
 # heat_limits = NULL
 # legend.position="right"
