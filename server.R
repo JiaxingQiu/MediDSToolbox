@@ -126,10 +126,10 @@ shinyServer(function(input, output, session) {
     data_nrow <- data_tmp %>% group_by(cluster_col_tmp) %>% summarise(nobs = n()) %>% as.data.frame()
     min_value = min(data_nrow$nobs,na.rm=TRUE)
     max_value = max(data_nrow$nobs,na.rm=TRUE)
-    updateSliderInput(inputId = "ml_uni_sample_per_cluster", 
-                      min = min_value,
-                      max = max_value,
-                      value = round((min_value+max_value)/2) )
+    # updateSliderInput(inputId = "ml_uni_sample_per_cluster", 
+    #                   min = min_value,
+    #                   max = max_value,
+    #                   value = round((min_value+max_value)/2) )
     rm(data_tmp)
     rm(data_nrow)
   })  
@@ -377,7 +377,7 @@ shinyServer(function(input, output, session) {
       y_map_func = input$ml_y_map_func,
       y_map_max = input$ml_y_max,
       group_label = input$ml_uni_group_label,
-      sample_per_cluster = input$ml_uni_sample_per_cluster,
+      sample_per_cluster = NULL,#input$ml_uni_sample_per_cluster,
       pct = input$ml_uni_pct
     )
     uni_obj$plot_obj

@@ -34,6 +34,7 @@ lrm_cv <- function(df,
   }
   
   df_mdl <- df[, mdl_cols]# initiate modeling dataframe
+  df_mdl <- df_mdl[which(!is.na(df_mdl[,y_col])),] # remove NA rows in response column
   
   # prepare folds indicators
   if (!is.null(external_df)) { # if testing / validation dfset is as external dataframe

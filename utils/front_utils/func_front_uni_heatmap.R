@@ -132,7 +132,7 @@ front_uni_heatmap <- function(
       var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_c=max(c_score)) %>% arrange(max_c) %>% as.data.frame()
       df_result_all$c_label <- NA
       for (var in unique(df_result_all$var_name) ){
-        c <- round(unique(df_result_all$c_score[which(df_result_all$var_name==var)]),4)
+        c <- round(unique(df_result_all$c_score[which(df_result_all$var_name==var)]),2)
         df_result_all$c_label[which(df_result_all$var_name==var)][1] <- paste0("C = ", c)
       }
     }else {

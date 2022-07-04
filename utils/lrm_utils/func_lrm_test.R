@@ -18,7 +18,7 @@ lrm_test <- function(
       test_data_score <- test_data %>% 
         filter(!is.na(y_prob) & !is.na(y_true) & y_true%in%c(0,1)) %>%
         as.data.frame()
-      y_prob <- as.numeric(test_data_score$y_prob)
+      y_prob <- round(as.numeric(test_data_score$y_prob),6)
       y_pred <- as.numeric(ifelse(y_prob<=threshold,0,1))
       y_true <- as.numeric(test_data_score$y_true)
       stopifnot(all(!is.na(y_true)))

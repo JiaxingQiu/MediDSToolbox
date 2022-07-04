@@ -10,7 +10,7 @@ mdl_test <- function(
   # ---- test data is engineered the same way to have valid scores ----
   tryCatch({
     
-    y_prob <- as.numeric(as.character(y_prob))
+    y_prob <- round(as.numeric(as.character(y_prob)),6)
     stopifnot(all(y_prob>=0 & y_prob<=1))
     y_true <- as.numeric(as.character(y_true))
     stopifnot(all(y_true%in%c(0,1) ))
@@ -27,7 +27,7 @@ mdl_test <- function(
     })
     AUROC <- NA
     tryCatch({
-      AUROC = ifelse(is.na(MLmetrics::AUC(y_prob, y_true)), round(pROC::auc(pROC::roc(y_true, y_prob)),6), MLmetrics::AUC(y_prob, y_true))
+      AUROC = ifelse(is.na(MLmetrics::AUC(y_prob, y_true)), round(pROC::auc(pROC::roc(y_true, round(y_prob,6) )),6), MLmetrics::AUC(y_prob, y_true))
     },error=function(e){
       print(e)
     })

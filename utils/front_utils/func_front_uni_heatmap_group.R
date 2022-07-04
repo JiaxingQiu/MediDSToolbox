@@ -32,8 +32,13 @@ front_uni_heatmap_group <- function(
   legend.position="right",
   sample_per_cluster = NULL
 ){
+  
   library(RColorBrewer)
   palette_diy <- colorRampPalette(brewer.pal(10, "Spectral"))
+  
+  # init objects to return
+  plot_obj <- NULL
+  plot_list <- NULL
   
   # find the column name in data for the group by label
   group_col <- dict_data$varname[which(dict_data$label==group_label)]
@@ -171,6 +176,7 @@ front_uni_heatmap_group <- function(
       }
     }else{
       plot_list <- list()
+      name_list <- c()
       i=1
       heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
       for(var_name in sort(unique(plot_df_all$var_name))){
@@ -217,7 +223,9 @@ front_uni_heatmap_group <- function(
           plot_list[[i]] <- plot_list[[i]] + geom_text(data=plot_df_all_final, aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
         }
         i <- i + 1
+        name_list <- c(name_list, var_name)
       }
+      names(plot_list) <- name_list
       layout_ncol <- min(length(plot_list), layout_ncol)
       plot_obj <- ggpubr::ggarrange(plotlist = plot_list, 
                                     ncol=layout_ncol, 

@@ -38,12 +38,12 @@ viz_death_star <- function(
   if (length(group_by_col)==0) {
     data$group <- 0
   } else {
-    # check group is unique per sbj
-    if(!as.logical( dict_data[which(dict_data$varname==group_by_col),"unique_per_sbj"] ) ){
-      data$group <- 0
-    }else{
-      data$group <- data[,group_by_col]
-    }
+    # # check group is unique per sbj
+    # if(!as.logical( dict_data[which(dict_data$varname==group_by_col),"unique_per_sbj"] ) ){
+    #   data$group <- 0
+    # }else{
+    data$group <- data[,group_by_col]
+    # }
   }
   # tag / mark
   if (length(tag_col)==0) {
@@ -59,8 +59,8 @@ viz_death_star <- function(
   }
   
   # max cluster population 1000, under sample if surpassed 
-  if(n_distinct(data[,cluster_col])>1000){
-    cluster_list <- sample(unique(data[,cluster_col]), size=1000, replace = FALSE)
+  if(n_distinct(data[,cluster_col])>2000){
+    cluster_list <- sample(unique(data[,cluster_col]), size=2000, replace = FALSE)
     data <- data[which(data[,cluster_col]%in%cluster_list),]
   }
   
@@ -101,9 +101,9 @@ viz_death_star <- function(
   
   # add grouping text labels 
   data$group_text <- NA
-  for(g in levels(data$group)){
+  for(g in unique(as.character(data$group)) ){
     idx1 <- data$group==g
-    y_loc <- round(mean(data$new_idx[which(idx1)],na.rm=TRUE))
+    y_loc <- round(min(data$new_idx[which(idx1)],na.rm=TRUE))#round(mean(data$new_idx[which(idx1)],na.rm=TRUE))
     idx2 <- data$new_idx==y_loc
     x_loc <- round(max(data$relative_time[which(idx1&idx2)],na.rm=TRUE))
     idx3 <- data$relative_time==x_loc
@@ -128,5 +128,29 @@ viz_death_star <- function(
     labs(fill=y_label) +
     theme(legend.position = "top" ) 
   
+  
+  # add group text info
+  p_star <- plot_obj
+  p_star$data$new_idx <- -(p_star$data$new_idx)
+  y_breaks <- p_star$data$new_idx[which(!is.na(p_star$data$group_text))]
+  y_labels <- p_star$data$group_text[which(!is.na(p_star$data$group_text))]
+  p_star$data$group_text <- NA
+  p_star <- p_star + 
+    scale_x_continuous(expand = c(0, 0))+
+    scale_y_continuous(expand = c(0, 0), breaks=y_breaks, labels = y_labels)+
+    scale_fill_gradientn(colours = topo.colors(30), na.value = "black") +
+    theme(axis.text.y = element_text(face="bold", colour="black", size=12),
+          axis.title.y = element_blank(),
+          axis.text.x = element_text(face="bold", colour="black", size=12),
+          axis.title.x = element_text(face="bold", colour="black", size=14),
+          legend.text = element_text(face="bold", colour="black", size=12),
+          legend.title = element_text(face="bold", colour="black", size=14),
+          legend.position = "bottom",
+          panel.grid =  element_blank(),
+          legend.key.height = unit(0.3,'cm'),
+          legend.key.width = unit(1.2,'cm')) 
+  
+  
+  plot_obj <- p_star
   return(plot_obj)
 }

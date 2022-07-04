@@ -170,10 +170,11 @@ sidebar <- dashboardSidebar(
                                      choices = c()),
                          checkboxInput("ml_uni_pct",
                                        "X by percentile",
-                                       value = TRUE),
-                         sliderInput("ml_uni_sample_per_cluster",
-                                     label = "Sample per cluster",
-                                     min = 1,  max = 200, step = 1, value = 20)
+                                       value = TRUE)
+                         # ,
+                         # sliderInput("ml_uni_sample_per_cluster",
+                         #             label = "Sample per cluster",
+                         #             min = 1,  max = 200, step = 1, value = 20)
                          
         )),
     div(id = 'sidebar_ml_select',

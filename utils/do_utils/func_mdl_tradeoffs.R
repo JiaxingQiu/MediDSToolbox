@@ -23,13 +23,13 @@ mdl_tradeoffs <- function(
   # calculate x and y axis
   confusion_df_all <- confusion_df_all %>% mutate(recall = TP/(TP+FN),
                                                   precision = TP/(TP+FP),
-                                                  specificity = FP/(FP+TN),
+                                                  specificity = TN/(FP+TN),
                                                   sensitivity = TP/(TP+FN),
                                                   alarm_rate = (TP+FP)/(TP+TN+FP+FN)) %>%
     as.data.frame()
   # add ending points for plotting
   confusion_df_all <- bind_rows(confusion_df_all,
-                                data.frame(specificity=c(0,1), 
+                                data.frame(specificity=c(1,0), 
                                            sensitivity=c(0,1),
                                            precision=c(1,0),
                                            recall=c(0,1),
@@ -38,10 +38,10 @@ mdl_tradeoffs <- function(
   
   # ROC
   df_plot <- confusion_df_all%>% group_by(specificity) %>% summarise(sensitivity = max(sensitivity)) %>% as.data.frame()
-  roc <- ggplot(data = df_plot, aes(x=specificity, y=sensitivity ) ) +
+  roc <- ggplot(data = df_plot, aes(x=1-specificity, y=sensitivity ) ) +
     geom_line() + xlim(0,1) + ylim(0,1) + theme_bw() +
     geom_abline(slope=1,intercept=0,linetype='dashed') +
-    labs(x="Specificity", y="Sensitivity", title="ROC")
+    labs(x="1 - Specificity", y="Sensitivity", title="ROC")
   
   # PRC
   df_plot <- confusion_df_all%>% group_by(recall) %>% summarise(precision = max(precision)) %>% as.data.frame()

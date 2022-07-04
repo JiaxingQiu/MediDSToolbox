@@ -10,18 +10,18 @@ front_viz_death_star <- function(
   pctcut_num_vec = c(0.1, 99.9),
   pctcut_num_coerce = TRUE,
   filter_tag_labels = c(),
-  cluster_label = "PreVent study ID", # tag columns
+  cluster_label, # tag columns
   # death star
   # user control
-  y_label = "IH (SPO2<85%) >=50s event counts per day", # num or fct(tag) y / response variable
-  sort_by_label = "Post-menstrual Age", 
-  align_by_label = "Chronological Age", 
+  y_label, # num or fct(tag) y / response variable
+  sort_by_label, 
+  align_by_label, 
   group_by_label = "None", #"None" # fct
   tag_label = "None",
   scale = c("Raw","Percentile (2D)", "Percentile (1D)")[1],
   # developer control
-  offset_label = "Post-menstrual Age", 
-  default_tag_labels = c("Date of birth tag", "Date of death tag")
+  offset_label = NULL,#"Post-menstrual Age", 
+  default_tag_labels = NULL#c("Date of birth tag", "Date of death tag")
 ){
   
   # warning global engineering doesn't affect death star plot because this is plot of individual trajectrories
@@ -50,24 +50,27 @@ front_viz_death_star <- function(
     quantiles <- quantile( data[,pctcut_num_col], c(as.numeric(pctcut_num_vec[1])/100, as.numeric(pctcut_num_vec[2])/100 ), na.rm =TRUE)
     if(pctcut_num_coerce){
       # if pctcut_num_coerce extremum
-      data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] < quantiles[1], quantiles[1], data[,pctcut_num_col])
-      data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], quantiles[2], data[,pctcut_num_col])
+      data[which(data[,pctcut_num_col]<quantiles[1]),pctcut_num_col] <- quantiles[1] 
+      data[which(data[,pctcut_num_col]>quantiles[2]),pctcut_num_col] <- quantiles[2] 
+      #data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], quantiles[2], data[,pctcut_num_col])
     }else{
       # otherwise remove extremum
-      data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] < quantiles[1], NA, data[,pctcut_num_col])
-      data[,pctcut_num_col] <- ifelse(data[,pctcut_num_col] > quantiles[2], NA, data[,pctcut_num_col])
+      data[which(data[,pctcut_num_col]<quantiles[1]),pctcut_num_col] <- NA
+      data[which(data[,pctcut_num_col]>quantiles[2]),pctcut_num_col] <- NA
     }
   }
-  # filter by all given tag columns 
+  # filter by all given tag columns (error!)
   if(length(filter_tag_cols)>0){
     for(col in filter_tag_cols){
-      data[which(data[,col]==0) ,y_col] <- NA
+      #data[which(data[,col]==0),y_col] <- NA
+      data <- data[which(data[,col]==1),]
     }
   }
   
+  
   plot_obj <- NULL
   plot_obj <- viz_death_star(
-    data = data,
+    data = data[,c(y_col,sort_col,align_col,cluster_col,group_by_col,tag_col,offset_col,default_tag_cols)],
     dict_data = dict_data,
     time_unit=time_unit,
     y_col=y_col,
