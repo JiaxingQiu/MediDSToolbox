@@ -53,8 +53,13 @@ do_lrm_pip <- function(data, # data for model training engineered
   
   # --- initiate model formula ---
   print("--- do_init ---")
-  df <- redun_obj$df_final
-  dict_df <- redun_obj$dict_final
+  if (!is.null(redun_obj)){
+    df <- redun_obj$df_final
+    dict_df <- redun_obj$dict_final
+  }else{
+    df <- assign.dict(data,dict_data)
+    dict_df <- get.dict(df)
+  }
   print(head(dict_df,5))
   init_obj <- do_init(df, dict_df, y_col=y_col, x_cols, cluster_col, rcs5_low=rcs5_low,rcs4_low=rcs4_low,linear_cols=x_cols_linear)
   # if knots are fixed by user, overwrite the dictionary dataframe in do_obj
