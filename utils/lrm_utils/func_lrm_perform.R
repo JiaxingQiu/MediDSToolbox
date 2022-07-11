@@ -7,7 +7,7 @@ lrm_perform <- function(
   x_cols=c(), # list of predictors to see the performance
   return_fitted_effect=FALSE,
   return_tte_plot = TRUE,
-  return_scores_plot = TRUE
+  return_scores_plot = TRUE # feature permutation scores
 ){
   
   library(tidytext)
@@ -181,9 +181,11 @@ lrm_perform <- function(
       smooth_method <- "glm"
       smooth_formula <- "y ~ poly(x, 6)"
     }
+    df_agg_plot_all <- df_agg_plot_all[which(!is.na(df_agg_plot_all$y_true)),]
     tte_plot <- ggplot(data=df_agg_plot_all, aes(x=relative_time, color=y_true)) +
       #geom_smooth(data = df_plot_pred, aes(y=y_pred), method = smooth_method, formula = smooth_formula, span=0.3)+
-      geom_smooth(aes(y=y_pred_stat, linetype=y_pred_stat_type), method = "loess", span=0.3)+
+      #geom_smooth(aes(y=y_pred_stat, linetype=y_pred_stat_type), method = "loess", span=0.3)+
+      geom_line(aes(y=y_pred_stat, linetype=y_pred_stat_type))+
       ylab(y_map_func) +
       xlab(rel_time_col) +
       scale_color_discrete(name = y_col)+

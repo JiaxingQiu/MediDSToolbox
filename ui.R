@@ -218,7 +218,7 @@ sidebar <- dashboardSidebar(
         conditionalPanel("input.sidebar == 'ml_multi'",
                          radioButtons("ml_cv_nfold",
                                       "CV folds",
-                                      choices = c("1", "2", "5", "10"),
+                                      choices = c("1", "5", "10"),#, "2"
                                       selected = c("10"),
                                       inline = TRUE),
                          checkboxInput("ml_stratified_cv", 
@@ -227,7 +227,12 @@ sidebar <- dashboardSidebar(
                          checkboxInput("ml_fix_knots", 
                                        "Fix Knots X", 
                                        value = TRUE),
-                         
+                         selectInput("ml_tune_by",
+                                     "Tune by",
+                                     choices=c("cv AUROC"="auroc",
+                                               "Logloss"="logloss",
+                                               "AIC"="aic",
+                                               "BIC"="bic")),
                          selectInput("ml_joint_col2_label",
                                      "Joint effect with",
                                      choices = c("None"))
@@ -625,10 +630,10 @@ body <- dashboardBody(
             fluidRow(column(1, actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Development", 
-                                 plotOutput("devel_cali_plot"),
+                                 #plotOutput("devel_cali_plot"),
+                                 tableOutput("devel_penal_trace_tbl"),
                                  tableOutput("devel_model_info_tbl"),
-                                 tableOutput("devel_score_summ_tbl"),
-                                 tableOutput("devel_cv_eval_trace_tbl")
+                                 tableOutput("devel_score_summ_tbl")
                         ),
                         tabPanel("Inference", 
                                  downloadButton("devel_download_mdl","Model (.rda)"),

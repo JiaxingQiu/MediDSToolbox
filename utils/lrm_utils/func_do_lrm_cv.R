@@ -5,7 +5,7 @@ do_lrm_cv <- function(df=df,
                       cv_nfold=5, 
                       tune_by=c("logloss","auroc","aic","bic")[1],  
                       stratified_cv=TRUE, 
-                      samepen_patience=5,
+                      samepen_patience=10,
                       fold_idx_df_ex=NULL){
   # ---- Usage ----
   # dictionary oriented (do) cross validation logistic regression machine learning pipeline
@@ -58,6 +58,7 @@ do_lrm_cv <- function(df=df,
   while (penalty <= penalty_max){
     cv_obj <- NULL
     try({
+      print(paste0("--- ",fml_obj$fml_string," ---"))
       cv_obj <- lrm_cv(df = df, 
                        external_df = external_df, 
                        fml = fml_obj$fml_string, 
@@ -143,7 +144,7 @@ do_lrm_cv <- function(df=df,
   # finalize the optimized model
   fml <- cv_obj$model_info$formula
   cluster_col <- cv_obj$model_info$cluster_col
-  penalty <- cv_obj$model_info$penalty 
+  penalty <- cv_obj$model_info$penalty
   dd <- datadist(df)
   options(datadist=dd, na.action=na.omit)
   mdl_final <- NULL
@@ -151,7 +152,8 @@ do_lrm_cv <- function(df=df,
   step_size = 0.5
   count = 0
   while(is.null(mdl_final)){
-    print(penalty)
+    print(paste0("--- final penalty ",penalty," ---"))
+    print(paste0("--- final formula ",fml," ---"))
     try({
       mdl_final <- rms::robcov(rms::lrm(as.formula(fml),x=TRUE, y=TRUE, data=df, penalty=penalty),cluster=df[,cluster_col])
     },TRUE)

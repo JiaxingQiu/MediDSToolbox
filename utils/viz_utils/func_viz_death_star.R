@@ -137,8 +137,25 @@ viz_death_star <- function(
   p_star$data$group_text <- NA
   p_star <- p_star + 
     scale_x_continuous(expand = c(0, 0))+
-    scale_y_continuous(expand = c(0, 0), breaks=y_breaks, labels = y_labels)+
-    scale_fill_gradientn(colours = topo.colors(30), na.value = "black") +
+    scale_y_continuous(expand = c(0, 0), breaks=y_breaks, labels = stringr::str_wrap(y_labels, width=10))+
+    #scale_fill_gradientn(colours = topo.colors(30), na.value = "black") +
+    scale_fill_gradientn(values=scales::rescale(c(
+      as.numeric(quantile(p_star$data$measure_final,0,na.rm = TRUE)),
+      as.numeric(quantile(p_star$data$measure_final,0.25,na.rm = TRUE)),
+      as.numeric(quantile(p_star$data$measure_final,0.5,na.rm = TRUE)),
+      as.numeric(quantile(p_star$data$measure_final,0.70,na.rm = TRUE)),
+      as.numeric(quantile(p_star$data$measure_final,0.80,na.rm = TRUE)),
+      as.numeric(quantile(p_star$data$measure_final,0.90,na.rm = TRUE)),
+      as.numeric(quantile(p_star$data$measure_final,1,na.rm = TRUE)))),
+      colours = c("#4C00FF",
+                  "#0019FF", 
+                  "#00A2FF", 
+                  "#00FF2B", 
+                  "#C3FF00", 
+                  "#FFDC63", 
+                  "#FFDB8B"),
+      na.value = "black") +
+    theme_dark(base_size = 16) +
     theme(axis.text.y = element_text(face="bold", colour="black", size=12),
           axis.title.y = element_blank(),
           axis.text.x = element_text(face="bold", colour="black", size=12),

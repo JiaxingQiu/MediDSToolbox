@@ -29,6 +29,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                        trim_by_col=NULL, # colname for relative_time
                        return_performance = TRUE,
                        return_fitted_effect = TRUE,
+                       return_scores_plot = TRUE, # feature permutation scores
                        fold_idx_df_ex=NULL
                        ){
   
@@ -105,7 +106,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         y_map_func = y_map_func,
                                         y_map_max = y_map_max,
                                         rel_time_col=trim_by_col,
-                                        return_fitted_effect=return_fitted_effect)
+                                        return_fitted_effect=return_fitted_effect,
+                                        return_scores_plot = return_scores_plot)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)
@@ -114,7 +116,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                             y_map_func =y_map_func,
                                             y_map_max = y_map_max,
                                             rel_time_col=trim_by_col,
-                                            return_fitted_effect=return_fitted_effect)
+                                            return_fitted_effect=return_fitted_effect,
+                                            return_scores_plot = FALSE)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)
@@ -123,7 +126,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         y_map_func = y_map_func,
                                         y_map_max = y_map_max,
                                         rel_time_col=trim_by_col,
-                                        return_fitted_effect=return_fitted_effect)
+                                        return_fitted_effect=return_fitted_effect,
+                                        return_scores_plot = return_scores_plot)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)
@@ -132,7 +136,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                             y_map_func =y_map_func,
                                             y_map_max = y_map_max,
                                             rel_time_col=trim_by_col,
-                                            return_fitted_effect=return_fitted_effect)
+                                            return_fitted_effect=return_fitted_effect,
+                                            return_scores_plot = FALSE)
   },error=function(e){print(e)})
   
   

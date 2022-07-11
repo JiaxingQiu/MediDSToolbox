@@ -46,6 +46,7 @@ front_multi_regression <- function(
   tune_by=c("logloss","auroc","aic","bic")[1],
   return_performance = TRUE,
   return_fitted_effect=FALSE,
+  return_scores_plot = TRUE, # feature permutation importance scores
   fold_idx_df_ex=NULL  # data.frame(cluster_col = c(), fold = c())
 ){
   
@@ -307,6 +308,7 @@ front_multi_regression <- function(
                           trim_by_col = trim_by_col,
                           return_performance = return_performance,
                           return_fitted_effect = return_fitted_effect,
+                          return_scores_plot = return_scores_plot,
                           fold_idx_df_ex = fold_idx_df_ex)
     
   }else if(dict_data[y_col, "type"]=="num"){

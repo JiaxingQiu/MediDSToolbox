@@ -503,7 +503,8 @@ shinyServer(function(input, output, session) {
       type=input$ml_type,
       fix_knots = input$ml_fix_knots,
       y_map_func = input$ml_y_map_func,  
-      y_map_max = input$ml_y_max) 
+      y_map_max = input$ml_y_max,
+      tune_by=input$ml_tune_by) 
   })
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {
@@ -1232,23 +1233,23 @@ shinyServer(function(input, output, session) {
   })
   # Regression ----
   ## development
-  output$devel_cali_plot <- renderPlot({
-    withProgress(message = 'Calculation in progress',
-                 detail = 'This may take a while...', value = 0.1, {
-                   Sys.sleep(0.25)
-                   MLreports <- MLreports()
-                   setProgress(1)
-                 })
-    
-    MLreports$devel_cali_plot #MLreports$time_pred_plot
-  })
+  # output$devel_cali_plot <- renderPlot({
+  #   withProgress(message = 'Calculation in progress',
+  #                detail = 'This may take a while...', value = 0.1, {
+  #                  Sys.sleep(0.25)
+  #                  MLreports <- MLreports()
+  #                  setProgress(1)
+  #                })
+  #   
+  #   MLreports$devel_cali_plot #MLreports$time_pred_plot
+  # })
   output$devel_model_info_tbl <- renderTable({
     MLreports <- MLreports()
     MLreports$devel_model_info_tbl # model info table
   })
-  output$devel_cv_eval_trace_tbl <- renderTable({
+  output$devel_penal_trace_tbl <- renderTable({
     MLreports <- MLreports()
-    MLreports$devel_cv_eval_trace_tbl # model info table
+    MLreports$devel_penal_trace_tbl # model cvScores table
   })
   output$devel_score_summ_tbl <- renderTable({
     MLreports <- MLreports()
