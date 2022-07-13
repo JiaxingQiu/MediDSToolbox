@@ -32,7 +32,7 @@ do_init <- function(df,
     rho_df <- data.frame(adj_rho=rho[,"Adjusted rho2"])
     rho_df$cols <- rownames(rho)
     rho_df <- rho_df[order(rho_df$adj_rho, decreasing = TRUE),]
-    scaler <- data.frame(q=quantile(rho_df$adj_rho, probs = seq(0, 1, 0.1) , na.rm = TRUE))
+    scaler <- data.frame(q=quantile(rho_df$adj_rho, probs = seq(0, 1, 0.01) , na.rm = TRUE))
     
     for (col in rho_df$cols){
       attr(df[,col], "spearman_rho") <- rho_df$adj_rho[which(rho_df$cols==col)]
