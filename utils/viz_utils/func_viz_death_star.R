@@ -116,10 +116,6 @@ viz_death_star <- function(
   plot_obj <- ggplot(data, aes(x=relative_time/time_unit, y=new_idx)) +
     geom_tile(aes(fill=measure_final)) + 
     scale_fill_gradientn(colours = topo.colors(30),labels=scaleFUN, na.value =NA) +
-    #geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
-    geom_point(data=data[which(rowSums(data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='red',size=0.5, shape=4) +
-    geom_point(data=data[which(data$mark==1),c('relative_time','new_idx')], color='red', size=1, shape=19, alpha=0.7) +
-    geom_text(aes(label=group_text), hjust=-0.5, vjust = 0, size=5) + 
     xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
                 " by ",
                 ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),
@@ -135,18 +131,31 @@ viz_death_star <- function(
   y_breaks <- p_star$data$new_idx[which(!is.na(p_star$data$group_text))]
   y_labels <- p_star$data$group_text[which(!is.na(p_star$data$group_text))]
   p_star$data$group_text <- NA
+  colorbreaks <- seq(from=floor(min(p_star$data$measure_final, na.rm=TRUE)),
+                     to=ceiling(max(p_star$data$measure_final, na.rm=TRUE)),
+                     length.out=5)
   p_star <- p_star + 
+    #geom_point(aes(x=init_time/time_unit),color='black',size=0.3, shape=1)+
+    geom_point(data=p_star$data[which(rowSums(p_star$data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='red',size=0.1, shape=4) +
+    #geom_point(data=p_star$data[which(p_star$data$mark==1),c('relative_time','new_idx')], color='black', size=0.1, shape=19) +
+    geom_tile(data=p_star$data[which(p_star$data$mark==1),c('relative_time','new_idx','mark')],
+              aes(x=relative_time/time_unit, y=new_idx, fill=mark),fill="black")+
+    #geom_text(aes(label=group_text), hjust=-0.5, vjust = 0, size=5) + 
     scale_x_continuous(expand = c(0, 0))+
     scale_y_continuous(expand = c(0, 0), breaks=y_breaks, labels = stringr::str_wrap(y_labels, width=10))+
     #scale_fill_gradientn(colours = topo.colors(30), na.value = "black") +
-    scale_fill_gradientn(values=scales::rescale(c(
-      as.numeric(quantile(p_star$data$measure_final,0,na.rm = TRUE)),
+    scale_fill_gradientn(
+      limit = c(colorbreaks[1],
+                colorbreaks[length(colorbreaks)]),
+      values=scales::rescale(c(
+      as.numeric(min(p_star$data$measure_final, na.rm=TRUE)),
       as.numeric(quantile(p_star$data$measure_final,0.25,na.rm = TRUE)),
       as.numeric(quantile(p_star$data$measure_final,0.5,na.rm = TRUE)),
       as.numeric(quantile(p_star$data$measure_final,0.70,na.rm = TRUE)),
       as.numeric(quantile(p_star$data$measure_final,0.80,na.rm = TRUE)),
       as.numeric(quantile(p_star$data$measure_final,0.90,na.rm = TRUE)),
-      as.numeric(quantile(p_star$data$measure_final,1,na.rm = TRUE)))),
+      as.numeric(max(p_star$data$measure_final, na.rm=TRUE)))),
+      breaks = colorbreaks,
       colours = c("#4C00FF",
                   "#0019FF", 
                   "#00A2FF", 
@@ -154,7 +163,7 @@ viz_death_star <- function(
                   "#C3FF00", 
                   "#FFDC63", 
                   "#FFDB8B"),
-      na.value = "black") +
+      na.value = NA) +
     theme_dark(base_size = 16) +
     theme(axis.text.y = element_text(face="bold", colour="black", size=12),
           axis.title.y = element_blank(),

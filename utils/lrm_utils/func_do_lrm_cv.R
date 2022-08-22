@@ -4,6 +4,7 @@ do_lrm_cv <- function(df=df,
                       external_df=NULL, 
                       cv_nfold=5, 
                       tune_by=c("logloss","auroc","aic","bic")[1],  
+                      lambda_value = NULL,
                       stratified_cv=TRUE, 
                       samepen_patience=10,
                       fold_idx_df_ex=NULL){
@@ -46,8 +47,13 @@ do_lrm_cv <- function(df=df,
                         tag_y_col = tag_y_col,
                         cluster_col = cluster_col)
   
+  if(is.null(lambda_value)){
+    penalty_max <- ifelse (fml_obj$use_dof <= fml_obj$afford_dof, 0, 1e06) # find max penalty based on dof report
+  }else{
+    warning(paste0("max penalty set to ", lambda_value))
+    penalty_max <- lambda_value
+  }
   
-  penalty_max <- ifelse (fml_obj$use_dof <= fml_obj$afford_dof, 0, 1e06) # find max penalty based on dof report
   failed <- 0 # count of failed model penalty
   base_score <- NULL
   penalty = 0 # initiate penalty

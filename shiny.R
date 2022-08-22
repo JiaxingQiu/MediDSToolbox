@@ -266,6 +266,18 @@ attr(data_ml$nondod_unfav, "unique_per_sbj") <- TRUE
 attr(data_ml$nondod_unfav, "source_file") <- "drvd"
 attr(data_ml$nondod_unfav, "mlrole") <- "output"
 
+data_ml$outcome_status <- NA
+data_ml$outcome_status[which(data_ml$moderate_unfavor==1)] <- "Moderate"
+data_ml$outcome_status[which(data_ml$high_unfavor==1)] <- "High"
+data_ml$outcome_status[which(data_ml$mild_unfavor==1)] <- "Mild"
+data_ml$outcome_status[which(data_ml$primary_outcome_factor=="Favorable")] <- "Favorable"
+attr(data_ml$outcome_status, "varname") <-"outcome_status"
+attr(data_ml$outcome_status, "label") <-"Outcome Breakdowns"
+attr(data_ml$outcome_status, "type") <- "fct"
+attr(data_ml$outcome_status, "unit") <- ""
+attr(data_ml$outcome_status, "unique_per_sbj") <- TRUE
+attr(data_ml$outcome_status, "source_file") <- "drvd"
+attr(data_ml$outcome_status, "mlrole") <- "input"
 
 dict_ml <- get.dict(data_ml)
 data_ml <- assign.dict(data_ml, dict_ml)

@@ -64,8 +64,11 @@ lrm_infer <-  function(
     eff_plot_1d <- ggpubr::ggarrange(plotlist = eff_plot_1d_list, ncol=1)
   },error=function(e){print(e)})
   
+  eff_stats_obj <- NULL
   tryCatch({
-    eff_plot_diy <- ggplot_rms_diy(mdl_obj=mdl_obj, ymap=ymap) 
+    infer_diy_obj <- ggplot_rms_diy(mdl_obj=mdl_obj, ymap=ymap) 
+    eff_stats_obj <- infer_diy_obj$stats_obj 
+    eff_plot_diy <- infer_diy_obj$eff_plot_1d_diy
     if(!is.null(eff_plot_diy$continuous)) eff_plot_diy$continuous <- eff_plot_diy$continuous + ylab(y_map_func)
     if(!is.null(eff_plot_diy$discrete)) eff_plot_diy$discrete <- eff_plot_diy$discrete + ylab(y_map_func)
   },error=function(e){print(e)})
@@ -114,7 +117,8 @@ lrm_infer <-  function(
   return(list(eff_plot_1d=eff_plot_1d, # all in one
               eff_plot_2d=eff_plot_2d, # all in one
               eff_plot = eff_plot,
-              eff_plot_diy = eff_plot_diy))
+              eff_plot_diy = eff_plot_diy,
+              eff_stats_obj = eff_stats_obj))
   
   
 }
@@ -158,7 +162,7 @@ ggplot_rms_diy <- function(
   colnames(anova_df) <- c("chi_square", "dof","p_value")
   anova_df$xname <- rownames(anova_df)
   anova_df$xlabel <- mdl_obj$Design$label
-  anova_df$rank <- -(rank(anova_df$chi_square)-max(rank(anova_df$chi_square))-1) # rank by chi-squre
+  anova_df$rank <- -(rank(anova_df$chi_square)-max(rank(anova_df$chi_square))-1) # rank by chi-square
   anova_df$signif <- "> 0.05"
   anova_df$signif[which(anova_df$p_value<=0.001)] <- "<= 0.001"
   anova_df$signif[which(anova_df$p_value>0.001&anova_df$p_value<=0.01)] <- "(0.001, 0.01]"
@@ -196,7 +200,10 @@ ggplot_rms_diy <- function(
     labs(x=NULL,y=NULL,fill="p")+
     theme(legend.position ="bottom")
 
-  return(eff_plot_1d_diy)
+  
+  stats_obj <- get_model_stats(mdl_obj)
+  return(list(stats_obj = stats_obj,
+              eff_plot_1d_diy = eff_plot_1d_diy))
   # eff_plot_1d_diy_combind <- ggplot() +
   #   geom_line(data=pdf_all[which(pdf_all$xtype=="num"),], aes(x=as.numeric(xvalue), y=yhat)) +
   #   geom_ribbon(data=pdf_all[which(pdf_all$xtype=="num"),], aes(x=as.numeric(xvalue), y=yhat, ymin=ylower, ymax=yupper), alpha=0.2, linetype=0)+
@@ -207,3 +214,43 @@ ggplot_rms_diy <- function(
   #   ylab(NULL)
 
 }
+
+
+
+get_model_stats = function(x, precision=60) {
+  library(stringr)
+  # remember old number formatting function
+  # (which would round and transforms p-values to formats like "<0.01")
+  old_format_np = rms::formatNP
+  # substitute it with a function which will print out as many digits as we want
+  assignInNamespace("formatNP", function(x, ...) formatC(x, format="f", digits=precision), "rms")
+  
+  # remember old width setting
+  old_width = options('width')$width
+  # substitute it with a setting making sure the table will not wrap
+  options(width=old_width + 4 * precision)
+  
+  # actually print the data and capture it
+  cap = capture.output(print(x))
+  
+  # restore original settings
+  options(width=old_width)
+  assignInNamespace("formatNP", old_format_np, "rms")
+  
+  #model stats
+  stats = c()
+  stats$R2.adj = stringr::str_match(cap, "R2 adj\\s+ (\\d\\.\\d+)") %>% na.omit() %>% .[, 2] %>% as.numeric()
+  
+  #coef stats lines
+  coef_lines = cap[which(stringr::str_detect(cap, "Coef\\s+S\\.E\\.")):(length(cap) - 1)]
+  
+  #parse
+  coef_lines_table = suppressWarnings(readr::read_table(coef_lines %>% stringr::str_c(collapse = "\n")))
+  coef_lines_table <- as.data.frame(coef_lines_table)
+  colnames(coef_lines_table) <- c("Predictor", "Coef", "S.E.", "Wald Z", "Pr(>|Z|)")
+  list(
+    stats = stats,
+    coefs = coef_lines_table
+  )
+}
+

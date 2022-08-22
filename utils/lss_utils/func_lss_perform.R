@@ -6,7 +6,8 @@ lss_perform <- function(
   y_map_func = "fold_risk", # response type
   y_map_max = 7, # response upper cutoff
   rel_time_col=NULL,
-  return_effect_plots = TRUE
+  return_effect_plots = TRUE,
+  lasso_by = c("none", "group", "cluster")[2]
 ){
   
   library(stringr)
@@ -25,12 +26,6 @@ lss_perform <- function(
     prob <- odds / (1 + odds)
     return(prob)
   }
-  # find column name for response variable and predictor variables
-  y_col <- colnames(mdl_obj$y)
-  x_cols <- colnames(mdl_obj$x)
-  Xobj <- reconstructX(lasso_optimal_mdl_obj = mdl_obj,df=df)
-  x_cols_raw <- Xobj$x_cols_raw
-  new_x <- Xobj$new_x
   
   # ------------- y-hat generation ------------
   # global mean of outcome
@@ -54,12 +49,32 @@ lss_perform <- function(
     }
   }
   
-  # prediction on dataframe
-  df$y_pred  <- ymap( predict(mdl_obj, newx=new_x , type = "link") )
-  df$y_logodds  <- predict(mdl_obj, newx=new_x , type = "link")
-  df$y_true <- as.factor(df[,y_col])
-  df_hat <- df
-
+  # find column name for response variable and predictor variables
+  y_col <- colnames(mdl_obj$y)
+  x_cols <- colnames(mdl_obj$x)
+  Xobj <- reconstructX(lasso_optimal_mdl_obj = mdl_obj,df=df)
+  x_cols_raw <- Xobj$x_cols_raw
+  new_x <- Xobj$new_x
+  
+  if(lasso_by%in%c("none", "group")){
+    # prediction on dataframe
+    df$y_pred  <- ymap( predict(mdl_obj, newx=new_x , type = "link") ) # NA are kept
+    df$y_logodds  <- predict(mdl_obj, newx=new_x , type = "link")
+    df$y_true <- as.factor(df[,y_col])
+    df_hat <- df
+  }
+  if(lasso_by=="cluster"){
+    new_df <- Xobj$new_df
+    new_df$cluster <- as.factor(df[,mdl_obj$c_info])
+    # prediction on dataframe
+    df$y_logodds <- NA
+    df[complete.cases(new_x),"y_logodds"] <- log(predict(mdl_obj, newdata=new_df)/(1-predict(mdl_obj, newdata=new_df)))
+    df$y_pred  <- ymap( df$y_logodds )
+    df$y_true <- as.factor(df[,y_col])
+    df_hat <- df
+  }
+  
+  
   # ------------- tradeoff curves ------------
   df_hat$y_true01 <- ifelse(as.numeric(as.character(df[,y_col]))==1, 1, 0)
   curves_obj <- mdl_tradeoffs(y_true=df_hat$y_true01, y_hat=df_hat$y_pred)

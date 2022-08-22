@@ -13,7 +13,11 @@ lasso_x_select_group <- function(
   dict_data=NULL, # dictionary table is optional
   lambda=c("auto","1se","min")[1],
   lambda_value = NULL, # external specified lasso lambda value
-  keep_rowname=TRUE
+  tune_by = c("misclass", 
+              "logloss",
+              "auc"),
+  lambda_seq = NULL,
+  foldid_col=NULL
 ){
   
   # ---- Description ----
@@ -31,6 +35,7 @@ lasso_x_select_group <- function(
   print("--- response distribution ---")
   print(table(data[,y_col]))
   
+  # ---- preprocess ----
   # linear > rcs3 > rcs4 > rcs5
   # variable name population space
   if(!is.null(dict_data)) {
@@ -179,28 +184,116 @@ lasso_x_select_group <- function(
   #y <- as.factor(y)
   v.group <- as.numeric(as.factor(x_col_df_all$x_group))
   
-  # ---- cv lasso an ridge regression ---
-  lasso_cv <- gglasso::cv.gglasso(x=x, 
-                                  y=y, 
-                                  group=v.group, 
-                                  loss="logit", # deviance function for regular logistic function
-                                  pred.loss = "misclass", #"misclass"
-                                  nfolds = 10)
-  # ----- show penalization trace -----
-  # par(mfrow = c(1, 1))
-  # plot(lasso_cv, main = "Lasso penalty\n\n")
-  # abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
-  # abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
-  # 
   
-  # ----- show penalization trace -----
+  # ---- fix arguments (tune_by, lamdba_seq, foldid_vector cannot be empty) ----
+  # --- tune_by ---
+  if (tune_by%in%c("auc","misclass","logloss")){
+    if (tune_by=="logloss") tune_by <- "loss"
+  }else{
+    # default
+    tune_by <- "misclass"
+  }
+  stopifnot(tune_by%in%c("auc", "misclass", "loss", "AIC", "BIC"))
+  # lambda_seq
+  if(is.null(lambda_seq)){
+    tryCatch({
+      # Friedman, Hastie & Tibshirani (2010) 'strategy 
+      yt <- ifelse(y>0,1,0)
+      lambda_max <- max(abs(colSums(x*as.numeric(yt),na.rm=TRUE)), na.rm = TRUE)/dim(x)[1]
+      epsilon <- .00001
+      K <- 300
+      lambda_seq <- round(exp(seq(log(lambda_max), log(lambda_max*epsilon),length.out = K)), digits = 10)
+      print("Lambda sequence by Friedman, Hastie & Tibshirani (2010) strategy")
+    },error=function(e){
+      print("fail to generate lambda sequence manually, using default one in package")
+      print(e)
+    })
+  }
+  if(is.null(lambda_seq)){
+    # get package default lambda sequence
+    lasso_trace <- gglasso::gglasso(x=x, 
+                                    y=y, 
+                                    group=v.group, 
+                                    lambda = NULL,
+                                    loss="logit")
+    lambda_seq <- lasso_trace$lambda
+  }
+  stopifnot(!is.null(lambda_seq))
+  # --- foldid_vector ---
+  foldid_vector <- NULL
+  if(!is.null(foldid_col)){
+    print("tuning lambda by external cv fold id")
+    foldid_vector <- as.numeric(data[complete.cases(data[,c(x_col_df_all$x_colname,y_col)]),foldid_col])
+  }else{
+    print("tuning lambda by internal cv fold id")
+    NR <- nrow(data[complete.cases(data[,c(x_col_df_all$x_colname,y_col)]),])
+    foldid_vector <- c(1:NR)%/%ceiling(NR/10)+1
+    foldid_vector[which(foldid_vector<1)] <- 1
+    foldid_vector[which(foldid_vector>10)] <- 10
+  }
+  stopifnot(!is.null(foldid_vector))
+  # ---- lasso regression tuning ----
+  if(tune_by%in%c("misclass", "loss") ){
+    # cv by package
+    lasso_cv <- gglasso::cv.gglasso(x=x, 
+                                    y=y, 
+                                    group=v.group, 
+                                    loss="logit", # deviance function for regular logistic function
+                                    pred.loss = tune_by,#"misclass", #"misclass"
+                                    lambda = lambda_seq,
+                                    foldid = foldid_vector )
+  }else if(tune_by%in%c("auc") ){
+    getmin_joy <- function(lambda,cvm,cvsd){
+      cvmin=min(cvm,na.rm=TRUE)
+      idmin=cvm<=cvmin
+      lambda.min=max(lambda[idmin],na.rm=TRUE)
+      idmin=match(lambda.min,lambda)
+      semin=(cvm+cvsd)[idmin]
+      idmin=cvm<=semin
+      lambda.1se=max(lambda[idmin],na.rm=TRUE)
+      list(lambda.min=lambda.min,lambda.1se=lambda.1se)
+    }
+    gglasso.object <- gglasso::gglasso(x=x, 
+                                       y=y, 
+                                       group=v.group, 
+                                       lambda = lambda_seq,
+                                       loss="logit")
+    lambda_seq <- gglasso.object$lambda
+    foldid <- foldid_vector
+    nfolds <- n_distinct(foldid)
+    outlist <- as.list(seq(nfolds))
+    ### fit the nfold models and store them
+    for (i in seq(nfolds)) {
+      which <- foldid == i
+      y_sub <- y[!which]
+      outlist[[i]] <- gglasso::gglasso(x = x[!which, , drop = FALSE], 
+                                       y = y_sub, 
+                                       group = v.group, 
+                                       lambda = lambda_seq,
+                                       loss="logit")
+      
+    }
+    fun <- paste("gglasso_cv", class(gglasso.object)[[2]], sep = "_")
+    cvstuff <- do.call(fun, list(outlist, lambda_seq, x, y, foldid, tune_by))
+    cvm <- cvstuff$cvm
+    cvsd <- cvstuff$cvsd
+    cvname <- cvstuff$name
+    out <- list(lambda = lambda_seq, cvm = cvm, cvsd = cvsd, cvupper = cvm + cvsd, 
+                cvlo = cvm - cvsd, name = cvname, gglasso.fit = gglasso.object)
+    lamin <- getmin_joy(lambda_seq, 1-cvm, cvsd)
+    obj <- c(out, as.list(lamin))
+    class(obj) <- "cv.gglasso"
+    lasso_cv <- obj
+  }
+  
+  # collect penalization trace
   lasso_trace <- gglasso::gglasso(x=x, 
                                   y=y, 
                                   group=v.group, 
+                                  lambda = lambda_seq,
                                   loss="logit")
-  # plot(lasso_trace)
   
-  #  ----- train optimal lambda models ----
+  #  get optimal lambda
   opt_lambda <- lasso_cv$lambda.1se
   if (lasso_cv$cvm[which(lasso_cv$lambda==lasso_cv$lambda.min)] == min(lasso_cv$cvm) ){
     opt_lambda <- lasso_cv$lambda.min
@@ -215,44 +308,25 @@ lasso_x_select_group <- function(
   if(!is.null(lambda_value)){
     opt_lambda <- lambda_value
   }
+  # ---- final optimal model with optimized lambda ----
   lasso_optimal <- gglasso::gglasso(x=x, 
                                     y=y, 
                                     group=v.group, 
                                     loss="logit",
                                     lambda = opt_lambda)
-  # if(standardize){
-  #   attr(x,"scaled:center") <- attr(scale(data_org[,x_cols]), "scaled:center")
-  #   attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols]), "scaled:scale")
-  # }else{
-  #   attr(x,"scaled:center") <- attr(scale(data_org[,x_cols], center = rep(0, length(x_cols)), scale = rep(1, length(x_cols)) ), "scaled:center")
-  #   attr(x,"scaled:scale") <- attr(scale(data_org[,x_cols], center = rep(0, length(x_cols)), scale = rep(1, length(x_cols))), "scaled:scale")
-  # }
-  
+ 
   lasso_optimal$x <- x
   lasso_optimal$y <- ifelse(y<0,0,1)
   lasso_optimal$group_info <- x_col_df_all
-  
-  # plot variable importance (coefficients) on final model obj
-  #data.frame(group = v.group, beta = lasso_optimal$beta[,1])
-  
+  lasso_optimal$opt_lambda <- opt_lambda
   
   # ------ manually 10 fold cross validation scores ---------
-  train_scores_tbl_all <- data.frame()
-  valid_scores_tbl_all <- data.frame()
   valid_yhat_df_all <- data.frame()
-  if(keep_rowname){
-    print("cross validation by external sequence")
-    row_index <- row.names(data_org)
-  }else{
-    row_index <- sample(1:nrow(data),nrow(data))# shuffle data rawname / index, if not using external fold indicator
-  }
-  rownames(data) <- row_index
-  foldsize <- round(nrow(data)/10)
-  
-  for(i in c(1:10)){
+  valid_yhat_df_permu_all <- data.frame()
+  for(i in unique(data[,foldid_col])){
     try({
-      validset <- data[which( as.numeric(rownames(data)) %in% c(seq((i-1)*foldsize, i*foldsize, 1)+1) ), ]
-      trainset <- data[which(!as.numeric(rownames(data)) %in% c(seq((i-1)*foldsize, i*foldsize, 1)+1) ), ]
+      validset <- data[which(data[,foldid_col]==i), ]
+      trainset <- data[which(!data[,foldid_col]==i), ]
       
       train_x <- data.matrix(trainset[complete.cases(trainset[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname])
       train_y <- data.matrix(trainset[complete.cases(trainset[,c(x_col_df_all$x_colname,y_col)]),y_col])
@@ -266,15 +340,8 @@ lasso_x_select_group <- function(
                                              y=train_y, 
                                              group=v.group, 
                                              loss="logit",
-                                             lambda = lasso_cv$lambda.1se)
-      y_prob_train <- exp(predict(lasso_fold_optimal, newx = train_x, type="link")) / (1 + exp(predict(lasso_fold_optimal, newx = train_x, type="link")))
-      train_scores <- mdl_test(y_true=as.numeric(  ifelse(train_y<0,0,1) ),
-                               y_prob =as.numeric(  y_prob_train ),
-                               threshold = mean(data[,y_col],na.rm=TRUE))
-      train_scores_tbl <- train_scores$res_df
-      train_scores_tbl$data <- i
-      train_scores_tbl_all <- bind_rows(train_scores_tbl_all, train_scores_tbl)
-        
+                                             lambda = opt_lambda)
+     
       y_prob_valid <- exp(predict(lasso_fold_optimal, newx = valid_x, type="link")) / (1 + exp(predict(lasso_fold_optimal, newx = valid_x, type="link")))
       valid_yhat_df <- data.frame( 
         rowid = rownames( validset[complete.cases(validset[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname] ),
@@ -282,25 +349,29 @@ lasso_x_select_group <- function(
         y_prob =  as.numeric( y_prob_valid) ,
         fold = i
       )
-      valid_yhat_df_all <- bind_rows(valid_yhat_df_all, valid_yhat_df, )
-      valid_scores <- mdl_test(y_true = as.numeric( ifelse(valid_y<0,0,1) ),
-                               y_prob =  as.numeric( y_prob_valid) ,
-                               threshold = mean(data[,y_col],na.rm=TRUE))
-      valid_scores_tbl <- valid_scores$res_df
-      valid_scores_tbl$data <- i
-      valid_scores_tbl_all <- bind_rows(valid_scores_tbl_all, valid_scores_tbl)
+      valid_yhat_df_all <- bind_rows(valid_yhat_df_all, valid_yhat_df)
+      
+      # predict on left out validation set with permuted predictors one by one
+      for(x_group in unique(x_col_df_all$x_group) ){
+        valid_x_permu <- valid_x
+        # shuffle
+        for(x_col in x_col_df_all$x_colname[which(x_col_df_all$x_group==x_group)] ){
+          valid_x_permu[,x_col] <- sample(valid_x_permu[,x_col], size=length(valid_x_permu[,x_col]))
+        }
+        # make new prediction
+        y_prob_valid_permu <- exp(predict(lasso_fold_optimal, newx = valid_x_permu, type="link")) / (1 + exp(predict(lasso_fold_optimal, newx = valid_x_permu, type="link")))
+        valid_yhat_df_permu <- data.frame( 
+          rowid = rownames( validset[complete.cases(validset[,c(x_col_df_all$x_colname,y_col)]),x_col_df_all$x_colname] ),
+          y_true = as.numeric(ifelse(valid_y<0,0,1) ),
+          y_prob =  as.numeric(y_prob_valid_permu),
+          fold = i,
+          permu_x = x_group
+        )
+        valid_yhat_df_permu_all <- bind_rows(valid_yhat_df_permu_all, valid_yhat_df_permu)
+      }
+      
     },TRUE)
   }
-  # reformat 10 AUCs (tricky one)
-  train_score_final <- train_scores_tbl_all[,setdiff(colnames(train_scores_tbl_all),"data")] %>% 
-    summarise_all( list(mean = ~mean(., na.rm=TRUE),
-                        sd = ~sd(., na.rm=TRUE)) )
-  valid_score_final <- valid_scores_tbl_all[,setdiff(colnames(valid_scores_tbl_all),"data")] %>% 
-    summarise_all( list(mean = ~mean(., na.rm=TRUE),
-                        sd = ~sd(., na.rm=TRUE)) )
-  scores_final <- bind_rows(train_score_final, valid_score_final)
-  scores_final$dataset <- c("train", "valid")
-  scores_final <- scores_final[,union("dataset", colnames(scores_final))]
   
   # cross-validated labeling (yhat)
   cv_final_scores <- mdl_test(y_true = valid_yhat_df_all$y_true,
@@ -310,12 +381,29 @@ lasso_x_select_group <- function(
   score_final_cv$data <- "cv_yhat_df"
   score_final_cv$AUROC <- ifelse(score_final_cv$AUROC>0.5, score_final_cv$AUROC, 1-score_final_cv$AUROC)
   
-  return(list( lasso_cv = lasso_cv,
-               lasso_trace = lasso_trace,
-               lasso_optimal = lasso_optimal,
-               scores_final_10fold = scores_final,
-               cv_yhat_df = valid_yhat_df_all,
-               score_final_cv = score_final_cv))
+  # cross-validated scores by permutation importance
+  score_final_cv_permu <- data.frame()
+  for(permu_x in unique(valid_yhat_df_permu_all$permu_x) ){
+    s <- mdl_test(y_true = valid_yhat_df_permu_all$y_true[which(valid_yhat_df_permu_all$permu_x==permu_x)],
+                  y_prob = valid_yhat_df_permu_all$y_prob[which(valid_yhat_df_permu_all$permu_x==permu_x)],
+                  threshold = mean(data[,y_col],na.rm=TRUE))
+    s <- s$res_df
+    s$data <- paste0("permutate ",permu_x)
+    score_final_cv_permu <- bind_rows(score_final_cv_permu, s)
+  }
+  
+  x_select_mdls_grouped <- list( lasso_cv = lasso_cv,
+                                 lasso_trace = lasso_trace,
+                                 lasso_optimal = lasso_optimal,
+                                 cv_yhat_df = valid_yhat_df_all,
+                                 score_final_cv = score_final_cv,
+                                 cv_yhat_df_permu = valid_yhat_df_permu_all, # permutation importance cv version
+                                 score_final_cv_permu = score_final_cv_permu,
+                                 tune_by = tune_by)
+  
+  
+  # ---- return ----
+  return(x_select_mdls_grouped)
   
 }
 

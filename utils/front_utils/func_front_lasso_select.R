@@ -19,7 +19,7 @@ front_lasso_select <- function(
   pctcut_num_coerce=TRUE,
   filter_tag_labels=c(),
   winsorizing=FALSE,
-  aggregate_per=c("cluster_trim_by_unit", "cluster")[2], # should set to be cluster wise or time unit wise
+  aggregate_per=c("cluster_trim_by_unit", "cluster","row")[2], # should set to be cluster wise or time unit wise
   imputation=c("None","Mean", "Median", "Zero")[1],
   imputeby_median = c(),
   imputeby_zero = c(),
@@ -27,20 +27,28 @@ front_lasso_select <- function(
   impute_per_cluster=FALSE,
   standardize_df = NULL, # data.frame(varname=c(), center=c(), scale=c())
   # --- local ---
+  lambda=c("auto","min","1se")[1],
+  lambda_value = NULL,
+  lasso_by = c("none", "group", "cluster")[2],
+  tune_by = c("auc", # area under the ROC curve, two-class logistic regression only
+              "misclass", # misclassification error = 1-accuracy
+              "logloss", # a.k.a "deviance"
+              "AIC", 
+              "BIC")[1],
+  lambda_seq=NULL,
   trim_ctrl = TRUE,
   standardize = FALSE, # set to TRUE to standardize data by internal engineered dataset if standardize_df is also null
   test_data=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
-  return_performance = FALSE,
-  return_effect_plots = TRUE,
-  lambda=c("auto","min","1se")[1],
-  lambda_value = NULL,
+  return_performance = TRUE,
+  return_effect_plots = FALSE,
   fold_idx_df_ex=NULL # data.frame(cluster_col = c(), fold = c())
 ){
   
   x_select_mdls <- NULL
   x_select_mdls_grouped <- NULL
+  x_select_mdls_cluster <- NULL
   
   # ---- pre-process ----
   x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num")]# linear numeric columns
@@ -154,7 +162,7 @@ front_lasso_select <- function(
   data_inorg <- NULL
   data_ex <- NULL
   data_exorg <- NULL
-  # ---- prepare original / no-engineering train and validation dataset (internal)  ----
+  # --- prepare original / no-engineering train and validation dataset (internal)  ---
   print("---- prepare original / no-engineering train and validation dataset (internal)  ----")
   tryCatch({
     data_inorg <- engineer(data = data,
@@ -168,7 +176,7 @@ front_lasso_select <- function(
     print("Error!")
     print(e)
   })
-  # ---- prepare engineered training and validation dataset (internal) ----
+  # --- prepare engineered training and validation dataset (internal) ---
   print("---- prepare engineered train and validation dataset (internal) ----")
   tryCatch({
     if(trim_ctrl){
@@ -243,7 +251,7 @@ front_lasso_select <- function(
     print("Error!")
     print(e)
   })
-  # ---- prepare original / no-engineering test dataset (external)  ----
+  # --- prepare original / no-engineering test dataset (external)  ---
   print("---- prepare original / no-engineering test dataset (external)  ----")
   tryCatch({
     if (!is.null(test_data)){# if test_data given
@@ -260,7 +268,7 @@ front_lasso_select <- function(
     print(e)
   })
   
-  # ---- prepare engineered test dataset (external)  ----
+  # --- prepare engineered test dataset (external)  ---
   print("---- prepare engineered test dataset (external)  ----")
   tryCatch({
     if (!is.null(test_data)){
@@ -339,6 +347,20 @@ front_lasso_select <- function(
   })
   
   
+  # ---- add cv fold id columns ----
+  if(is.null(fold_idx_df_ex)){
+    fold_idx_df_ex <- data.frame(cluster_col=unique(data_in[,cluster_col]), 
+                            fold=ceiling(c(1:n_distinct(data_in[,cluster_col]))/round(n_distinct(data_in[,cluster_col])/10) ) )
+    fold_idx_df_ex$fold <- sample(fold_idx_df_ex$fold, length(fold_idx_df_ex$fold), replace = FALSE)
+    fold_idx_df_ex$fold[which(fold_idx_df_ex$fold>10)] <- 10
+    stopifnot(n_distinct(fold_idx_df_ex$fold)<=10)
+  }else{
+    print("using external fold indicator instead!")
+  }
+  colnames(fold_idx_df_ex)[which(colnames(fold_idx_df_ex)=="cluster_col")] <- cluster_col
+  data_in <- merge(data_in[,setdiff(colnames(data_in),"fold")], fold_idx_df_ex, all.x=TRUE)
+  
+  # ---- lasso_x_select ----
   if(length(y_col_tag)>0 ){
     family <- "binomial"
   } else if(length(y_col_num) > 0){
@@ -346,51 +368,62 @@ front_lasso_select <- function(
   }
   print("---- lasso_x_select ----")
   tryCatch({
+    stopifnot(lasso_by=="none")
     x_select_mdls <- lasso_x_select(data = data_in,
                                     y_col = y_col,
-                                    family = family,
                                     x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
                                     x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
                                     x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
                                     x_cols_linear = x_cols_linear, 
                                     x_cols_fct = x_cols_fct,
                                     x_cols_tag = x_cols_tag,
+                                    family = family,
                                     standardize = standardize,
                                     dict_data = dict_data,
                                     lambda = lambda,
-                                    lambda_value = lambda_value)
+                                    lambda_value = lambda_value,
+                                    tune_by = tune_by,
+                                    lambda_seq = lambda_seq,
+                                    foldid_col = "fold")
   },error=function(e){
-    print("Error!")
+    print("Not run lasso_x_select")
     print(e)
   })
   
+  
+  # ---- lasso_x_select_group ----
   print("---- lasso_x_select_group ----")
   tryCatch({
-    data_cv_info <- NULL
-    keep_rowname <- FALSE
-    if(!is.null(fold_idx_df_ex)){
-      warning("using external fold indicator instead!")
-      tryCatch({
-        fold_idx_df_ex <- distinct(fold_idx_df_ex)
-        stopifnot("cluster_col" %in% colnames(fold_idx_df_ex) )
-        stopifnot("fold" %in% colnames(fold_idx_df_ex) )
-        stopifnot( length(intersect(unique(as.character( fold_idx_df_ex$cluster_col)), unique(as.character( data_in[,cluster_col])) )) >0  )
-        if(n_distinct(fold_idx_df_ex$cluster_col) < n_distinct(data_in[,cluster_col])) warning("subjects in external fold map is partial to raw dataset")
-        data_in$cluster_col <- data_in[,cluster_col]
-        data_in <- merge(data_in[,setdiff(colnames(data_in), c("fold")) ],fold_idx_df_ex,all.x=TRUE)
-        data_in <- data_in[order(data_in$fold),]
-        rownames(data_in) <- 1:nrow(data_in)
-        data_cv_info <- data_in[,c("cluster_col", "fold")]
-        colnames(data_cv_info)[which(colnames(data_cv_info)=='cluster_col')] <- cluster_col
-        data_cv_info$rowid <- rownames( data_cv_info )
-        data_in <- data_in[,setdiff(colnames(data_in), c("cluster_col", "fold"))]
-        keep_rowname <- TRUE
-      },error=function(e){
-        print(e)
-      })
-    }
+    stopifnot(lasso_by=="group")
     x_select_mdls_grouped <- lasso_x_select_group(data = data_in,
                                                   y_col = y_col,
+                                                  x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
+                                                  x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
+                                                  x_cols_nonlin_rcs5 = x_cols_nonlin_rcs5,
+                                                  x_cols_linear = x_cols_linear, 
+                                                  x_cols_fct = x_cols_fct,
+                                                  x_cols_tag = x_cols_tag,
+                                                  family = family,
+                                                  dict_data = dict_data,
+                                                  lambda = lambda,
+                                                  lambda_value = lambda_value,
+                                                  tune_by = tune_by,
+                                                  lambda_seq = lambda_seq,
+                                                  foldid_col = "fold")
+    
+  },error=function(e){
+    print("Not run lasso_x_select_group")
+    print(e)
+  })
+
+  
+  # ---- lasso_x_select_cluster ----
+  print("---- lasso_x_select_cluster ----")
+  tryCatch({
+    stopifnot(lasso_by=="cluster")
+    x_select_mdls_cluster <- lasso_x_select_cluster(data = data_in,
+                                                  y_col = y_col,
+                                                  cluster_col = cluster_col,
                                                   family = family,
                                                   x_cols_nonlin_rcs3 = x_cols_nonlin_rcs3,
                                                   x_cols_nonlin_rcs4 = x_cols_nonlin_rcs4,
@@ -399,30 +432,48 @@ front_lasso_select <- function(
                                                   x_cols_fct = x_cols_fct,
                                                   x_cols_tag = x_cols_tag,
                                                   dict_data = dict_data,
-                                                  lambda = lambda,
-                                                  lambda_value = lambda_value,
-                                                  keep_rowname = keep_rowname)
-    if(!is.null(data_cv_info)){
-      x_select_mdls_grouped$cv_yhat_df <- merge(x_select_mdls_grouped$cv_yhat_df, data_cv_info[,c(cluster_col, "rowid")], all.x = TRUE, by="rowid")
-      x_select_mdls_grouped$cv_yhat_df <- x_select_mdls_grouped$cv_yhat_df[order(x_select_mdls_grouped$cv_yhat_df$fold),] 
-    }
-    
+                                                  tune_by = tune_by,
+                                                  lambda_seq = lambda_seq,
+                                                  foldid_col = "fold" )
   },error=function(e){
-    print("Error!")
+    print("Not run lasso_x_select_cluster")
     print(e)
   })
+  
+  # ---- inference ----
+  if(lasso_by=="none") lasso_obj <- list(tune_trace=x_select_mdls$cv_mdls$lasso_cv,
+                                         coef_trace=x_select_mdls$trace_mdls$lasso_trace,
+                                         opt_model=x_select_mdls$optimal_mdls$lasso_optimal)
+  if(lasso_by=="group") lasso_obj <- list(tune_trace=x_select_mdls_grouped$lasso_cv,
+                                          coef_trace=x_select_mdls_grouped$lasso_trace,
+                                          opt_model=x_select_mdls_grouped$lasso_optimal)
+  if(lasso_by=="cluster") lasso_obj <- list(tune_trace=x_select_mdls_cluster$lasso_trace,
+                                            coef_trace=x_select_mdls_cluster$lasso_coefs,
+                                            opt_model=x_select_mdls_cluster$lasso_optimal)
+  
+  infer_obj <- lss_infer(lasso_obj, lasso_by)
+  
+  
+  
+  
+  
+  # ---- performances ----
+  if(lasso_by=="none") mdl_obj <- x_select_mdls$optimal_mdls$lasso_optimal
+  if(lasso_by=="group") mdl_obj <- x_select_mdls_grouped$lasso_optimal
+  if(lasso_by=="cluster") mdl_obj <- x_select_mdls_cluster$lasso_optimal
   
   print("----- lss_perform in -----")
   lss_perform_in <- NULL
   tryCatch({
     stopifnot(return_performance)
     lss_perform_in <- lss_perform(
-      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      mdl_obj = mdl_obj, # a grouped lasso regression model object
       df = data_in, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
       rel_time_col=rel_time_col,
-      return_effect_plots=return_effect_plots
+      return_effect_plots=return_effect_plots,
+      lasso_by = lasso_by
     )
   },error=function(e){
     print("Error!")
@@ -434,12 +485,13 @@ front_lasso_select <- function(
   tryCatch({
     stopifnot(return_performance)
     lss_perform_inorg <- lss_perform(
-      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      mdl_obj = mdl_obj , # a grouped lasso regression model object
       df = data_inorg, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
       rel_time_col=rel_time_col,
-      return_effect_plots=return_effect_plots
+      return_effect_plots=return_effect_plots,
+      lasso_by = lasso_by
     )
   },error=function(e){
     print("Error!")
@@ -451,12 +503,13 @@ front_lasso_select <- function(
   tryCatch({
     stopifnot(return_performance)
     lss_perform_ex <- lss_perform(
-      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      mdl_obj = mdl_obj , # a grouped lasso regression model object
       df = data_ex, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
       rel_time_col=rel_time_col,
-      return_effect_plots=return_effect_plots
+      return_effect_plots=return_effect_plots,
+      lasso_by = lasso_by
     )
   },error=function(e){
     print("Error!")
@@ -468,12 +521,13 @@ front_lasso_select <- function(
   tryCatch({
     stopifnot(return_performance)
     lss_perform_exorg <- lss_perform(
-      mdl_obj = x_select_mdls_grouped$lasso_optimal, # a grouped lasso regression model object
+      mdl_obj = mdl_obj , # a grouped lasso regression model object
       df = data_exorg, # a dataset to test out performance on
       y_map_func = y_map_func, # response type
       y_map_max = y_map_max, # response upper cutoff
       rel_time_col=rel_time_col,
-      return_effect_plots=return_effect_plots
+      return_effect_plots=return_effect_plots,
+      lasso_by = lasso_by
     )
   },error=function(e){
     print("Error!")
@@ -515,59 +569,43 @@ front_lasso_select <- function(
   perform_ex_tradeoff_plot <- lss_perform_ex$tradeoff_plot
   perform_exorg_tradeoff_plot <- lss_perform_exorg$tradeoff_plot
   
-  # selected coef df
-  vars_selected_df <- NULL
-  x_select_obj <- x_select_mdls_grouped # grouped lasso regression
-  if (!is.null(x_select_obj)){
-    lasso_optimal <- x_select_obj$lasso_optimal
-    coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
-    coef_df$vars <- as.character(rownames(lasso_optimal$beta))
-    coef_df$coef_abs <- abs(coef_df$coef)
-    coef_df_all <- coef_df
-    vars_selected_df <- data.frame(vars_selected = coef_df_all$vars[which(coef_df_all$coef!=0)])
-  }
-  group_df <- x_select_obj$lasso_optimal$group_info
-  colnames(group_df)[which(colnames(group_df) =="x_colname")] <- "vars_selected"
-  vars_selected_df <- merge(vars_selected_df, group_df, all.x=TRUE)
-  vars_selected_df$var_type <- gsub("^.*_", "", vars_selected_df$x_group)
-  vars_selected_df$raw_vars_selected <- NA
-  for (i in 1:nrow(vars_selected_df)){
-    vars_selected_df$raw_vars_selected[i] <- gsub(paste0("_",vars_selected_df$var_type[i]),"",vars_selected_df$x_group[i])
-  }
-  group_lasso_vars_selected <- distinct( vars_selected_df[,c("raw_vars_selected", "var_type")] )
-  
-  return( list(group_lasso_vars_selected=group_lasso_vars_selected,
-               x_select_mdls = x_select_mdls,
-               x_select_mdls_grouped = x_select_mdls_grouped,
-               perform_in_df_hat = perform_in_df_hat,
-               perform_inorg_df_hat = perform_inorg_df_hat,
-               perform_ex_df_hat = perform_ex_df_hat,
-               perform_exorg_df_hat = perform_exorg_df_hat, 
-               perform_in_fitted_eff_plot = perform_in_fitted_eff_plot,
-               perform_inorg_fitted_eff_plot = perform_inorg_fitted_eff_plot,
-               perform_ex_fitted_eff_plot =perform_ex_fitted_eff_plot,
-               perform_exorg_fitted_eff_plot = perform_exorg_fitted_eff_plot,
-               perform_in_tte_plot = perform_in_tte_plot,
-               perform_inorg_tte_plot = perform_inorg_tte_plot,
-               perform_ex_tte_plot = perform_ex_tte_plot,
-               perform_exorg_tte_plot = perform_exorg_tte_plot,
-               perform_in_cali_plot = perform_in_cali_plot,
-               perform_inorg_cali_plot = perform_inorg_cali_plot,
-               perform_ex_cali_plot =perform_ex_cali_plot,
-               perform_exorg_cali_plot = perform_exorg_cali_plot,
-               perform_in_scores_plot = perform_in_scores_plot,
-               perform_inorg_scores_plot = perform_inorg_scores_plot,
-               perform_ex_scores_plot = perform_ex_scores_plot,
-               perform_exorg_scores_plot = perform_exorg_scores_plot,
-               perform_in_scores_tbl = perform_in_scores_tbl,
-               perform_inorg_scores_tbl = perform_inorg_scores_tbl,
-               perform_ex_scores_tbl = perform_ex_scores_tbl,
-               perform_exorg_scores_tbl = perform_exorg_scores_tbl,
-               perform_in_tradeoff_plot = perform_in_tradeoff_plot,
-               perform_inorg_tradeoff_plot = perform_inorg_tradeoff_plot,
-               perform_ex_tradeoff_plot = perform_ex_tradeoff_plot,
-               perform_exorg_tradeoff_plot = perform_exorg_tradeoff_plot
-               ))
+  return( list(mdl_obj = list(x_select_mdls = x_select_mdls,
+                              x_select_mdls_grouped = x_select_mdls_grouped,
+                              x_select_mdls_cluster = x_select_mdls_cluster),
+               infer_obj = list(tune_trace_plot = infer_obj$tune_trace_plot,
+                                coef_trace_plot = infer_obj$coef_trace_plot,
+                                opt_model_df = infer_obj$opt_model_df,
+                                lambda_zero_coef = infer_obj$lambda_zero_coef,
+                                lasso_coef_trace = infer_obj$lasso_coef ),
+               perform_obj = list(perform_in_df_hat = perform_in_df_hat,
+                                  perform_inorg_df_hat = perform_inorg_df_hat,
+                                  perform_ex_df_hat = perform_ex_df_hat,
+                                  perform_exorg_df_hat = perform_exorg_df_hat, 
+                                  perform_in_fitted_eff_plot = perform_in_fitted_eff_plot,
+                                  perform_inorg_fitted_eff_plot = perform_inorg_fitted_eff_plot,
+                                  perform_ex_fitted_eff_plot =perform_ex_fitted_eff_plot,
+                                  perform_exorg_fitted_eff_plot = perform_exorg_fitted_eff_plot,
+                                  perform_in_tte_plot = perform_in_tte_plot,
+                                  perform_inorg_tte_plot = perform_inorg_tte_plot,
+                                  perform_ex_tte_plot = perform_ex_tte_plot,
+                                  perform_exorg_tte_plot = perform_exorg_tte_plot,
+                                  perform_in_cali_plot = perform_in_cali_plot,
+                                  perform_inorg_cali_plot = perform_inorg_cali_plot,
+                                  perform_ex_cali_plot =perform_ex_cali_plot,
+                                  perform_exorg_cali_plot = perform_exorg_cali_plot,
+                                  perform_in_scores_plot = perform_in_scores_plot,
+                                  perform_inorg_scores_plot = perform_inorg_scores_plot,
+                                  perform_ex_scores_plot = perform_ex_scores_plot,
+                                  perform_exorg_scores_plot = perform_exorg_scores_plot,
+                                  perform_in_scores_tbl = perform_in_scores_tbl,
+                                  perform_inorg_scores_tbl = perform_inorg_scores_tbl,
+                                  perform_ex_scores_tbl = perform_ex_scores_tbl,
+                                  perform_exorg_scores_tbl = perform_exorg_scores_tbl,
+                                  perform_in_tradeoff_plot = perform_in_tradeoff_plot,
+                                  perform_inorg_tradeoff_plot = perform_inorg_tradeoff_plot,
+                                  perform_ex_tradeoff_plot = perform_ex_tradeoff_plot,
+                                  perform_exorg_tradeoff_plot = perform_exorg_tradeoff_plot)
+  ))
 }
 
 
@@ -576,56 +614,18 @@ front_lasso_select <- function(
 
 # ##################### not run #############################
 # # variable to use
-# x_vars_linear = c("baby_weight",
-#                   "baby_length",
-#                   "baby_head",
-#                   "ga_days",
-#                   "demog_mage",
-#                   "apgar1min",
-#                   "apgar5min",
-#                   "baby_temp"
-#                   #"ca_fullpo",
-#                   #"ca_enteralfeeds_date"
+# x_vars_linear = c("demog_mage",
+#                   "apgar1min"
 # )
-# x_vars_tag <- c("baby_weight_under_fenton_10pct_factor_Yes",
-#                 "baby_gender_factor_Male",
-#                 "baby_multiple_factor_Yes",
-#                 "baby_birthloc_factor_Born_outside_the_study_center",
-#                 "chorio_clnc_factor_Yes",
-#                 "chorio_hist_factor_Yes",
-#                 "ld_membranes_factor_Yes",
-#                 "membrane18hr_factor_Yes",
-#                 "membrane7d_factor_Yes",
-#                 "steroids_admin_factor_No",
-#                 "any_antenatal_comp_factor_Yes",
-#                 "antibio_admin_factor_Yes",
-#                 "antibio_reason___2_factor_Yes",
-#                 "antibio_reason___1_factor_Yes",
-#                 "demog_mrace_baby_check_factor_Black_African_American",
-#                 "demog_methnicity_baby_check_factor_Hispanic_or_Latino",
-#                 "htn_hx_factor_Yes",
-#                 "htn_priorpg_factor_Yes",
-#                 "asthmahx_factor_Yes",
-#                 "ant_hx_factor_Yes",
-#                 "asthmapgprolong_factor_Yes",
-#                 "m_smokehx_factor_Yes",
-#                 "m_drugs_factor_Yes",
-#                 "resuscit_options___1_factor_Yes",
-#                 "resuscit_options___2_factor_Yes",
-#                 "resuscit_options___3_factor_Yes",
-#                 "resuscit_options___4_factor_Yes",
-#                 "resuscit_options___5_factor_Yes",
-#                 "resuscit_options___6_factor_Yes",
-#                 "resuscit_options___7_factor_Yes",
-#                 "indomethacin_admin_factor_Yes"
-# )
+# x_vars_tag <- c("baby_gender_factor_Male",
+#                 "baby_multiple_factor_Yes")
 # x_vars_fct <- c("baby_insurance_factor")
 # 
 # 
-# data = data_ml
+# data = data_ml[which(data_ml$ca_days==7),]
 # dict_data = dict_ml
 # y_label = dict_ml[which(dict_ml$varname=="primary_outcome_factor_Unfavorable"),"label"]
-# cluster_label = dict_ml[which(dict_ml$varname=="subjectnbr"),"label"]
+# cluster_label = dict_ml[which(dict_ml$varname=="m_id"),"label"]
 # x_labels_linear = dict_ml$label[which(dict_ml$varname%in%x_vars_linear)]
 # x_labels_nonlin_rcs5 = c("Maternal age")
 # x_labels_nonlin_rcs4 = c("Gestational Age")
@@ -641,17 +641,29 @@ front_lasso_select <- function(
 # pctcut_num_vec = c(0.1, 99.9)
 # pctcut_num_coerce=TRUE
 # filter_tag_labels=c()
-# imputation=c("None","Mean", "Median", "Zero")[1]
 # impute_per_cluster=FALSE
 # winsorizing=FALSE
-# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[3]
+# aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1]
+# imputation=c("None","Mean", "Median", "Zero")[1]
+# imputeby_median = c()
+# imputeby_zero = c()
+# imputeby_mean = c()
+# impute_per_cluster=FALSE
+# standardize_df = NULL # data.frame(varname=c(), center=c(), scale=c())
 # # --- local ---
-# trim_ctrl = TRUE
-# standardize=TRUE # always set to be true
-# test_data = data_ml[c(20000:40000),]
-# y_map_func=c("fold_risk", "probability", "log_odds")[1]
-# y_map_max=3
-# return_performance = FALSE
+# lasso_by = c("none", "group", "cluster")[3]
 # lambda=c("auto","min","1se")[1]
 # lambda_value = NULL
-# fold_idx_df_ex = data.frame(cluster_col=unique(data_ml$subjectnbr), fold= ceiling(c(1:n_distinct(data_ml$subjectnbr))/ round(n_distinct(data_ml$subjectnbr)/10) ) )
+# lambda_seq=NULL
+# tune_by = c("AIC", "BIC", "cvAUC", "cvLogLoss")[1]
+# trim_ctrl = TRUE
+# standardize = TRUE # set to TRUE to standardize data by internal engineered dataset if standardize_df is also null
+# test_data= data_ml[c(20000:40000),]
+# y_map_func=c("fold_risk", "probability", "log_odds")[1]
+# y_map_max=3
+# return_performance = TRUE
+# return_effect_plots = TRUE
+# cluster_col <- "m_id"
+# fold_idx_df_ex=data.frame(cluster_col=unique(data_ml[,cluster_col]), fold= ceiling(c(1:n_distinct(data_ml[,cluster_col]))/ round(n_distinct(data_ml[,cluster_col])/10) ) )
+# fold_idx_df_ex$fold[which(fold_idx_df_ex$fold>10)] <- 10
+

@@ -22,7 +22,7 @@ lrm_cv <- function(df,
   # ---- Value ----
   # model_data: modeling dataframe with folds and predicted response columns
   # model_info: ML score estimates of current model and model information
-  # calibration_curve: calibratioin curve plot 
+  # calibration_curve: calibration curve plot 
   
   
   
@@ -102,9 +102,10 @@ lrm_cv <- function(df,
   df_mdl$y_prob <- NA
   eval_df<-c()
   cv_yhat_df <- data.frame()
+  cv_yhat_df_permu <- data.frame()
   for (N in 1:max(as.numeric(as.character( df_mdl$fold)), na.rm=TRUE) ){
-    tryCatch({# train the model on training set
-      
+    tryCatch({
+      # train the model on training set
       mdl <- rms::robcov(rms::lrm(as.formula(fml),x=TRUE, y=TRUE, data=df_mdl[which(df_mdl$fold!=N),], penalty=penalty),cluster=df_mdl[which(df_mdl$fold!=N),cluster_col])
       df_mdl$y_prob[which(df_mdl$fold==N)] <- logit2prob(rms::predictrms(mdl, newdata=df_mdl[which(df_mdl$fold==N),]))
       
@@ -120,11 +121,12 @@ lrm_cv <- function(df,
       valid_eval_df$y_pred <- 0
       valid_eval_df$y_pred[which(valid_eval_df$y_prob > mean(as.numeric( as.character(df_mdl[df_mdl$fold!=N,y_col]) ),na.rm=TRUE))] <- 1
       valid_eval_df <- valid_eval_df[complete.cases(valid_eval_df),]
-      
       cv_yhat_df_fold <- valid_eval_df
       cv_yhat_df_fold$fold <- N
       cv_yhat_df <- bind_rows(cv_yhat_df, cv_yhat_df_fold[,c("y_true","y_prob","fold")])
-      eval_df <- bind_rows(eval_df, # calculate evaluation matrices
+      
+      # calculate evaluation matrices
+      eval_df <- bind_rows(eval_df, 
                            data.frame(fold_index = N,
                                       penalty = penalty,
                                       model_AIC = AIC(mdl), 
@@ -136,6 +138,24 @@ lrm_cv <- function(df,
                                       train_AUPRC = MLmetrics::PRAUC(train_eval_df$y_pred, train_eval_df$y_true), 
                                       valid_AUPRC = MLmetrics::PRAUC(valid_eval_df$y_pred, valid_eval_df$y_true)
                            ))
+      
+      # predict on left out validation set with permuted predictors one by one
+      for(x_col in setdiff(mdl_cols,y_col)){
+        valid_x_permu <- df_mdl[df_mdl$fold==N,]
+        # shuffle
+        valid_x_permu[,x_col] <- sample(valid_x_permu[,x_col], size=length(valid_x_permu[,x_col]))
+        
+        # make new prediction
+        cv_yhat_df_permu_fold <- data.frame( 
+          rowid = rownames(df_mdl[df_mdl$fold==N,]),
+          y_true = as.numeric(as.character(valid_x_permu[,y_col])),
+          y_prob =  as.numeric(logit2prob( predictrms(mdl, newdata=valid_x_permu))),
+          fold = N,
+          permu_x = x_col
+        )
+        cv_yhat_df_permu <- bind_rows(cv_yhat_df_permu, cv_yhat_df_permu_fold)
+      }
+      
     },error=function(e){ print(e) })
   }
   # add numeric 0-1 responce y_true as a column in df_mdl
@@ -171,8 +191,7 @@ lrm_cv <- function(df,
     ))
   
   model_info <- data.frame(formula=fml, penalty=penalty, cluster_col=cluster_col, stratified_cv=stratified, stringsAsFactors = FALSE)
-  
-  print(eval_df)
+  #print(eval_df)
   
   
   # train a model on 100% all data
@@ -181,13 +200,27 @@ lrm_cv <- function(df,
   mdl_all <- rms::robcov(rms::lrm(as.formula(fml),x=TRUE, y=TRUE, data=df_mdl, penalty=penalty),cluster=df_mdl[,cluster_col])
   
   
+  # cross-validated scores by permutation importance
+  score_final_cv_permu <- data.frame()
+  for(permu_x in unique(cv_yhat_df_permu$permu_x) ){
+    s <- mdl_test(y_true = cv_yhat_df_permu$y_true[which(cv_yhat_df_permu$permu_x==permu_x)],
+                  y_prob = cv_yhat_df_permu$y_prob[which(cv_yhat_df_permu$permu_x==permu_x)],
+                  threshold = mean(df_mdl[,y_col],na.rm=TRUE))
+    s <- s$res_df
+    s$data <- paste0("permutate ",permu_x)
+    score_final_cv_permu <- bind_rows(score_final_cv_permu, s)
+  }
+  
   return(list( "cv_eval_trace" = eval_df,
                "model_info" = model_info,
                "model_scores"=scores, 
                "model_data"=df_mdl, 
                "calibration_curve"=cali_plot,
                "cv_yhat_df"=cv_yhat_df,
-               "mdl_all"=mdl_all
+               "mdl_all"=mdl_all,
+               "cv_yhat_df_permu" = cv_yhat_df_permu,
+               "score_final_cv_permu" = score_final_cv_permu
+               
   ))
   
 }

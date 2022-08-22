@@ -26,6 +26,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                        y_map_func=c("fold_risk", "probability", "log_odds")[1],
                        y_map_max=3,
                        tune_by=c("logloss","auroc","aic","bic")[1],
+                       lambda_value = NULL,
                        trim_by_col=NULL, # colname for relative_time
                        return_performance = TRUE,
                        return_fitted_effect = TRUE,
@@ -37,18 +38,20 @@ do_lrm_pip <- function(data, # data for model training engineered
   # --- redundancy analysis ----
   df <- assign.dict(data,dict_data)
   dict_df <- get.dict(df)
-  print(dict_df)
+  #print(dict_df)
   redun_obj <- NULL
   print("--- do_x_redun ---")
-  try({
-    redun_obj <- do_x_redun(df=df, 
-                         dict_df=dict_df, 
-                         x_cols=x_cols, 
-                         r_abs=r_abs, 
-                         type=type, 
-                         r2=r2, 
-                         rank=rank)
-  },TRUE)
+  if(!fix_knots){
+    try({
+      redun_obj <- do_x_redun(df=df, 
+                           dict_df=dict_df, 
+                           x_cols=x_cols, 
+                           r_abs=r_abs, 
+                           type=type, 
+                           r2=r2, 
+                           rank=rank)
+    },TRUE)
+  }
   
   
   # --- initiate model formula ---
@@ -59,7 +62,7 @@ do_lrm_pip <- function(data, # data for model training engineered
     df <- assign.dict(data,dict_data)
     dict_df <- get.dict(df)
   }
-  print(dict_df)
+  #print(dict_df)
   print("--- do_init ---")
   init_obj <- do_init(df, dict_df, y_col=y_col, x_cols, cluster_col, rcs5_low=rcs5_low,rcs4_low=rcs4_low,linear_cols=x_cols_linear)
   # if knots are fixed by user, overwrite the dictionary dataframe in do_obj
@@ -77,7 +80,7 @@ do_lrm_pip <- function(data, # data for model training engineered
   # --- dictionary oriented (do) cross validate modeling ---
   df <- init_obj$df_final
   dict_df <- init_obj$dict_final
-  print(dict_df)
+  #print(dict_df)
   print("--- do_lrm_cv ---")
   model_obj <- do_lrm_cv(df=df, 
                          dict_df=dict_df, 
@@ -85,6 +88,7 @@ do_lrm_pip <- function(data, # data for model training engineered
                          na_frac_max=na_frac_max, 
                          stratified_cv=stratified_cv,
                          tune_by = tune_by,
+                         lambda_value = lambda_value,
                          fold_idx_df_ex=fold_idx_df_ex)
   
   # --- lrm_infer modeling ---

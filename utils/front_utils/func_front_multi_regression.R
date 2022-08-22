@@ -44,6 +44,7 @@ front_multi_regression <- function(
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
   tune_by=c("logloss","auroc","aic","bic")[1],
+  lambda_value = NULL,
   return_performance = TRUE,
   return_fitted_effect=FALSE,
   return_scores_plot = TRUE, # feature permutation importance scores
@@ -305,6 +306,7 @@ front_multi_regression <- function(
                           y_map_func=y_map_func,
                           y_map_max=y_map_max,
                           tune_by = tune_by,
+                          lambda_value = lambda_value,
                           trim_by_col = trim_by_col,
                           return_performance = return_performance,
                           return_fitted_effect = return_fitted_effect,
@@ -380,7 +382,7 @@ front_multi_regression <- function(
   devel_score_summ_tbl <- devel_score_summ_tbl[,intersect(colnames(devel_score_summ_tbl), union(c("success_nfold","train_AUROC_mean","valid_AUROC_mean","train_AUROC_se","valid_AUROC_se"), colnames(devel_score_summ_tbl)) )]
   devel_cali_plot <- results$model_obj$cv_obj$calibration_curve
   devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace # trace of score per fold while cross validation
-  devel_final_model_obj <- results$model_obj$mdl_obj # for print, anova and save locally
+  devel_final_model_obj <- results$model_obj$mdl_obj # final model object trained on all data, for print, anova and save locally
   devel_penal_trace_tbl <- results$model_obj$score_trace_df # trace of score while tuning penalty
   
   # model inference reports
@@ -425,7 +427,10 @@ front_multi_regression <- function(
   perform_ex_tradeoff_plot <- results$perform_obj$external$tradeoff_plot
   perform_exorg_tradeoff_plot <- results$perform_obj$external_org$tradeoff_plot
   
-  return(list( devel_model_info_tbl = devel_model_info_tbl,
+  return(list( model_obj = results$model_obj,
+               infer_obj = results$infer_obj,
+               perform_obj = results$perform_obj,
+               devel_model_info_tbl = devel_model_info_tbl,
                devel_vars_selected_tbl = devel_vars_selected_tbl,
                devel_score_summ_tbl = devel_score_summ_tbl,
                devel_cali_plot = devel_cali_plot,

@@ -383,6 +383,25 @@ shinyServer(function(input, output, session) {
     uni_obj$plot_obj
     
   })
+  # ---- ml_select_lambda ----
+  observeEvent(input$ml_select_lasso_by, {
+    if(input$ml_select_lasso_by=="cluster"){
+      updateSelectInput(inputId = "ml_select_lambda", 
+                        choices = c("AIC"="AIC",
+                                    "BIC"="BIC",
+                                    "10 fold cvAUC" = "cvAUC",
+                                    "10 fold cvLogLoss"="cvLogLoss"),
+                        selected = "BIC")
+    }else{
+      updateSelectInput(inputId = "ml_select_lambda", 
+                        choices = c(
+                          "Automated" = "auto",
+                          "lambda.min" = "min",
+                          "lambda.1se" = "1se"
+                        ),
+                        selected="auto")
+    }
+  })
   XselectReports <- eventReactive(input$ml_select_go, {
     test_data <- NULL
     if(!is.null(input$ex_test_csv)){
@@ -423,7 +442,9 @@ shinyServer(function(input, output, session) {
       y_map_func=input$ml_y_map_func,
       y_map_max=input$ml_y_max,
       return_performance=input$ml_select_return_performance,
-      lambda = input$ml_select_lambda
+      lambda = input$ml_select_lambda,
+      lasso_by = input$ml_select_lasso_by,
+      tune_by = input$ml_select_tune_by
     )
   })
   
@@ -476,7 +497,7 @@ shinyServer(function(input, output, session) {
       x_labels_nonlin_rcs3 = input$ml_nonlin_rcs3_labels,
       x_labels_fct = input$ml_fct_labels_mdl,
       x_labels_tag = input$ml_tag_labels_mdl,
-      x_labels=unique(c(input$ml_tag_labels_mdl, input$ml_fct_labels_mdl,input$ml_linear_num_labels,input$ml_nonlin_rcs3_labels,input$ml_nonlin_rcs4_labels,input$ml_nonlin_rcs5_labels)), 
+      x_labels = unique(c(input$ml_tag_labels_mdl, input$ml_fct_labels_mdl,input$ml_linear_num_labels,input$ml_nonlin_rcs3_labels,input$ml_nonlin_rcs4_labels,input$ml_nonlin_rcs5_labels)), 
       # --- engineer ---
       trim_by_label = input$setup_trim_by_label, 
       trim_vec = as.numeric(input$setup_trim_vec),  
@@ -497,10 +518,10 @@ shinyServer(function(input, output, session) {
       cv_nfold = as.numeric(input$ml_cv_nfold),
       na_frac_max=input$ml_na_frac_max, 
       test_data = test_data,
-      joint_col2_label=input$ml_joint_col2_label,
-      stratified_cv=input$ml_stratified_cv,
-      r_abs=input$ml_r_abs, 
-      type=input$ml_type,
+      joint_col2_label = input$ml_joint_col2_label,
+      stratified_cv = input$ml_stratified_cv,
+      r_abs = input$ml_r_abs, 
+      type = input$ml_type,
       fix_knots = input$ml_fix_knots,
       y_map_func = input$ml_y_map_func,  
       y_map_max = input$ml_y_max,
@@ -862,159 +883,24 @@ shinyServer(function(input, output, session) {
     plot_obj
   })
   # Feature Selection ----
-  output$ml_select_lasso_tuning_plot <- renderPlot({
+  output$ml_select_tune_trace_plot <- renderPlot({
     withProgress(message = 'Calculation in progress',
                  detail = 'This may take a while...', value = 0.1, {
                    Sys.sleep(0.25)
                    x_select_report <- XselectReports()
                    setProgress(1)
                  })
-    x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
-    
-    if (!is.null(x_select_obj)){
-      lasso_cv <- x_select_obj$cv_mdls$lasso_cv
-      ridge_cv <- x_select_obj$cv_mdls$ridge_cv
-      lasso_trace <- x_select_obj$trace_mdls$lasso_trace
-      ridge_trace <- x_select_obj$trace_mdls$ridge_trace
-      print(lasso_cv$lambda.min)
-      print(ridge_cv$lambda.min)
-      
-      # plot results
-      par(mfrow = c(2, 2))
-      plot(lasso_cv, main = "Lasso penalty\n\n")
-      plot(ridge_cv, main = "Ridge penalty\n\n")
-      plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n")
-      abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
-      abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
-      plot(ridge_trace, xvar = "lambda", main = "Ridge penalty\n\n")
-      abline(v = log(ridge_cv$lambda.min), col = "red", lty = "dashed")
-      abline(v = log(ridge_cv$lambda.1se), col = "blue", lty = "dashed")
-    }
+    x_select_report$infer_obj$tune_trace_plot
   })
-  output$ml_select_lasso_vip <- renderPlot({
+  output$ml_select_coef_trace_plot <- renderPlot({
     x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
-    if (!is.null(x_select_obj)){
-      lasso_optimal <- x_select_obj$optimal_mdls$lasso_optimal
-      ridge_optimal <- x_select_obj$optimal_mdls$ridge_optimal
-      coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
-      coef_df$vars <- as.character(rownames(lasso_optimal$beta))
-      coef_df$penalty <- "Lasso"
-      coef_df$coef_abs <- abs(coef_df$coef)
-      # coef_df <- coef_df[order(-coef_df$coef_abs),]
-      # coef_df$vars <- paste0(c(1:nrow(coef_df)),"__",coef_df$vars)
-      coef_df_all <- coef_df
-      coef_df <- data.frame(coef=as.numeric(ridge_optimal$beta))
-      coef_df$vars <- as.character(rownames(ridge_optimal$beta))
-      coef_df$penalty <- "Ridge"
-      coef_df$coef_abs <- abs(coef_df$coef)
-      # coef_df <- coef_df[order(-coef_df$coef_abs),]
-      # coef_df$vars <- paste0(c(1:nrow(coef_df)),"__",coef_df$vars)
-      coef_df_all <- bind_rows(coef_df_all, coef_df)
-      ggplot(data = coef_df_all, aes(x = abs(coef), y = vars ) )+ 
-        geom_point() + 
-        facet_grid(~ penalty) + 
-        ylab(NULL) + 
-        xlab(" | coefficients | ") 
-    }
+    x_select_report$infer_obj$coef_trace_plot
   })
-  output$ml_select_lasso_coef_df <- renderTable({
+  output$ml_select_opt_model_df <- renderTable({
     x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls # raw lasso regression
-    if (!is.null(x_select_obj)){
-      lasso_optimal <- x_select_obj$optimal_mdls$lasso_optimal
-      ridge_optimal <- x_select_obj$optimal_mdls$ridge_optimal
-      coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
-      coef_df$vars <- as.character(rownames(lasso_optimal$beta))
-      coef_df$penalty <- "Lasso"
-      coef_df$coef_abs <- abs(coef_df$coef)
-      coef_df_all <- coef_df
-      coef_df <- data.frame(coef=as.numeric(ridge_optimal$beta))
-      coef_df$vars <- as.character(rownames(ridge_optimal$beta))
-      coef_df$penalty <- "Ridge"
-      coef_df$coef_abs <- abs(coef_df$coef)
-      coef_df_all <- bind_rows(coef_df_all, coef_df)
-      coef_df_all
-    }
+    x_select_report$infer_obj$opt_model_df
   })
-  output$ml_select_group_lasso_tuning_plot <- renderPlot({
-    withProgress(message = 'Calculation in progress',
-                 detail = 'This may take a while...', value = 0.1, {
-                   Sys.sleep(0.25)
-                   x_select_report <- XselectReports()
-                   setProgress(1)
-                 })
-    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
-    if (!is.null(x_select_obj)){
-      # lasso trace df
-      lasso_cv <- x_select_obj$lasso_cv
-      lasso_trace <- x_select_obj$lasso_trace
-      # coef zero lambda df
-      lasso_coef <- as.data.frame( lasso_trace$beta)
-      lasso_coef <- as.data.frame( t(lasso_coef) )
-      lasso_coef$s <- as.numeric( gsub("s","", rownames(lasso_coef)))
-      lmd_s <- c()
-      var_s <- c()
-      for (var in setdiff(colnames(lasso_coef),"s") ){
-        lmd_s <- c(lmd_s, max(lasso_coef$s[which(lasso_coef[,var]==0)]) )
-        var_s <- c(var_s, var)
-      }
-      lambda_zero_coef <- data.frame(varname = var_s, 
-                                     lambda = lasso_trace$lambda[lmd_s+1],
-                                     log_lambda = log(lasso_trace$lambda[lmd_s+1]))
-      lambda_zero_coef <- lambda_zero_coef[order(lambda_zero_coef$log_lambda),]
-      rownames( lambda_zero_coef ) <- NULL
-      # plot results
-      par(mfrow = c(2, 1))
-      plot(lasso_cv, main = "Lasso penalty\n\n", 
-           xlab=NULL,
-           xlim=rev(c(min(log(lasso_cv$lambda)),max(log(lasso_cv$lambda))))) 
-      plot(lasso_trace, xvar = "lambda", main = "Lasso penalty\n\n", 
-           xlab="log lambda",
-           xlim=rev(c(min(log(lasso_trace$lambda)),max(log(lasso_trace$lambda)))) )
-      abline(v = log(lasso_cv$lambda.min), col = "red", lty = "dashed")
-      abline(v = log(lasso_cv$lambda.1se), col = "blue", lty = "dashed")
-      text(lambda_zero_coef[,'log_lambda'], 0, lambda_zero_coef[,'varname'], 
-           cex=0.7, col="black",srt=90)
-    }
-  })
-  output$ml_select_group_lasso_vip <- renderPlot({
-    x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression vip/coef plot
-    if (!is.null(x_select_obj)){
-      lasso_optimal <- x_select_obj$lasso_optimal
-      coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
-      coef_df$vars <- as.character(rownames(lasso_optimal$beta))
-      coef_df$coef_abs <- abs(coef_df$coef)
-      coef_df_all <- coef_df
-      ggplot(data = coef_df_all, aes(x = abs(coef), y = vars)) + # reorder(vars, abs(coef))
-        geom_point() + 
-        ylab(NULL) + 
-        xlab(" | coefficients | ") +
-        xlim(0,max(abs(coef_df_all$coef))+0.1)
-    }
-  })
-  output$ml_select_group_lasso_coef_df <- renderTable({
-    x_select_report <- XselectReports()
-    x_select_obj <- x_select_report$x_select_mdls_grouped # grouped lasso regression
-    if (!is.null(x_select_obj)){
-      lasso_optimal <- x_select_obj$lasso_optimal
-      coef_df <- data.frame(coef=as.numeric(lasso_optimal$beta))
-      coef_df$vars <- as.character(rownames(lasso_optimal$beta))
-      coef_df$coef_abs <- abs(coef_df$coef)
-      coef_df
-    }
-  })
-  output$ml_select_group_lasso_vars_selected <- renderTable({
-    vars_selected_df <- NULL
-    x_select_report <- XselectReports()
-    vars_selected_df <- x_select_report$group_lasso_vars_selected
-    
-  })
-  output$ml_select_group_lasso_score10fold <- renderTable({
-    x_select_report <- XselectReports()
-    x_select_report$score10fold
-  })
+  
   # lasso performance
   output$perform_download_df_hat_lasso <- downloadHandler(
     filename = function() {
@@ -1025,15 +911,15 @@ shinyServer(function(input, output, session) {
       df_hat <- NULL
       if(input$perform_from_lasso=="Internal"){
         if(input$perform_dataset_lasso=="Engineered"){
-          df_hat <- x_select_report$perform_in_df_hat
+          df_hat <- x_select_report$perform_obj$perform_in_df_hat
         }else if(input$perform_dataset_lasso=="Original"){
-          df_hat <- x_select_report$perform_inorg_df_hat
+          df_hat <- x_select_report$perform_obj$perform_inorg_df_hat
         }
       }else if(input$perform_from_lasso=="External"){
         if(input$perform_dataset_lasso=="Engineered"){
-          df_hat <- x_select_report$perform_ex_df_hat
+          df_hat <- x_select_report$perform_obj$perform_ex_df_hat
         }else if(input$perform_dataset_lasso=="Original"){
-          df_hat <- x_select_report$perform_exorg_df_hat
+          df_hat <- x_select_report$perform_obj$perform_exorg_df_hat
         }
       }
       write.csv(df_hat, file, row.names = FALSE)
@@ -1048,15 +934,15 @@ shinyServer(function(input, output, session) {
       scores_tbl <- NULL
       if(input$perform_from_lasso=="Internal"){
         if(input$perform_dataset_lasso=="Engineered"){
-          scores_tbl <- x_select_report$perform_in_scores_tbl
+          scores_tbl <- x_select_report$perform_obj$perform_in_scores_tbl
         }else if(input$perform_dataset_lasso=="Original"){
-          scores_tbl <- x_select_report$perform_inorg_scores_tbl
+          scores_tbl <- x_select_report$perform_obj$perform_inorg_scores_tbl
         }
       }else if(input$perform_from_lasso=="External"){
         if(input$perform_dataset_lasso=="Engineered"){
-          scores_tbl <- x_select_report$perform_ex_scores_tbl
+          scores_tbl <- x_select_report$perform_obj$perform_ex_scores_tbl
         }else if(input$perform_dataset_lasso=="Original"){
-          scores_tbl <- x_select_report$perform_exorg_scores_tbl
+          scores_tbl <- x_select_report$perform_obj$perform_exorg_scores_tbl
         }
       }
       write.csv(scores_tbl, file, row.names = FALSE)
@@ -1072,15 +958,15 @@ shinyServer(function(input, output, session) {
     cali_plot <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
-        cali_plot <- x_select_report$perform_in_cali_plot
+        cali_plot <- x_select_report$perform_obj$perform_in_cali_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        cali_plot <- x_select_report$perform_inorg_cali_plot
+        cali_plot <- x_select_report$perform_obj$perform_inorg_cali_plot
       }
     }else if(input$perform_from_lasso=="External"){
       if(input$perform_dataset_lasso=="Engineered"){
-        cali_plot <- x_select_report$perform_ex_cali_plot
+        cali_plot <- x_select_report$perform_obj$perform_ex_cali_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        cali_plot <- x_select_report$perform_exorg_cali_plot
+        cali_plot <- x_select_report$perform_obj$perform_exorg_cali_plot
       }
     }
     cali_plot
@@ -1090,15 +976,15 @@ shinyServer(function(input, output, session) {
     fitted_eff_plot <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
-        fitted_eff_plot <- x_select_report$perform_in_fitted_eff_plot
+        fitted_eff_plot <- x_select_report$perform_obj$perform_in_fitted_eff_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        fitted_eff_plot <- x_select_report$perform_inorg_fitted_eff_plot
+        fitted_eff_plot <- x_select_report$perform_obj$perform_inorg_fitted_eff_plot
       }
     }else if(input$perform_from_lasso=="External"){
       if(input$perform_dataset_lasso=="Engineered"){
-        fitted_eff_plot <- x_select_report$perform_ex_fitted_eff_plot
+        fitted_eff_plot <- x_select_report$perform_obj$perform_ex_fitted_eff_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        fitted_eff_plot <- x_select_report$perform_exorg_fitted_eff_plot
+        fitted_eff_plot <- x_select_report$perform_obj$perform_exorg_fitted_eff_plot
       }
     }
     fitted_eff_plot
@@ -1108,15 +994,15 @@ shinyServer(function(input, output, session) {
     tradeoff_plot <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
-        tradeoff_plot <- x_select_report$perform_in_tradeoff_plot
+        tradeoff_plot <- x_select_report$perform_obj$perform_in_tradeoff_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        tradeoff_plot <- x_select_report$perform_inorg_tradeoff_plot
+        tradeoff_plot <- x_select_report$perform_obj$perform_inorg_tradeoff_plot
       }
     }else if(input$perform_from_lasso=="External"){
       if(input$perform_dataset_lasso=="Engineered"){
-        tradeoff_plot <- x_select_report$perform_ex_tradeoff_plot
+        tradeoff_plot <- x_select_report$perform_obj$perform_ex_tradeoff_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        tradeoff_plot <- x_select_report$perform_exorg_tradeoff_plot
+        tradeoff_plot <- x_select_report$perform_obj$perform_exorg_tradeoff_plot
       }
     }
     tradeoff_plot
@@ -1126,15 +1012,15 @@ shinyServer(function(input, output, session) {
     tte_plot <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
-        tte_plot <- x_select_report$perform_in_tte_plot
+        tte_plot <- x_select_report$perform_obj$perform_in_tte_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        tte_plot <- x_select_report$perform_inorg_tte_plot
+        tte_plot <- x_select_report$perform_obj$perform_inorg_tte_plot
       }
     }else if(input$perform_from_lasso=="External"){
       if(input$perform_dataset_lasso=="Engineered"){
-        tte_plot <- x_select_report$perform_ex_tte_plot
+        tte_plot <- x_select_report$perform_obj$perform_ex_tte_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        tte_plot <- x_select_report$perform_exorg_tte_plot
+        tte_plot <- x_select_report$perform_obj$perform_exorg_tte_plot
       }
     }
     tte_plot
@@ -1144,15 +1030,15 @@ shinyServer(function(input, output, session) {
     scores_plot <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
-        scores_plot <- x_select_report$perform_in_scores_plot
+        scores_plot <- x_select_report$perform_obj$perform_in_scores_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        scores_plot <- x_select_report$perform_inorg_scores_plot
+        scores_plot <- x_select_report$perform_obj$perform_inorg_scores_plot
       }
     }else if(input$perform_from_lasso=="External"){
       if(input$perform_dataset_lasso=="Engineered"){
-        scores_plot <- x_select_report$perform_ex_scores_plot
+        scores_plot <- x_select_report$perform_obj$perform_ex_scores_plot
       }else if(input$perform_dataset_lasso=="Original"){
-        scores_plot <- x_select_report$perform_exorg_scores_plot
+        scores_plot <- x_select_report$perform_obj$perform_exorg_scores_plot
       }
     }
     scores_plot
@@ -1162,15 +1048,15 @@ shinyServer(function(input, output, session) {
     scores_tbl <- NULL
     if(input$perform_from_lasso=="Internal"){
       if(input$perform_dataset_lasso=="Engineered"){
-        scores_tbl <- x_select_report$perform_in_scores_tbl
+        scores_tbl <- x_select_report$perform_obj$perform_in_scores_tbl
       }else if(input$perform_dataset_lasso=="Original"){
-        scores_tbl <- x_select_report$perform_inorg_scores_tbl
+        scores_tbl <- x_select_report$perform_obj$perform_inorg_scores_tbl
       }
     }else if(input$perform_from_lasso=="External"){
       if(input$perform_dataset_lasso=="Engineered"){
-        scores_tbl <- x_select_report$perform_ex_scores_tbl
+        scores_tbl <- x_select_report$perform_obj$perform_ex_scores_tbl
       }else if(input$perform_dataset_lasso=="Original"){
-        scores_tbl <- x_select_report$perform_exorg_scores_tbl
+        scores_tbl <- x_select_report$perform_obj$perform_exorg_scores_tbl
       }
     }
     scores_tbl
