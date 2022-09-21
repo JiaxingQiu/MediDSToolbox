@@ -4,6 +4,7 @@ library(shinydashboardPlus)
 library(shiny)
 options(shiny.maxRequestSize = 500*1024^2)
 
+
 shinyServer(function(input, output, session) {
   
   #-------------------------------------------- Event control --------------------------------------------
@@ -89,6 +90,23 @@ shinyServer(function(input, output, session) {
     
   })
   observeEvent(input$setup_trim_by_label, {
+    # if time index is not given by user
+    if(input$setup_trim_by_label=="Fake Time Index"){
+      data_tmp <- assign.dict(data_ml, dict_ml)
+      data_tmp$fake_time <- 333
+      attr(data_tmp$fake_time,"varname") <- "fake_time"
+      attr(data_tmp$fake_time, "label") <- "Fake Time Index"
+      attr(data_tmp$fake_time, "type") <- "tim"
+      attr(data_tmp$fake_time, "unit") <- "fake unit"
+      attr(data_tmp$fake_time, "source_file") <- "drvd"
+      attr(data_tmp$fake_time, "unique_per_sbj") <- "FALSE"
+      # update global data_ml
+      data_ml <<- data_tmp
+      # update global dictionary
+      dict_ml <<- get.dict(data_ml)
+      rm(data_tmp)
+    }
+      
     trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
     min_value = min(data_ml[,trim_by_col],na.rm=TRUE)
     max_value = max(data_ml[,trim_by_col],na.rm=TRUE)
@@ -121,7 +139,8 @@ shinyServer(function(input, output, session) {
     # calculate min and max number of observations per cluster
     cluster_col <- dict_ml$varname[which(dict_ml$label==input$setup_cluster_label)]
     trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
-    data_tmp <- data_ml[which(data_ml[,trim_by_col]>=input$setup_trim_vec[1]*input$setup_trim_time_unit & data_ml[,trim_by_col]<input$setup_trim_vec[2]*input$setup_trim_time_unit ),]
+    print(paste0("update input$eda_time_breaks_allu by ",trim_by_col))
+    data_tmp <- data_ml[which(data_ml[,trim_by_col]>=input$setup_trim_vec[1]*input$setup_trim_time_unit & data_ml[,trim_by_col]<=input$setup_trim_vec[2]*input$setup_trim_time_unit ),]
     data_tmp$cluster_col_tmp <- data_tmp[,cluster_col]
     data_nrow <- data_tmp %>% group_by(cluster_col_tmp) %>% summarise(nobs = n()) %>% as.data.frame()
     min_value = min(data_nrow$nobs,na.rm=TRUE)

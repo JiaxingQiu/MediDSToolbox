@@ -4,6 +4,19 @@ library(shinydashboardPlus)
 library(shiny)
 source("./shiny.R")
 
+
+#### maintain global constants ####
+if(!exists("time_over_labels")){
+  time_over_labels <- c("Fake Time Index")
+}
+if(!exists("prj_name")){
+  prj_name <- "Unnamed Project -- You can specify project name / desciption / link in shiny.R script"
+}
+if(!exists("prj_link")){
+  prj_link <- "https://github.com/JiaxingQiu/MediDSToolbox"
+}
+
+#### header ####
 header <- dashboardHeader(
   title = HTML("Medical Data Science Toolbox"),
   disable = FALSE,
@@ -518,6 +531,7 @@ body <- dashboardBody(
             fluidRow(column(1,actionButton("eda_star_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_death_star",
                                 height = "800px",
+                                width="700px",
                                 dblclick = "plot_death_star_dblclick",
                                 brush = brushOpts(
                                   id = "plot_death_star_brush",

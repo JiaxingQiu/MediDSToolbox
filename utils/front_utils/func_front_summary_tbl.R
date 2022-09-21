@@ -202,9 +202,9 @@ front_summary_tbl <- function(
   tryCatch({
     df <- tbl_obj$num_detail_df 
     df$N <- df$n-df$miss
-    df$mean_sd <- paste0(round(df$mean,2), " (", round(df$sd,2), ")")
-    df$range <- paste0(round(df$median,2), " [",round(df$p25,2),", ",round(df$p75,2),"] (",round(df$min,2),", ",round(df$max,2),")")
-    df$summary_string <- paste(paste0("N = ", df$N), df$mean_sd, df$range, sep =" \n ")
+    df$mean_sd <- paste0(round(df$mean,2), " ± ", round(df$sd,2))
+    df$range <- paste0(round(df$median,2), "; ",round(df$p25,2),"-",round(df$p75,2))
+    df$summary_string <- paste(df$mean_sd, df$range, paste0("n = ", df$N), sep ="; ")
     for (att in c("label", "unit", "source_file", "unique_per_sbj")){
       if (!att %in% colnames(dict_data)) next
       df[,att] <- ""
@@ -212,7 +212,8 @@ front_summary_tbl <- function(
         df[which(df$varname==varname),att] <- dict_data[which(dict_data$varname==varname), att]
       }
     }
-    num_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "N", "mean_sd", "range", "varname", "unique_per_sbj")]
+    num_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "N", "mean_sd", "range", "varname", "unique_per_sbj", "mean", "sd", "median", "p25", "p75", "min", "max")]
+    num_detail_df <- num_detail_df[which(!num_detail_df$varname%in%c(stratify_col) ),]
   },error=function(e){
     print("--- Error in num_detail_df --- ")
     print(e)
@@ -237,10 +238,11 @@ front_summary_tbl <- function(
     df$N <- df$n-df$miss
     df$n_freq <- as.numeric(as.character(df$freq))
     df$p <- as.numeric(as.character(df$freq))/df$N
-    df$summary_string <- paste0(round(df$p,2), " (", df$n_freq, "/",df$N,")")
+    df$summary_string <- paste0(round(df$p*100,2), "% (", df$n_freq, "/",df$N,")")
     df$label_org <- df$label
     df$label <- paste0(df$label_org, " = ", df$level)
     fct_detail_df <- df[,c("group", "label", "summary_string", "unit", "source_file", "N", "n_freq", "p","varname", "unique_per_sbj")]
+    fct_detail_df <- fct_detail_df[which(!fct_detail_df$varname%in%c(stratify_col) ),]
   },error=function(e){
     print("--- Error in fct_detail_df --- ")
     print(e)
@@ -319,6 +321,8 @@ front_summary_tbl <- function(
     print("--- Error in na_plot --- ")
     print(e)
   })
+  
+  
   
   return(list("summ_df" = res_df, 
               "summ_df_reformat" = summ_df_reformat,
