@@ -1,7 +1,6 @@
 # Medical Data Science Toolbox
 *For tools in the box, we think outside the box.* <br/>
-
-**** Jiaxing (Joy) Qiu, M.S., Data Science, School of Data Science, University of Virginia  <br/>
+Jiaxing (Joy) Qiu, M.S., Data Science, School of Data Science, University of Virginia  <br/>
 
 Thanks to Center of Advanced Medical Analytics (CAMA), School of Medicine, University of Virginia, the helpful comments and professional expriences inspire these creative tools in the box!<br/>
 
