@@ -230,6 +230,14 @@ attr(data_ml$baby_weight_lin, "unit") <- "grams"
 attr(data_ml$baby_weight_lin, "unique_per_sbj") <- TRUE
 attr(data_ml$baby_weight_lin, "source_file") <- "drvd"
 attr(data_ml$baby_weight_lin, "mlrole") <- "input"
+# example 3 remove bad columns
+rm_c <- c()
+for(c in colnames(data_ml)){
+  if(n_distinct( data_ml[,c] )<2){
+    rm_c <- c(rm_c, c)
+  }
+}
+data_ml <- data_ml[,setdiff(colnames(data_ml),rm_c)]
 
 # ---- [don't change] finalize global variables ----
 dict_ml <- get.dict(data_ml)
