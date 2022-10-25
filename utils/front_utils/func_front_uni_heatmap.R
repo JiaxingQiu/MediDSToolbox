@@ -128,6 +128,7 @@ front_uni_heatmap <- function(
                                   pct=pct, 
                                   y_map_func=y_map_func, 
                                   y_map_max=y_map_max)
+    stopifnot(!is.null(df_result_all))
     if ("c_score" %in% colnames(df_result_all)) {
       var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_c=max(c_score)) %>% arrange(max_c) %>% as.data.frame()
       df_result_all$c_label <- NA

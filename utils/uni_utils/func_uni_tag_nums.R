@@ -34,7 +34,7 @@ uni_tag_nums <- function(data,
     }
   }
   
-  df_result_all = data.frame()
+  df_result_all <- NULL
   for(num_col in num_cols){
     print(paste0("--- working on ",num_col," ---"))
     df_mdl <- data[,intersect(colnames(data), unique(c(num_cols,tag_col,cluster_col,num_adjust_col))) ]
@@ -62,15 +62,14 @@ uni_tag_nums <- function(data,
     stopifnot(all(unique(as.numeric(as.character( df_mdl[[tag_col]])))%in% c(0,1))) #assert tag y is 01 binary
     afford_dof <- n_distinct(df_mdl[which(df_mdl[[tag_col]]==1), cluster_col])/15
     print(paste0("---- affordable degree of freedom ---- ", afford_dof))
+    # initiate dof
     dof_list <- c(3,4,5,6)
     dof <- max(3, max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)) # at least 3 knots
+    print(paste0("---- initiate degree of freedom ", dof, " ---- "))
     
-    # loop through dof until df_result works
-    dof <- dof + 1 # initiate dof
+    # calculate prediction matrix
     df_result <- NULL
-    while( is.null(df_result) ){
-      dof <- dof - 1
-      stopifnot(dof>=3)
+    tryCatch({
       if (method=="bootstrap"){
         df_result <- uni_tag_num_bootstrap(df_mdl, num_col, tag_col)
       }else if(method=="loess"){
@@ -80,16 +79,29 @@ uni_tag_nums <- function(data,
       }else if(method=="mean"){
         df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
       }
-    }
-   
+    }, error=function(e){
+      print(e)
+    })
     
     if (!is.null(df_result)){
-      print(paste0("final dof used: ",dof))
+      print(paste0("---- final dof used: ",dof," ----"))
       df_result$var_name <- num_col
-      df_result_all <- bind_rows(df_result_all, df_result)
+      if(is.null(df_result_all)) {
+        df_result_all <- df_result
+      }else{
+        df_result_all <- bind_rows(df_result_all, df_result)
+      }
+    }else{
+      print(paste0("uni_tag_num failed on ", num_col))
     }
   }
-  df_result_all$yhat <- ymap(df_result_all$prob)
+  
+  # final returned result dataframe or NULL object
+  if(!is.null(df_result_all)){
+    df_result_all$yhat <- ymap(df_result_all$prob)
+  }else{
+    print("uni_tag_nums returns NULL")
+  }
   
   return(df_result_all)
 }
@@ -98,10 +110,11 @@ uni_tag_nums <- function(data,
 uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_adjust_col=NULL){
   df_mdl$num_col <- df_mdl[[num_col]]
   df_mdl$tag_col <- df_mdl[[tag_col]]
+  df_mdl <- df_mdl[,c("num_col", "tag_col", cluster_col, num_adjust_col)] # only keep columns that will be used later
   df_result <- NULL
   while((is.null(df_result))&(dof>=3)){
     if (length(num_adjust_col)==0){
-      try({
+      tryCatch({
         fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")"))
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
@@ -110,9 +123,11 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
         df_result$c_score <- mdl$stats[["C"]]
-      },TRUE )
+      },error=function(e){
+        print(e)
+      })
     }else{
-      try({
+      tryCatch({
         df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
         fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")*num_adjust_col")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
         dd <- rms::datadist(df_mdl)
@@ -122,9 +137,11 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
         df_result$c_score <- mdl$stats[["C"]]
-      },TRUE )
+      },error=function(e){
+        print(e)
+      })
       if(is.null(df_result)){
-        try({
+        tryCatch({
           df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
           fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
           dd <- rms::datadist(df_mdl)
@@ -134,15 +151,17 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
           df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
           df_result$pctl <- round(df_result$pctl,2)
           df_result$c_score <- mdl$stats[["C"]]
-        },TRUE )
+        },error=function(e){
+          print(e)
+        } )
       }
     }
     dof <- dof - 1
   }
-  # if none of >=3 knots work, use linear term
+  # if none of >=3 knots work or given dof is < 3, use linear term
   if(is.null(df_result)){
     if (length(num_adjust_col)==0){
-      try({
+      tryCatch({
         fml <- formula(paste0("as.factor(tag_col) ~ I(num_col)"))
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
@@ -151,9 +170,11 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
         df_result$c_score <- mdl$stats[["C"]]
-      },TRUE )
+      },error=function(e){
+        print(e)
+      } )
     }else{
-      try({
+      tryCatch({
         df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
         fml <- formula(paste0("as.factor(tag_col) ~ I(num_col)*I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
         dd <- rms::datadist(df_mdl)
@@ -163,9 +184,11 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
         df_result$c_score <- mdl$stats[["C"]]
-      },TRUE )
+      },error=function(e){
+        print(e)
+      } )
       if(is.null(df_result)){
-        try({
+        tryCatch({
           df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
           fml <- formula(paste0("as.factor(tag_col) ~ I(num_col) + I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
           dd <- rms::datadist(df_mdl)
@@ -175,10 +198,13 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
           df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
           df_result$pctl <- round(df_result$pctl,2)
           df_result$c_score <- mdl$stats[["C"]]
-        },TRUE )
+        },error=function(e){
+          print(e)
+        } )
       }
     }
   }
+  if(is.null(df_result)) print(paste0("uni_tag_num_rcs failed on ", num_col))
   return(df_result)
 }
 
