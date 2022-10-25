@@ -640,7 +640,7 @@ shinyServer(function(input, output, session) {
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 1. setup ----
   output$dictionary_setup  <- renderDataTable(
-    dict_ml[which(dict_ml$source_file%in%input$setup_source_file),c("source_file","varname","label","type","unit","unique_per_sbj")]
+    dict_ml[which(dict_ml$source_file%in%input$setup_source_file),c("varname","label","type","unit","unit_label","unique_per_sbj","source_file")]
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({
