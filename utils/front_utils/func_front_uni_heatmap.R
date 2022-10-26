@@ -22,6 +22,7 @@ front_uni_heatmap <- function(
   method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
   pct=TRUE,
   layout_ncol = 5,
+  heat_limits = NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
   label_y=TRUE,
@@ -146,11 +147,19 @@ front_uni_heatmap <- function(
       for(var in unique(df_result_all_sort$var_name)){
         df_result_all_sort$raw_value[which(df_result_all_sort$var_name==var)]<-as.numeric( quantile(data[,var],df_result_all_sort$pctl[which(df_result_all_sort$var_name==var)], na.rm=TRUE) )
       }
+      # fix heat color legend 
+      if( length(heat_limits)<2 ){
+        heat_limits <- c(min(df_result_all_sort$yhat,na.rm = TRUE), min(y_map_max,max(df_result_all_sort$yhat,na.rm = TRUE))) 
+      }
+      df_result_all_sort$yhat[which(df_result_all_sort$yhat<heat_limits[1])] <- heat_limits[1]
+      df_result_all_sort$yhat[which(df_result_all_sort$yhat>heat_limits[2])] <- heat_limits[2]
+      print(paste0("using limits of [",paste0(heat_limits,collapse=", "),"] heatmap legend"))
       plot_obj <- ggplot(df_result_all_sort, aes(x=pctl,y=var_name))+
         geom_tile(aes(fill=yhat)) +
         labs(fill=y_map_func,x="Percentile") + 
         theme(axis.title.y=element_blank()) + 
-        scale_fill_gradientn(colours = rev(palette_diy(8)),
+        scale_fill_gradientn(limits = heat_limits, 
+                             colours = rev(palette_diy(8)),
                              na.value = NA) +
         scale_y_discrete(limits=var_order$var_name)
       if(label_y){
@@ -181,7 +190,12 @@ front_uni_heatmap <- function(
       plot_df_all_return <- data.frame()
       plot_df_all <- df_result_all_sort
       plot_df_all$level <- ""
-      heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+      if( length(heat_limits)<2 ){
+        heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+      }
+      plot_df_all$yhat[which(plot_df_all$yhat<heat_limits[1])] <- heat_limits[1]
+      plot_df_all$yhat[which(plot_df_all$yhat>heat_limits[2])] <- heat_limits[2]
+      print(paste0("using limits of [",paste0(heat_limits,collapse=", "),"] heatmap legend"))
       for(var_name in sort(unique(plot_df_all$var_name))){
         tryCatch({
           plot_df_all_var <- plot_df_all[which(plot_df_all$var_name==var_name),]

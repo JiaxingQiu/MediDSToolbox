@@ -43,6 +43,7 @@ front_uni_heatmap_group <- function(
   # find the column name in data for the group by label
   group_col <- dict_data$varname[which(dict_data$label==group_label)]
   if(length(group_col)==0){
+    print("-- non-grouping uni-heat --")
     heatmap_obj <- front_uni_heatmap(data=data,
                                      dict_data=dict_data,
                                      num_labels=num_labels, 
@@ -66,6 +67,7 @@ front_uni_heatmap_group <- function(
                                      method=method, 
                                      pct=pct,
                                      layout_ncol = layout_ncol,
+                                     heat_limits = heat_limits,
                                      y_map_func=y_map_func,
                                      y_map_max=y_map_max,
                                      label_y=label_y,
@@ -74,6 +76,7 @@ front_uni_heatmap_group <- function(
     return(list(plot_obj = heatmap_obj$plot_obj,
                 df_result_all_sort = heatmap_obj$df_result_all_sort))
   }else{
+    print("-- grouped uni-heat --")
     group_levels <- unique(as.character( data[,group_col] ))
     # collect plot data for each level in a list
     plot_df_list <- list()
@@ -104,6 +107,7 @@ front_uni_heatmap_group <- function(
                                          method=method, 
                                          pct=pct,
                                          layout_ncol = layout_ncol,
+                                         heat_limits = heat_limits,
                                          y_map_func=y_map_func,
                                          y_map_max=y_map_max,
                                          label_y=label_y,
@@ -129,10 +133,19 @@ front_uni_heatmap_group <- function(
     }
     if(pct){
       if (!x_raw_scale){
+        if( length(heat_limits)<2 ){
+          heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+        }
+        # fix upper and lower boundary if forced
+        plot_df_all$yhat[which(plot_df_all$yhat<heat_limits[1])] <- heat_limits[1]
+        plot_df_all$yhat[which(plot_df_all$yhat>heat_limits[2])] <- heat_limits[2]
+        print(paste0("using limits of [",paste0(heat_limits,collapse=", "),"] heatmap legend"))
+        
         plot_obj <- ggplot(plot_df_all, aes(x=pctl,y=level))+
           geom_tile(aes(fill=yhat)) +
           labs(fill=y_map_func,x="Percentile",y=NULL) + 
-          scale_fill_gradientn(colours = rev(palette_diy(8)),
+          scale_fill_gradientn(limits = heat_limits, 
+                               colours = rev(palette_diy(8)),
                                na.value =NA) +
           facet_wrap(~var_name, ncol=layout_ncol, scales = "free") +
           theme_minimal()
@@ -143,6 +156,11 @@ front_uni_heatmap_group <- function(
         if( length(heat_limits)<2 ){
           heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
         }
+        # fix upper and lower boundary if forced
+        plot_df_all$yhat[which(plot_df_all$yhat<heat_limits[1])] <- heat_limits[1]
+        plot_df_all$yhat[which(plot_df_all$yhat>heat_limits[2])] <- heat_limits[2]
+        print(paste0("using limits of [",paste0(heat_limits,collapse=", "),"] heatmap legend"))
+        
         x_label_map <- plot_df_all %>% group_by(var_name) %>% summarise(q0 = paste0("0th\n", round(mean(raw_value[which(round(pctl,2)==0)],na.rm=TRUE),1)),
                                                                         q25 = paste0("25th\n", round(mean(raw_value[which(round(pctl,2)==0.25)],na.rm=TRUE),1)),
                                                                         q50 = paste0("50th\n", round(mean(raw_value[which(round(pctl,2)==0.50)],na.rm=TRUE),1)),
@@ -178,7 +196,14 @@ front_uni_heatmap_group <- function(
       plot_list <- list()
       name_list <- c()
       i=1
-      heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+      if( length(heat_limits)<2 ){
+        heat_limits <- c(min(plot_df_all$yhat,na.rm = TRUE), min(y_map_max,max(plot_df_all$yhat,na.rm = TRUE))) 
+      }
+      # fix upper and lower boundary if forced
+      plot_df_all$yhat[which(plot_df_all$yhat<heat_limits[1])] <- heat_limits[1]
+      plot_df_all$yhat[which(plot_df_all$yhat>heat_limits[2])] <- heat_limits[2]
+      print(paste0("using limits of [",paste0(heat_limits,collapse=", "),"] heatmap legend"))
+      
       for(var_name in sort(unique(plot_df_all$var_name))){
         plot_df_all_var <- plot_df_all[which(plot_df_all$var_name==var_name),]
         plot_df_all_var$raw_value <- as.numeric(sub("\\(", "", stringr::str_split_fixed(cut(plot_df_all_var$raw_value, 15),",",2)[,1]))

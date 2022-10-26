@@ -2,7 +2,7 @@
 uns_cluster_kmeans <- function(
   data, # dataframe with one row per one observation subject (i.e. baby day / baby)
   dict_data, # dictionary for data
-  input_cols=colnames(data_ml%>%select(starts_with("cpd_"))), # input variables to be used to train clustering model
+  input_cols,# =colnames(data_ml%>%select(starts_with("cpd_"))), # input variables to be used to train clustering model
   nc_max=4, # maximum number of clusters, default 15, must be [1,20]
   nc_min=2, # minimum number of cluster you expect kmeans to split your observations [1,20]
   plot_wss=FALSE, # whethr or not to plot trace of within group sum of squares in console
