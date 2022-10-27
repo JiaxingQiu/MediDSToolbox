@@ -24,7 +24,7 @@ front_uni_heatmap <- function(
   layout_ncol = 5,
   heat_limits = NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=3,
+  y_map_max=Inf,
   label_y=TRUE,
   sample_per_cluster = NULL
 ){

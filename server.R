@@ -369,8 +369,17 @@ shinyServer(function(input, output, session) {
                       choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs5_labels)
   })
-  
+  observeEvent(input$ml_y_max, {
+    updateSliderInput(inputId = "ml_uni_heat_limits", 
+                      min = 0,
+                      max = input$ml_y_max,
+                      value = c(0, input$ml_y_max) )
+  })
   uniHeatmap <- eventReactive(input$ml_uni_go, {
+    heat_limits <- NULL
+    if(input$ml_uni_custom_heat){
+      heat_limits <- input$ml_uni_heat_limits
+    }
     uni_obj <- front_uni_heatmap_group(
       data=data_ml,
       dict_data=dict_ml,
@@ -393,6 +402,7 @@ shinyServer(function(input, output, session) {
       trim_ctrl = input$ml_trim_ctrl,
       num_adjust_label=input$ml_num_adjust_label, 
       method=input$ml_method, 
+      heat_limits = heat_limits,
       y_map_func = input$ml_y_map_func,
       y_map_max = input$ml_y_max,
       group_label = input$ml_uni_group_label,

@@ -15,6 +15,10 @@ viz_2d_stats<- function(
     data_org <- data_org[which(data_org[,cluster_col]%in%cluster_list),]
     print("under sample population to be 800")
   }
+  if(length(group_by_col)==0){
+    group_by_col <- "fake_group_viz_2d_stats"
+    data_org$fake_group_viz_2d_stats <- "Overall"
+  }
   if(length(group_by_col)>0){
     df_plot_all <- data.frame()
     for (g in unique(data_org[,group_by_col])){

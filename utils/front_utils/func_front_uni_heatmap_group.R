@@ -22,7 +22,7 @@ front_uni_heatmap_group <- function(
   method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
   pct=TRUE,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
-  y_map_max=2,
+  y_map_max=Inf,
   label_y=TRUE,
   label_y_order = c(), # order of the levels of y
   group_label=NULL,

@@ -162,6 +162,19 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_uni',
         conditionalPanel("input.sidebar == 'ml_uni'",
+                         checkboxInput("ml_uni_pct",
+                                       "X by percentile",
+                                       value = TRUE),
+                         checkboxInput("ml_uni_custom_heat",
+                                       "Customize Heat Limits",
+                                       value = FALSE),
+                         conditionalPanel(
+                           condition = "input.ml_uni_custom_heat",
+                           sliderInput("ml_uni_heat_limits",
+                                       label = NULL,
+                                       min = 0,  max = 10, step = 0.1, value = c(0,10)),
+                           
+                         ),
                          selectInput("ml_method",
                                      "Method (smoother)",
                                      choices = c(
@@ -180,10 +193,7 @@ sidebar <- dashboardSidebar(
                          selectInput("ml_num_labels",
                                      "Numeric predictors",
                                      multiple = TRUE,
-                                     choices = c()),
-                         checkboxInput("ml_uni_pct",
-                                       "X by percentile",
-                                       value = TRUE)
+                                     choices = c())
                          # ,
                          # sliderInput("ml_uni_sample_per_cluster",
                          #             label = "Sample per cluster",
