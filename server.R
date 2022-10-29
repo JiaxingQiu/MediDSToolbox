@@ -1147,29 +1147,24 @@ shinyServer(function(input, output, session) {
     plot(XclusReports$ml_summ_obj$na_obj)
   })
   # Regression ----
-  ## development
-  # output$devel_cali_plot <- renderPlot({
-  #   withProgress(message = 'Calculation in progress',
-  #                detail = 'This may take a while...', value = 0.1, {
-  #                  Sys.sleep(0.25)
-  #                  MLreports <- MLreports()
-  #                  setProgress(1)
-  #                })
-  #   
-  #   MLreports$devel_cali_plot #MLreports$time_pred_plot
-  # })
+  # development
   output$devel_model_info_tbl <- renderTable({
-    MLreports <- MLreports()
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   MLreports <- MLreports()
+                   setProgress(1)
+                 })
     MLreports$devel_model_info_tbl # model info table
   })
   output$devel_penal_trace_tbl <- renderTable({
     MLreports <- MLreports()
     MLreports$devel_penal_trace_tbl # model cvScores table
   })
-  output$devel_score_summ_tbl <- renderTable({
-    MLreports <- MLreports()
-    MLreports$devel_score_summ_tbl # model score table
-  })
+  # output$devel_score_summ_tbl <- renderTable({
+  #   MLreports <- MLreports()
+  #   MLreports$devel_score_summ_tbl # model score table
+  # })
   # inference
   output$devel_download_mdl <- downloadHandler(
     filename = function() {

@@ -1,0 +1,14 @@
+name: MediDSToolbox_demo
+title: MediDSToolbox_demo
+username:
+account: joy-cama-uva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5209084
+bundleId: 6454197
+url: https://joy-cama-uva.shinyapps.io/MediDSToolbox_demo/
+when: 1667057071.35511
+lastSyncTime: 1667057071.35512
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: LICENSE|README.md|archive

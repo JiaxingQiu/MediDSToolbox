@@ -67,19 +67,16 @@ if(length(flst)>0){
 
 
 
-# ---- [make changes here!] global constants ----
+# ---- [if you are a data person, you might make changes here :) ] global constants ----
 # [optional] "prj_name" is the name of your project, it's optional and will be shown in "Project Info" page if given.
-prj_name <- "Pre-Vent"
+prj_name <- "Demo"
 # [optional] "prj_link" is a hyperlink of your project if any, it's optional and will be shown in "Project Info" page if given.
 prj_link <- "https://github.com/JiaxingQiu/MediDSToolbox"
 # [required (if longitudinal)] "time_over_labels" is a list of the labels of time-indicator variables of your data. 
 ### If your data is "longitudinal" / "time-series" data (there are repeated measures from each subject in your study),  
 ### you are required to specify their label here, otherwise a "fake time index" (value of 333) will be assign to your dataframe, 
 ### which will make your study no different from subject-wise analysis.
-time_over_labels <- c("Post-menstrual Age", "Chronological Age")
-
-
-# ---- [make changes here!] global variables ----
+time_over_labels <- c("Hour since birth")
 # [required] load .csv format dictionary file from "data" folder, it must have the following columns:
 ### "varname": machine-friendly variable names
 ### "label": human-friendly variable labels
@@ -87,9 +84,9 @@ time_over_labels <- c("Post-menstrual Age", "Chronological Age")
 ###         ["num": numeric, fct": factor, "tim": time-indicator, "key": subject/cluster-indicator]
 ### "source_file": source group of the variable, where does a variable come from / how is a variable generated
 ### "unique_per_sbj": TRUE/FALSE, whether or not this variable is unique per subject (i.e. patient)
-dict_org <- read.csv("./data/dict_deid_data_final.csv", stringsAsFactors = FALSE)
+dict_org <- read.csv("./data/dict_data_demo.csv", stringsAsFactors = FALSE)
 # [required] load .csv format data file from "data" folder
-data_org <- read.csv("./data/deid_data_final.csv", stringsAsFactors = FALSE) 
+data_org <- read.csv("./data/data_demo.csv", stringsAsFactors = FALSE) 
 
 
 # ---- [don't change] engineer global variables ----
@@ -191,13 +188,13 @@ dict_ml <- get.dict(data_ml)
 
 
 
-# ---- [make changes here!] specify machine learning roles ----
+# ---- [if you are a data person, you might make changes here :) ] specify machine learning roles ----
 # output / response variables
-output_varname_list <- c("primary_outcome_factor__level__Unfavorable")
+output_varname_list <- c("eos", "died")
 # cluster / study unit variables 
-cluster_varname_list <- c("subjectnbr","m_id")
+cluster_varname_list <- c("id")
 # input / predictors / explanatory variables
-input_varname_list <- c(setdiff(dict_ml$varname[which(dict_ml$type=="num")], c("time_since_birth","death_ca_days") ), 
+input_varname_list <- c(setdiff(dict_ml$varname[which(dict_ml$type=="num")], c(dict_ml$varname[which(dict_ml$label%in%time_over_labels)])), 
                         setdiff(dict_ml$varname[which(dict_ml$type=="fct"&dict_ml$unit!="tag01")],output_varname_list),
                         setdiff(dict_ml$varname[which(dict_ml$unit=="tag01")], output_varname_list) )
 
@@ -209,27 +206,33 @@ dict_ml[which(dict_ml$varname %in% cluster_varname_list), "mlrole"] <- "cluster"
 dict_ml$varname_dict <- stringr::str_split_fixed(stringr::str_split_fixed(dict_ml$varname, "_factor_",2)[,1], "___", 2)[,1]
 data_ml <- assign.dict(data_ml, dict_ml)
 
-# ---- [make changes here!] derive new variables ----
-# example 1
-data_ml$GA_bins <- floor(data_ml$ga_days/7)
-data_ml$GA_bins[which(data_ml$GA_bins <=23)] <- 23
-data_ml$GA_bins <- as.factor(as.character(data_ml$GA_bins))
-attr(data_ml$GA_bins, "varname") <- "GA_bins"
-attr(data_ml$GA_bins, "label") <- "GA weeks binned"
-attr(data_ml$GA_bins, "type") <- "fct"
-attr(data_ml$GA_bins, "unit") <- ""
-attr(data_ml$GA_bins, "mlrole") <- ""
-attr(data_ml$GA_bins, "unique_per_sbj") <- TRUE
-attr(data_ml$GA_bins, "source_file") <- "drvd"
-# example 2
-data_ml$baby_weight_lin <- ifelse(data_ml$baby_weight<1000,data_ml$baby_weight, 1000)
-attr(data_ml$baby_weight_lin, "varname") <-"baby_weight_lin"
-attr(data_ml$baby_weight_lin, "label") <-"Birth weight (<=1000)"
-attr(data_ml$baby_weight_lin, "type") <- "num"
-attr(data_ml$baby_weight_lin, "unit") <- "grams"
-attr(data_ml$baby_weight_lin, "unique_per_sbj") <- TRUE
-attr(data_ml$baby_weight_lin, "source_file") <- "drvd"
-attr(data_ml$baby_weight_lin, "mlrole") <- "input"
+# ---- [if you are a data person, you might make changes here :)] derive new variables ----
+# # example 1
+# if(("ga_days" %in%colnames(data_ml)) & (!"GA_bins"%in%colnames(data_ml)) ){
+#   data_ml$GA_bins <- floor(data_ml$ga_days/7)
+#   data_ml$GA_bins[which(data_ml$GA_bins <=23)] <- 23
+#   data_ml$GA_bins <- as.factor(as.character(data_ml$GA_bins))
+#   attr(data_ml$GA_bins, "varname") <- "GA_bins"
+#   attr(data_ml$GA_bins, "label") <- "GA weeks binned"
+#   attr(data_ml$GA_bins, "type") <- "fct"
+#   attr(data_ml$GA_bins, "unit") <- ""
+#   attr(data_ml$GA_bins, "mlrole") <- ""
+#   attr(data_ml$GA_bins, "unique_per_sbj") <- TRUE
+#   attr(data_ml$GA_bins, "source_file") <- "drvd"
+# }
+# 
+# # example 2
+# if(("bw" %in%colnames(data_ml)) & (!"baby_weight_lin"%in%colnames(data_ml)) ){
+#   data_ml$baby_weight_lin <- ifelse(data_ml$bw<900,data_ml$bw, 900)
+#   attr(data_ml$baby_weight_lin, "varname") <-"baby_weight_lin"
+#   attr(data_ml$baby_weight_lin, "label") <-"Birth weight (<=900)"
+#   attr(data_ml$baby_weight_lin, "type") <- "num"
+#   attr(data_ml$baby_weight_lin, "unit") <- "grams"
+#   attr(data_ml$baby_weight_lin, "unique_per_sbj") <- TRUE
+#   attr(data_ml$baby_weight_lin, "source_file") <- "drvd"
+#   attr(data_ml$baby_weight_lin, "mlrole") <- "input"
+# }
+
 # example 3 remove bad columns
 rm_c <- c()
 for(c in colnames(data_ml)){

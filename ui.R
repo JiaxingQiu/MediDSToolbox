@@ -267,8 +267,8 @@ sidebar <- dashboardSidebar(
                                        value = TRUE),
                          selectInput("ml_tune_by",
                                      "Tune by",
-                                     choices=c("cv AUROC"="auroc",
-                                               "Logloss"="logloss",
+                                     choices=c("cvAUROC"="auroc",
+                                               "cvLogloss"="logloss",
                                                "AIC"="aic",
                                                "BIC"="bic")),
                          selectInput("ml_joint_col2_label",
@@ -662,10 +662,10 @@ body <- dashboardBody(
             fluidRow(column(1, actionButton("ml_multi_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Development", 
-                                 #plotOutput("devel_cali_plot"),
                                  tableOutput("devel_penal_trace_tbl"),
-                                 tableOutput("devel_model_info_tbl"),
-                                 tableOutput("devel_score_summ_tbl")
+                                 tableOutput("devel_model_info_tbl")
+                                 # ,
+                                 # tableOutput("devel_score_summ_tbl")
                         ),
                         tabPanel("Inference", 
                                  downloadButton("devel_download_mdl","Model (.rda)"),
