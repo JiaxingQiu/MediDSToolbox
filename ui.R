@@ -209,7 +209,7 @@ sidebar <- dashboardSidebar(
                                        "Grouped" = "group",
                                        "Clustered" = "cluster"
                                      ),
-                                     selected="cluster"),
+                                     selected="group"),
                          checkboxInput("ml_select_return_performance",
                                        "Return Performance",
                                        value = FALSE),
