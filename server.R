@@ -2,7 +2,7 @@ library(shinydashboard)
 library(shinyjs)
 library(shinydashboardPlus)
 library(shiny)
-options(shiny.maxRequestSize = 500*1024^2)
+options(shiny.maxRequestSize = 5000*1024^2) # 5G data
 
 
 shinyServer(function(input, output, session) {
@@ -55,34 +55,34 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "eda_tag_labels_allu",
                       choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")] )
     updateSelectInput(inputId = "ml_y_label",
-                      choices = dict_ml$label[which( (dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01") | dict_ml$type=="num")],
-                      selected = dict_ml$label[which( (dict_ml$mlrole=="output"&dict_ml$type=="fct"&dict_ml$unit=="tag01") | dict_ml$type=="num")][1] )
+                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")],#| dict_ml$type=="num"
+                      selected = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")][1] )#| dict_ml$type=="num"
     updateSelectInput(inputId = "ml_num_adjust_label",
-                      choices = c("None",dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")]),
+                      choices = c("None",dict_ml$label[which(dict_ml$type=="num")]),
                       selected = "None" )
     updateSelectInput(inputId = "ml_uni_group_label",
-                      choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]),#dict_ml$mlrole=="input"&
+                      choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]),
                       selected = "None" )
     updateSelectInput(inputId = "ml_num_labels",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      choices = dict_ml$label[which(dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_nonlin_rcs5_labels",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      choices = dict_ml$label[which(dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_nonlin_rcs4_labels",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      choices = dict_ml$label[which(dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_nonlin_rcs3_labels",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      choices = dict_ml$label[which(dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_linear_num_labels",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")],
+                      choices = dict_ml$label[which(dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_fct_labels_mdl",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit!="tag01")],
+                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit!="tag01")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_tag_labels_mdl",
-                      choices = dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="fct"&dict_ml$unit=="tag01")],
+                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")],
                       selected = NULL )
     updateSelectInput(inputId = "unml_input_labels",
                       choices = dict_ml$label[which(dict_ml$type=="num"|dict_ml$unit=="tag01")],
@@ -318,7 +318,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_linear_num_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_linear_num_labels)
   })
   # --- ml_nonlin_rcs3_labels ---
@@ -334,7 +334,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs3_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs3_labels)
   })
   # --- ml_nonlin_rcs4_labels ---
@@ -350,7 +350,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs4_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs4_labels)
   })
   # --- ml_nonlin_rcs5_labels ---
@@ -366,7 +366,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs4_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs5_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$mlrole=="input"&dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs5_labels)
   })
   observeEvent(input$ml_y_max, {
@@ -899,7 +899,7 @@ shinyServer(function(input, output, session) {
   # ---- 3. supervised ml ----
   # setup ----
   output$dictionary_table_ml <- renderDataTable(
-    dict_ml[which(dict_ml$mlrole!=""),c("label","source_file","varname","mlrole","type","unit")]
+    dict_ml[,c("label","source_file","varname","type","unit")]
   )
   # Univariate Heatmap ----
   output$plot_uniheat <- renderPlot({
@@ -1437,7 +1437,7 @@ shinyServer(function(input, output, session) {
   
   # ---- 4. unsupervised ml ----
   # setup ----
-  output$dictionary_table_unml <- renderDataTable(dict_ml[which(dict_ml$source_file!=""),c("source_file","varname","label","type","unit","mlrole")])
+  output$dictionary_table_unml <- renderDataTable(dict_ml[which(dict_ml$source_file!=""),c("source_file","varname","label","type","unit")])
   
   # kmeans clustering ---
   output$unml_wss_plot <- renderPlot({

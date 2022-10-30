@@ -44,7 +44,7 @@ lasso_x_select <- function(
   # linear > rcs3 > rcs4 > rcs5
   # variable name population space
   if(!is.null(dict_data)) {
-    input_cols_choices <- intersect(colnames(data), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
+    input_cols_choices <- intersect(colnames(data), dict_data$varname[which(dict_data$type=="num")])
   } else {
     input_cols_choices <- colnames(data)
   }

@@ -401,10 +401,10 @@ body <- dashboardBody(
                                  fluidRow(
                                    column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_cluster_label",
-                                                      label="Cluster",
+                                                      label="Cluster by",
                                                       choices = dict_ml$label[which(dict_ml$type=="key")] ),
                                           selectInput("setup_trim_by_label",
-                                                      label="Trim time unit by",
+                                                      label="Trim time by",
                                                       choices = time_over_labels),
                                           numericInput("setup_trim_time_unit", "/", 1),
                                           sliderInput("setup_trim_vec",

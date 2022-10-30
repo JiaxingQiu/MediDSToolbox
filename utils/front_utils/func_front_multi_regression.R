@@ -63,12 +63,12 @@ front_multi_regression <- function(
    
   # ---- translate front end labels to column names ----
   x_cols <- dict_data$varname[which(dict_data$label%in%x_labels)]
-  x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$mlrole=="input"&dict_data$type=="num")] # linear numeric columns
-  x_cols_nonlin_rcs5 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs5&dict_data$mlrole=="input"&dict_data$type=="num")]
-  x_cols_nonlin_rcs4 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs4&dict_data$mlrole=="input"&dict_data$type=="num")]
-  x_cols_nonlin_rcs3 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs3&dict_data$mlrole=="input"&dict_data$type=="num")]
-  x_cols_fct <- dict_data$varname[which(dict_data$label%in%x_labels_fct & dict_data$type=="fct" & dict_data$unit!="tag01" & dict_data$mlrole=="input")]
-  x_cols_tag <- dict_data$varname[which(dict_data$label%in%x_labels_tag & dict_data$type=="fct" & dict_data$unit=="tag01" & dict_data$mlrole=="input")]
+  x_cols_linear <- dict_data$varname[which(dict_data$label%in%x_labels_linear&dict_data$type=="num")] # linear numeric columns
+  x_cols_nonlin_rcs5 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs5&dict_data$type=="num")]
+  x_cols_nonlin_rcs4 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs4&dict_data$type=="num")]
+  x_cols_nonlin_rcs3 <- dict_data$varname[which(dict_data$label%in%x_labels_nonlin_rcs3&dict_data$type=="num")]
+  x_cols_fct <- dict_data$varname[which(dict_data$label%in%x_labels_fct & dict_data$type=="fct" & dict_data$unit!="tag01" )]
+  x_cols_tag <- dict_data$varname[which(dict_data$label%in%x_labels_tag & dict_data$type=="fct" & dict_data$unit=="tag01" )]
   y_col_tag <- dict_data$varname[which(dict_data$label==y_label & dict_data$type=="fct" & dict_data$unit=="tag01" )]
   y_col_num <- dict_data$varname[which(dict_data$label==y_label & dict_data$type=="num" )]
   y_col <- union(y_col_tag, y_col_num)
@@ -77,7 +77,7 @@ front_multi_regression <- function(
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
   joint_col2 <- dict_data$varname[which(dict_data$label==joint_col2_label)]
   if(length(joint_col2)==0) joint_col2 <- NULL
-  num_cols <- intersect(union(y_col_num,x_cols), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
+  num_cols <- intersect(union(y_col_num,x_cols), dict_data$varname[which(dict_data$type=="num")])
   fct_cols <- setdiff(union(y_col_tag, x_cols), num_cols)
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]

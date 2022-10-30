@@ -20,7 +20,7 @@ do_x_redun <- function(df = data_ml,
   
   
   # --- remove redundency by correlation ---
-  x_cols_num <- intersect(x_cols,rownames(dict_df[which(dict_df$mlrole=="input"&dict_df$type=="num"),]))
+  x_cols_num <- intersect(x_cols,rownames(dict_df[which(dict_df$type=="num"),]))
   dele_cols <- c()
   rmcor_obj <- NULL
   if(length(x_cols_num)>0){
@@ -31,7 +31,7 @@ do_x_redun <- function(df = data_ml,
   }
   
   # --- remove redundency by redundency analysis ---
-  x_cols_fct <- intersect(x_cols,rownames(dict_df[which(dict_df$mlrole=="input"&dict_df$type=="fct"),]))
+  x_cols_fct <- intersect(x_cols,rownames(dict_df[which(dict_df$type=="fct"),]))
   # numeric predictors that failed rcs transformation will be forced to be linear term
   linear_cols <- c()
   for (col in x_cols_num){

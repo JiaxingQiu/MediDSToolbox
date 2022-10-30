@@ -210,11 +210,11 @@ dict.tag2fct <- function(data, revlist=NULL, use_label=FALSE, fillna="None_level
   
   dict_df <- get.dict(data)
   stopifnot("varname_dict"%in%colnames(dict_df))
-  stopifnot("mlrole"%in% colnames(dict_df))
+  #stopifnot("mlrole"%in% colnames(dict_df))
   stopifnot("tag01"%in%unique(dict_df$unit))
   data <- assign.dict(data, dict_df)
   
-  tag_dict <- dict_df[which(dict_df$type=="fct" & dict_df$unit=="tag01" & dict_df$mlrole%in%c("input","output","cluster") ),]
+  tag_dict <- dict_df[which(dict_df$type=="fct" & dict_df$unit=="tag01" ),]# & dict_df$mlrole%in%c("input","output","cluster")
   revlist_dict <- unique(tag_dict$varname_dict)
   if(is.null(revlist)){
     revlist <- revlist_dict

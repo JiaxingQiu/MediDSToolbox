@@ -41,7 +41,7 @@ front_uni_heatmap <- function(
   
   # ---- translate front end labels to column names ----
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
-  num_cols <- intersect(dict_data$varname[which(dict_data$label%in%num_labels)], dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
+  num_cols <- intersect(dict_data$varname[which(dict_data$label%in%num_labels)], dict_data$varname[which(dict_data$type=="num")])#dict_data$mlrole=="input"&
   y_col <- dict_data$varname[which(dict_data$label==y_label)]
   fct_cols <- c(y_col)
   cluster_col <- dict_data$varname[which(dict_data$label==cluster_label)]

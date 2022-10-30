@@ -22,8 +22,8 @@ do_init <- function(df,
   # initiate rho object
   rho <- NULL
   
-  x_cols_num <- intersect(x_cols,rownames(dict_df[which(dict_df$mlrole=="input"&dict_df$type=="num"),]))
-  x_cols_fct <- intersect(x_cols,rownames(dict_df[which(dict_df$mlrole=="input"&dict_df$type=="fct"),]))
+  x_cols_num <- intersect(x_cols,rownames(dict_df[which(dict_df$type=="num"),]))
+  x_cols_fct <- intersect(x_cols,rownames(dict_df[which(dict_df$type=="fct"),]))
   if (length(x_cols_num)>0){
     
     # --- calculate quadratic spearman rank for numeric predictors ---

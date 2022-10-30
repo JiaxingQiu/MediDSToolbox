@@ -38,7 +38,7 @@ front_X_clus <- function(
   # --- find corresponding column names ---
   x_cols <- dict_data$varname[which(dict_data$label%in%x_labels)]
   y_col <- dict_data$varname[which(dict_data$label==y_label)]
-  num_cols <- intersect(union(x_cols,y_col), dict_data$varname[which(dict_data$mlrole=="input"&dict_data$type=="num")])
+  num_cols <- intersect(union(x_cols,y_col), dict_data$varname[which(dict_data$type=="num")])#dict_data$mlrole=="input"&
   fct_cols <- setdiff(union(x_cols,y_col), num_cols)
   cluster_col <- dict_data$varname[which(dict_data$label==cluster_label)]
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
