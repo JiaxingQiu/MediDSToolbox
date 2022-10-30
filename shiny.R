@@ -64,7 +64,6 @@ flst = list.files(path)
 if(length(flst)>0){
   sapply(c(paste(path,flst,sep="/")), source, .GlobalEnv)
 }
-source("./shiny_dictup.R")
 
 
 
@@ -89,8 +88,8 @@ dict_org <- read.csv("./data/dict_data_demo.csv", stringsAsFactors = FALSE)
 # [required] load .csv format data file from "data" folder
 data_org <- read.csv("./data/data_demo.csv", stringsAsFactors = FALSE) 
 
-
-shiny_obj <- shiny_dictup(data_org, dict_org, time_over_labels)
+# ---- call dict up shiny function in util folder ----
+shiny_obj <- dictup_shiny(data_org, dict_org, time_over_labels)
 data_org <- shiny_obj$data_org
 dict_org <- shiny_obj$dict_org
 data_ml <- shiny_obj$data_ml

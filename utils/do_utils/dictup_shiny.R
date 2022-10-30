@@ -1,4 +1,4 @@
-shiny_dictup <- function(data_org, 
+dictup_shiny <- function(data_org, 
                          dict_org,
                          time_over_labels){
   # ---- [don't change] engineer global variables ----
@@ -101,34 +101,6 @@ shiny_dictup <- function(data_org,
   data_ml <- assign.dict(data_ml, dict_ml)
   
   
-  # ---- [if you are a data person, you might make changes here :)] derive new variables ----
-  # # example 1
-  # if(("ga_days" %in%colnames(data_ml)) & (!"GA_bins"%in%colnames(data_ml)) ){
-  #   data_ml$GA_bins <- floor(data_ml$ga_days/7)
-  #   data_ml$GA_bins[which(data_ml$GA_bins <=23)] <- 23
-  #   data_ml$GA_bins <- as.factor(as.character(data_ml$GA_bins))
-  #   attr(data_ml$GA_bins, "varname") <- "GA_bins"
-  #   attr(data_ml$GA_bins, "label") <- "GA weeks binned"
-  #   attr(data_ml$GA_bins, "type") <- "fct"
-  #   attr(data_ml$GA_bins, "unit") <- ""
-  #   attr(data_ml$GA_bins, "mlrole") <- ""
-  #   attr(data_ml$GA_bins, "unique_per_sbj") <- TRUE
-  #   attr(data_ml$GA_bins, "source_file") <- "drvd"
-  # }
-  # 
-  # # example 2
-  # if(("bw" %in%colnames(data_ml)) & (!"baby_weight_lin"%in%colnames(data_ml)) ){
-  #   data_ml$baby_weight_lin <- ifelse(data_ml$bw<900,data_ml$bw, 900)
-  #   attr(data_ml$baby_weight_lin, "varname") <-"baby_weight_lin"
-  #   attr(data_ml$baby_weight_lin, "label") <-"Birth weight (<=900)"
-  #   attr(data_ml$baby_weight_lin, "type") <- "num"
-  #   attr(data_ml$baby_weight_lin, "unit") <- "grams"
-  #   attr(data_ml$baby_weight_lin, "unique_per_sbj") <- TRUE
-  #   attr(data_ml$baby_weight_lin, "source_file") <- "drvd"
-  #   attr(data_ml$baby_weight_lin, "mlrole") <- "input"
-  # }
-  
-  
   # ---- [don't change] finalize global variables ----
   # remove bad columns
   rm_c <- c()
@@ -149,3 +121,5 @@ shiny_dictup <- function(data_org,
               data_org = data_org,
               dict_org = dict_org))
 }
+
+
