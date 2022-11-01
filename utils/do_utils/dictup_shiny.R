@@ -6,6 +6,12 @@ dictup_shiny <- function(data_org,
   colnames(data_org) <- gsub("[^[:alnum:]]","_",colnames(data_org))
   dict_org$varname <- gsub("[^[:alnum:]]","_",dict_org$varname)
   dict_org$label <- gsub("_v[0-9]", "", dict_org$label)
+  if(!"unit"%in%colnames(dict_org)){
+    dict_org$unit <- ""
+  }
+  if(!"source_file"%in%colnames(dict_org)){
+    dict_org$source_file <- "source"
+  }
   # key / cluster name and labels
   key_var_name <- as.character(dict_org$varname[which(dict_org$type=="key")])
   key_var_label <- as.character(dict_org$label[which(dict_org$type=="key")])

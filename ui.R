@@ -10,7 +10,7 @@ if(!exists("time_over_labels")){
   time_over_labels <- c("Fake Time Index")
 }
 if(!exists("prj_name")){
-  prj_name <- "Unnamed Project -- You can specify project name / desciption / link in shiny.R script"
+  prj_name <- "Unnamed Project -- You may specify project name / desciption / link in shiny.R script"
 }
 if(!exists("prj_link")){
   prj_link <- "https://github.com/JiaxingQiu/MediDSToolbox"
@@ -33,10 +33,10 @@ sidebar <- dashboardSidebar(
     menuItem("About", tabName = "about"),
     
     # ---- 0. project info ----
-    menuItem("Project Info", tabName = "prj_info"),
+    menuItem("Build Project", tabName = "prj_info"),
     
     # ---- 1. setup ----
-    menuItem("Set up", tabName = "setup", startExpanded = FALSE,
+    menuItem("Engineer Data", tabName = "setup", startExpanded = FALSE,
              menuSubItem('Engineer', tabName = 'setup_engineer'),
              menuSubItem('Summary', tabName = 'setup_summ')),
     useShinyjs(),
@@ -151,11 +151,9 @@ sidebar <- dashboardSidebar(
     useShinyjs(),
     div(id = 'sidebar_ml_setup',
         conditionalPanel("input.sidebar == 'ml_setup'",
-                         
                          checkboxInput("ml_trim_ctrl", 
                                        "Trim Control Group", 
                                        value = TRUE),
-                        
                          fileInput("ex_test_csv", "External Test Dataset(.csv)",
                                    multiple = FALSE,
                                    accept = c("text/csv","text/comma-separated-values,text/plain",".csv"))
@@ -311,6 +309,8 @@ sidebar <- dashboardSidebar(
                                      choices = c())
         ))
   )
+  # ,
+  # actionButton("demo_go", "Try Demo",icon=icon("play-circle"))
 )
 
 body <- dashboardBody(
@@ -375,22 +375,59 @@ body <- dashboardBody(
             )
     ),
     
-    # ---- 0.project info ----
+    # ---- 0.project upload ----
     tabItem(tabName = "prj_info",
-            tags$h1(prj_name),
-            tags$p("Click ",
-                   tags$a(href = prj_link, "here"),
-                   " for more information.")
+            hr(),
+            fluidRow(
+              column(1,actionButton("demo_go", "Try Demo",icon=icon("play-circle")))
+            ),
+            hr(),
+            fluidRow(
+              column(6, 
+                     fileInput("up_data_org", "Upload Your Data (.csv)",
+                               multiple = FALSE,
+                               accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
+                     htmlOutput("up_data_org_msg")
+              ),
+              column(4,
+                     conditionalPanel("output.up_data_org_valid",
+                                      downloadButton("init_dict_org","Create Dictionary*"),
+                                      tags$p("Hint: (optional) if you don't have a dictionary .csv file locally, we can generate one for you from the uploaded data!")
+                     )
+              )
+            ),
+            fluidRow(
+              column(6, 
+                     fileInput("up_dict_org", "Upload Your Dictionary (.csv)",
+                               multiple = FALSE,
+                               accept = c("text/csv","text/comma-separated-values,text/plain",".csv")),
+                     htmlOutput("up_dict_org_msg") 
+              ),
+              column(4, 
+                     conditionalPanel("output.up_dict_org_valid",
+                                      selectInput("up_time_over_labels", 
+                                                  label="Time over variable(s)",
+                                                  choices = c(),
+                                                  selected = c(),
+                                                  multiple = TRUE) )
+              )
+            ),
+            hr(),
+            conditionalPanel("output.up_data_org_valid && output.up_dict_org_valid && output.up_time_over_labels_valid",
+                             fluidRow(
+                               column(1,actionButton("upload_go", "Go",icon=icon("play-circle")))
+                             )
+            )
     ),
     # ---- 1. setup ----
     tabItem(tabName = "setup_engineer",
-            h3(" Set Up -- Engineer"),
+            h3("Set up -- Engineer"),
             tabsetPanel(type = "tabs", selected = "Data",
                         tabPanel("Dictionary",
                                  selectInput("setup_source_file",
                                              label="Include source(s)",
-                                             choices = unique(dict_ml$source_file),
-                                             selected = unique(dict_ml$source_file),
+                                             choices = c(),
+                                             selected = c(),
                                              multiple = TRUE),
                                  dataTableOutput("dictionary_setup")
                         ),
@@ -402,10 +439,10 @@ body <- dashboardBody(
                                    column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_cluster_label",
                                                       label="Cluster by",
-                                                      choices = dict_ml$label[which(dict_ml$type=="key")] ),
+                                                      choices = c() ),
                                           selectInput("setup_trim_by_label",
                                                       label="Trim time by",
-                                                      choices = time_over_labels),
+                                                      choices = c()),
                                           numericInput("setup_trim_time_unit", "/", 1),
                                           sliderInput("setup_trim_vec",
                                                       label="[ from, to )",
@@ -461,7 +498,7 @@ body <- dashboardBody(
             )
     ),
     tabItem(tabName = "setup_summ",
-            h3("Engineering -- Summary Table"),
+            h3("Set up -- Summary Tables"),
             fluidRow(column(1,actionButton("setup_summ_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Summary",
@@ -553,7 +590,7 @@ body <- dashboardBody(
     
     # ---- 3. ml (supervised) ----
     tabItem(tabName = "ml_setup",
-            h3("Machine Learning (supervised) -- Set up"),
+            h3("Machine Learning (supervised) -- Variable Selection"),
             tabsetPanel(type = "tabs",
                         tabPanel("Setup", 
                                  hr(),

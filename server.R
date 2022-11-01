@@ -2,97 +2,201 @@ library(shinydashboard)
 library(shinyjs)
 library(shinydashboardPlus)
 library(shiny)
+library(shinyBS)
 options(shiny.maxRequestSize = 5000*1024^2) # 5G data
 
 
 shinyServer(function(input, output, session) {
   
-  #-------------------------------------------- Event control --------------------------------------------
-  # ---- 1. setup ----'
+  values <- reactiveValues(dict_ml = dict_ml,
+                           data_ml = data_ml,
+                           time_over_labels = time_over_labels)
   
-  observeEvent(input$setup_source_file,{
-    if(length(input$setup_source_file)<1) {
-      updateSelectInput(inputId = "setup_source_file",
-                        choices = unique(dict_ml$source_file),
-                        selected = unique(dict_ml$source_file) )
-      dict_ml_org <- dict_ml
-    }else{
-      dict_ml_org <- dict_ml
-      dict_ml <- dict_ml_org[which(dict_ml_org$source_file%in%input$setup_source_file),]
-    }
+  #-------------------------------------------- Event control --------------------------------------------
+  # ---- 0. project upload ----
+  observeEvent(input$demo_go,{
+    
+    # reset to demo project
+    shiny_obj <- dictup_shiny(data_org, dict_org, time_over_labels)
+    values$data_ml <- shiny_obj$data_ml
+    values$dict_ml <- shiny_obj$dict_ml
+    values$time_over_labels <- time_over_labels
+    
+    updateSelectInput(inputId = "setup_source_file",
+                      choices = unique(values$dict_ml$source_file),
+                      selected = unique(values$dict_ml$source_file) )
+    updateSelectInput(inputId = "setup_cluster_label",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="key")])
+    updateSelectInput(inputId = "setup_trim_by_label",
+                      choices = values$time_over_labels)
     updateSelectInput(inputId = "setup_pctcut_num_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num")])
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")])
     updateSelectInput(inputId = "setup_filter_tag_labels",
-                      choices = dict_ml$label[which(dict_ml$unit=="tag01")])
+                      choices = values$dict_ml$label[which(values$dict_ml$unit=="tag01")])
     updateSelectInput(inputId = "setup_strat_by",
-                      choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]))
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]))
     updateSelectInput(inputId = "eda_y_label_stats1d",
-                      choices = dict_ml$label[which(dict_ml$type=="num"|(dict_ml$unit=="tag01") )])
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$unit=="tag01") )])
     updateSelectInput(inputId = "eda_x_label_stats1d",
-                      choices = dict_ml$label[which(dict_ml$type!="")] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type!="")] )
     updateSelectInput(inputId = "eda_group_by_label_stats1d",
-                      choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]) )
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats2d",
-                      choices = dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num" | (values$dict_ml$unit=="tag01") )] )
     updateSelectInput(inputId = "eda_x_label1_stats2d",
-                      choices = dict_ml$label[which(dict_ml$type=="num")] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")] )
     updateSelectInput(inputId = "eda_x_label2_stats2d",
-                      choices = dict_ml$label[which(dict_ml$type=="num")] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")] )
     updateSelectInput(inputId = "eda_group_by_label_stats2d",
-                      choices = c("None", dict_ml$label[which(dict_ml$type=="fct")]) )
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_star",
-                      choices = dict_ml$label[which(dict_ml$type=="num" | (dict_ml$unit=="tag01") )] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num" | (values$dict_ml$unit=="tag01") )] )
     # updateSelectInput(inputId = "eda_sort_by_label",
-    #                   choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
+    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
     # updateSelectInput(inputId = "eda_align_by_label",
-    #                   choices = dict_ml$label[which(dict_ml$type=="num"&as.character(dict_ml$unique_per_sbj)=="FALSE")] )
+    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
     updateSelectInput(inputId = "eda_group_by_label_star",
-                      choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]) )
+                      choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_tag_label",
-                      choices = c("None", dict_ml$label[which(dict_ml$unit=="tag01")]) )
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$unit=="tag01")]) )
     updateSelectInput(inputId = "eda_y_label_allu",
-                      choices = c("None", dict_ml$label[which(dict_ml$type=="num")]) )
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="num")]) )
     updateSelectInput(inputId = "eda_tag_labels_allu",
-                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")] )
     updateSelectInput(inputId = "ml_y_label",
-                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")],#| dict_ml$type=="num"
-                      selected = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")][1] )#| dict_ml$type=="num"
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")],#| values$dict_ml$type=="num"
+                      selected = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")][1] )#| values$dict_ml$type=="num"
     updateSelectInput(inputId = "ml_num_adjust_label",
-                      choices = c("None",dict_ml$label[which(dict_ml$type=="num")]),
+                      choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="num")]),
                       selected = "None" )
     updateSelectInput(inputId = "ml_uni_group_label",
-                      choices = c("None",dict_ml$label[which(dict_ml$type=="fct")]),
+                      choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="fct")]),
                       selected = "None" )
     updateSelectInput(inputId = "ml_num_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_nonlin_rcs5_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_nonlin_rcs4_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_nonlin_rcs3_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_linear_num_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_fct_labels_mdl",
-                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit!="tag01")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit!="tag01")],
                       selected = NULL )
     updateSelectInput(inputId = "ml_tag_labels_mdl",
-                      choices = dict_ml$label[which(dict_ml$type=="fct"&dict_ml$unit=="tag01")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")],
                       selected = NULL )
     updateSelectInput(inputId = "unml_input_labels",
-                      choices = dict_ml$label[which(dict_ml$type=="num"|dict_ml$unit=="tag01")],
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|values$dict_ml$unit=="tag01")],
                       selected = NULL )
     
+    
   })
+  observeEvent(input$upload_go,{
+    # reset dict_org in values
+    up_dict_org_obj <- UpDictOrg()
+    up_dict_org <- up_dict_org_obj$dict_org
+    # reset data_org in values
+    ext <- tools::file_ext(input$up_data_org$datapath)
+    req(input$up_data_org)
+    try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+    up_data_org <- read.csv(input$up_data_org$datapath)
+    # reset values$dict_ml and values$data_ml
+    shiny_obj <- dictup_shiny(up_data_org, up_dict_org, input$up_time_over_labels)
+    values$data_ml <- shiny_obj$data_ml
+    values$dict_ml <- shiny_obj$dict_ml
+    values$time_over_labels <- input$up_time_over_labels
+    updateSelectInput(inputId = "setup_source_file",
+                      choices = unique(values$dict_ml$source_file),
+                      selected = unique(values$dict_ml$source_file) )
+    updateSelectInput(inputId = "setup_cluster_label",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="key")])
+    updateSelectInput(inputId = "setup_trim_by_label",
+                      choices = values$time_over_labels)
+    updateSelectInput(inputId = "setup_pctcut_num_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")])
+    updateSelectInput(inputId = "setup_filter_tag_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$unit=="tag01")])
+    updateSelectInput(inputId = "setup_strat_by",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]))
+    updateSelectInput(inputId = "eda_y_label_stats1d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$unit=="tag01") )])
+    updateSelectInput(inputId = "eda_x_label_stats1d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type!="")] )
+    updateSelectInput(inputId = "eda_group_by_label_stats1d",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
+    updateSelectInput(inputId = "eda_y_label_stats2d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num" | (values$dict_ml$unit=="tag01") )] )
+    updateSelectInput(inputId = "eda_x_label1_stats2d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")] )
+    updateSelectInput(inputId = "eda_x_label2_stats2d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")] )
+    updateSelectInput(inputId = "eda_group_by_label_stats2d",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
+    updateSelectInput(inputId = "eda_y_label_star",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num" | (values$dict_ml$unit=="tag01") )] )
+    # updateSelectInput(inputId = "eda_sort_by_label",
+    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
+    # updateSelectInput(inputId = "eda_align_by_label",
+    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
+    updateSelectInput(inputId = "eda_group_by_label_star",
+                      choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
+    updateSelectInput(inputId = "eda_tag_label",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$unit=="tag01")]) )
+    updateSelectInput(inputId = "eda_y_label_allu",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="num")]) )
+    updateSelectInput(inputId = "eda_tag_labels_allu",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")] )
+    updateSelectInput(inputId = "ml_y_label",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")],#| values$dict_ml$type=="num"
+                      selected = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")][1] )#| values$dict_ml$type=="num"
+    updateSelectInput(inputId = "ml_num_adjust_label",
+                      choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="num")]),
+                      selected = "None" )
+    updateSelectInput(inputId = "ml_uni_group_label",
+                      choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="fct")]),
+                      selected = "None" )
+    updateSelectInput(inputId = "ml_num_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_nonlin_rcs5_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_nonlin_rcs4_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_nonlin_rcs3_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_linear_num_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_fct_labels_mdl",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit!="tag01")],
+                      selected = NULL )
+    updateSelectInput(inputId = "ml_tag_labels_mdl",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")],
+                      selected = NULL )
+    updateSelectInput(inputId = "unml_input_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|values$dict_ml$unit=="tag01")],
+                      selected = NULL )
+
+
+  })
+
+  # ---- 1. setup ----
+  
   observeEvent(input$setup_trim_by_label, {
     # if time index is not given by user
     if(input$setup_trim_by_label=="Fake Time Index"){
-      data_tmp <- assign.dict(data_ml, dict_ml)
+      data_tmp <- assign.dict(values$data_ml, values$dict_ml)
       data_tmp$fake_time <- 333
       attr(data_tmp$fake_time,"varname") <- "fake_time"
       attr(data_tmp$fake_time, "label") <- "Fake Time Index"
@@ -100,16 +204,16 @@ shinyServer(function(input, output, session) {
       attr(data_tmp$fake_time, "unit") <- "fake unit"
       attr(data_tmp$fake_time, "source_file") <- "drvd"
       attr(data_tmp$fake_time, "unique_per_sbj") <- "FALSE"
-      # update global data_ml
-      data_ml <<- data_tmp
+      # update global values$data_ml
+      values$data_ml <<- data_tmp
       # update global dictionary
-      dict_ml <<- get.dict(data_ml)
+      values$dict_ml <<- get.dict(values$data_ml)
       rm(data_tmp)
     }
       
-    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
-    min_value = min(data_ml[,trim_by_col],na.rm=TRUE)
-    max_value = max(data_ml[,trim_by_col],na.rm=TRUE)
+    trim_by_col <- values$dict_ml$varname[which(values$dict_ml$label==input$setup_trim_by_label)]
+    min_value = min(values$data_ml[,trim_by_col],na.rm=TRUE)
+    max_value = max(values$data_ml[,trim_by_col],na.rm=TRUE)
     updateSliderInput(inputId = "setup_trim_vec", 
                       min = min_value,
                       max = max_value,
@@ -119,9 +223,9 @@ shinyServer(function(input, output, session) {
     
   })  
   observeEvent(input$setup_trim_time_unit, {
-    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
-    min_value = floor(min(data_ml[,trim_by_col],na.rm=TRUE)/input$setup_trim_time_unit)
-    max_value = floor(max(data_ml[,trim_by_col],na.rm=TRUE)/input$setup_trim_time_unit)
+    trim_by_col <- values$dict_ml$varname[which(values$dict_ml$label==input$setup_trim_by_label)]
+    min_value = floor(min(values$data_ml[,trim_by_col],na.rm=TRUE)/input$setup_trim_time_unit)
+    max_value = floor(max(values$data_ml[,trim_by_col],na.rm=TRUE)/input$setup_trim_time_unit)
     updateSliderInput(inputId = "setup_trim_vec", 
                       min = min_value,
                       max = max_value,
@@ -137,10 +241,10 @@ shinyServer(function(input, output, session) {
                              label = input$setup_trim_by_label,
                              inline = TRUE)
     # calculate min and max number of observations per cluster
-    cluster_col <- dict_ml$varname[which(dict_ml$label==input$setup_cluster_label)]
-    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]
+    cluster_col <- values$dict_ml$varname[which(values$dict_ml$label==input$setup_cluster_label)]
+    trim_by_col <- values$dict_ml$varname[which(values$dict_ml$label==input$setup_trim_by_label)]
     print(paste0("update input$eda_time_breaks_allu by ",trim_by_col))
-    data_tmp <- data_ml[which(data_ml[,trim_by_col]>=input$setup_trim_vec[1]*input$setup_trim_time_unit & data_ml[,trim_by_col]<=input$setup_trim_vec[2]*input$setup_trim_time_unit ),]
+    data_tmp <- values$data_ml[which(values$data_ml[,trim_by_col]>=input$setup_trim_vec[1]*input$setup_trim_time_unit & values$data_ml[,trim_by_col]<=input$setup_trim_vec[2]*input$setup_trim_time_unit ),]
     data_tmp$cluster_col_tmp <- data_tmp[,cluster_col]
     data_nrow <- data_tmp %>% group_by(cluster_col_tmp) %>% summarise(nobs = n()) %>% as.data.frame()
     min_value = min(data_nrow$nobs,na.rm=TRUE)
@@ -161,19 +265,19 @@ shinyServer(function(input, output, session) {
   summReport <- eventReactive(input$setup_summ_go, {
     source_list <- input$setup_source_file
     if(length(input$setup_source_file)<1) {
-      source_list <- unique(dict_ml$source_file)
+      source_list <- unique(values$dict_ml$source_file)
     }
-    cols_selected <- dict_ml$varname[which(dict_ml$source_file %in% c(source_list))]
-    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label==input$setup_cluster_label)]) 
-    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label==input$setup_trim_by_label)]) 
-    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label%in%input$setup_pctcut_num_labels)]) 
-    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label%in%input$setup_filter_tag_labels)]) 
-    cols_selected <- c(cols_selected, dict_ml$varname[which(dict_ml$label==input$setup_strat_by)]) 
+    cols_selected <- values$dict_ml$varname[which(values$dict_ml$source_file %in% c(source_list))]
+    cols_selected <- c(cols_selected, values$dict_ml$varname[which(values$dict_ml$label==input$setup_cluster_label)]) 
+    cols_selected <- c(cols_selected, values$dict_ml$varname[which(values$dict_ml$label==input$setup_trim_by_label)]) 
+    cols_selected <- c(cols_selected, values$dict_ml$varname[which(values$dict_ml$label%in%input$setup_pctcut_num_labels)]) 
+    cols_selected <- c(cols_selected, values$dict_ml$varname[which(values$dict_ml$label%in%input$setup_filter_tag_labels)]) 
+    cols_selected <- c(cols_selected, values$dict_ml$varname[which(values$dict_ml$label==input$setup_strat_by)]) 
     cols_selected <- unique(cols_selected)
-    data_ml_sub <- data_ml[,cols_selected]
+    data_ml_sub <- values$data_ml[,cols_selected]
     front_summary_tbl(
       data=data_ml_sub,
-      dict_data=dict_ml,
+      dict_data=values$dict_ml,
       cluster_label=input$setup_cluster_label, 
       # --- engineer ---
       trim_by_label=input$setup_trim_by_label, 
@@ -194,8 +298,8 @@ shinyServer(function(input, output, session) {
   })
   # ---- 2. eda ----
   stats1dViz <- eventReactive(input$eda_stats1d_go, {
-    front_viz_1d_stats(data = data_ml,
-                       dict_data = dict_ml,
+    front_viz_1d_stats(data = values$data_ml,
+                       dict_data = values$dict_ml,
                        y_label = input$eda_y_label_stats1d,
                        x_label = input$eda_x_label_stats1d,
                        cluster_label = input$setup_cluster_label,
@@ -216,8 +320,8 @@ shinyServer(function(input, output, session) {
   
   
   stats2dViz <- eventReactive(input$eda_stats2d_go, {
-    front_viz_2d_stats(data = data_ml,
-                       dict_data = dict_ml,
+    front_viz_2d_stats(data = values$data_ml,
+                       dict_data = values$dict_ml,
                        y_label = input$eda_y_label_stats2d,
                        x_label1 = input$eda_x_label1_stats2d,
                        x_label2 = input$eda_x_label2_stats2d,
@@ -235,8 +339,8 @@ shinyServer(function(input, output, session) {
   })
   
   starViz <- eventReactive(input$eda_star_go, {
-    front_viz_death_star(data = data_ml,
-                         dict_data = dict_ml,
+    front_viz_death_star(data = values$data_ml,
+                         dict_data = values$dict_ml,
                          trim_by_label = input$setup_trim_by_label,
                          trim_vec = as.numeric(input$setup_trim_vec),
                          time_unit = input$setup_trim_time_unit,
@@ -259,8 +363,8 @@ shinyServer(function(input, output, session) {
   })
   
   alluvialViz <- eventReactive(input$eda_allu_go, {
-    front_viz_alluvial(data = data_ml,
-                       dict_data = dict_ml,
+    front_viz_alluvial(data = values$data_ml,
+                       dict_data = values$dict_ml,
                        y_label = input$eda_y_label_allu,
                        cluster_label = input$setup_cluster_label,
                        trim_by_label = input$setup_trim_by_label,
@@ -318,7 +422,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_linear_num_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_linear_num_labels)
   })
   # --- ml_nonlin_rcs3_labels ---
@@ -334,7 +438,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs3_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs3_labels)
   })
   # --- ml_nonlin_rcs4_labels ---
@@ -350,7 +454,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs5_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs4_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs4_labels)
   })
   # --- ml_nonlin_rcs5_labels ---
@@ -366,7 +470,7 @@ shinyServer(function(input, output, session) {
       input$ml_nonlin_rcs4_labels
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs5_labels", 
-                      choices = setdiff(dict_ml$label[which(dict_ml$type=="num")], X_labels_used),
+                      choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs5_labels)
   })
   observeEvent(input$ml_y_max, {
@@ -381,8 +485,8 @@ shinyServer(function(input, output, session) {
       heat_limits <- input$ml_uni_heat_limits
     }
     uni_obj <- front_uni_heatmap_group(
-      data=data_ml,
-      dict_data=dict_ml,
+      data=values$data_ml,
+      dict_data=values$dict_ml,
       num_labels=input$ml_num_labels, 
       y_label=input$ml_y_label, 
       cluster_label=input$setup_cluster_label,
@@ -442,8 +546,8 @@ shinyServer(function(input, output, session) {
     aggregate_per <- ifelse(input$setup_aggregate_per%in%c("cluster_trim_by_unit", "cluster"), input$setup_aggregate_per, "cluster")
     
     front_lasso_select(
-      data = data_ml,
-      dict_data = dict_ml,
+      data = values$data_ml,
+      dict_data = values$dict_ml,
       y_label=input$ml_y_label, 
       cluster_label=input$setup_cluster_label,
       x_labels_linear=input$ml_linear_num_labels,
@@ -479,8 +583,8 @@ shinyServer(function(input, output, session) {
   
   XclusReports <- eventReactive(input$ml_clus_go, {
     front_X_clus(
-      data = data_ml,
-      dict_data = dict_ml,
+      data = values$data_ml,
+      dict_data = values$dict_ml,
       x_labels=unique(c(input$ml_tag_labels_mdl, input$ml_fct_labels_mdl,input$ml_linear_num_labels,input$ml_nonlin_rcs3_labels,input$ml_nonlin_rcs4_labels,input$ml_nonlin_rcs5_labels)), 
       y_label=input$ml_y_label, 
       cluster_label=input$setup_cluster_label,
@@ -516,8 +620,8 @@ shinyServer(function(input, output, session) {
       test_data <- read.csv(input$ex_test_csv$datapath)
     }
     front_multi_regression(
-      data = data_ml,
-      dict_data = dict_ml,
+      data = values$data_ml,
+      dict_data = values$dict_ml,
       y_label=input$ml_y_label, 
       cluster_label=input$setup_cluster_label,
       x_labels_linear=input$ml_linear_num_labels,
@@ -559,8 +663,8 @@ shinyServer(function(input, output, session) {
   
   MLreports_timely <- eventReactive(input$ml_timely_go, {
     front_multi_regression_timely(
-      data = data_ml,
-      dict_data = dict_ml,
+      data = values$data_ml,
+      dict_data = values$dict_ml,
       y_label=input$ml_y_label, 
       cluster_label=input$setup_cluster_label,
       x_labels_linear=input$ml_linear_num_labels,
@@ -601,9 +705,9 @@ shinyServer(function(input, output, session) {
   
   # ---- 4. unsupervised ml ----
   observeEvent(input$unml_trim_by_label, {
-    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$unml_trim_by_label)]
-    min_value = min(data_ml[,trim_by_col],na.rm=TRUE)
-    max_value = max(data_ml[,trim_by_col],na.rm=TRUE)
+    trim_by_col <- values$dict_ml$varname[which(values$dict_ml$label==input$unml_trim_by_label)]
+    min_value = min(values$data_ml[,trim_by_col],na.rm=TRUE)
+    max_value = max(values$data_ml[,trim_by_col],na.rm=TRUE)
     updateSliderInput(inputId = "unml_trim_vec",
                       min = min_value,
                       max = max_value,
@@ -612,9 +716,9 @@ shinyServer(function(input, output, session) {
                        value = 1)
   })
   observeEvent(input$unml_trim_time_unit, {
-    trim_by_col <- dict_ml$varname[which(dict_ml$label==input$unml_trim_by_label)]
-    min_value = floor(min(data_ml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
-    max_value = floor(max(data_ml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
+    trim_by_col <- values$dict_ml$varname[which(values$dict_ml$label==input$unml_trim_by_label)]
+    min_value = floor(min(values$data_ml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
+    max_value = floor(max(values$data_ml[,trim_by_col],na.rm=TRUE)/input$unml_trim_time_unit)
     updateSliderInput(inputId = "unml_trim_vec",
                       min = min_value,
                       max = max_value,
@@ -623,8 +727,8 @@ shinyServer(function(input, output, session) {
   MLuns_cluster <- eventReactive(input$umml_cluster_go, {
     front_uns_cluster(
       # global parameters (unsupervised setup page)
-      data=data_ml,
-      dict_data=dict_ml,
+      data=values$data_ml,
+      dict_data=values$dict_ml,
       cluster_label=input$setup_cluster_label,
       # --- engineer ---
       trim_by_label=input$setup_trim_by_label,
@@ -648,9 +752,128 @@ shinyServer(function(input, output, session) {
   
   
   # --------------------------------------------- output object ------------------------------------------------
+  # ---- 0. project upload ----
+  UpDataOrg <- reactive({
+    msg <- NULL
+    valid <- FALSE
+    if(!is.null(input$up_data_org)){
+      ext <- tools::file_ext(input$up_data_org$datapath)
+      req(input$up_data_org)
+      try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+      df <- read.csv(input$up_data_org$datapath, nrows = 1000)
+      # change status message
+      msg <-"Using uploaded dataframe status:"
+      # TBD error checks
+      # final status
+      if(grepl("invalid",msg)){
+        msg <- paste(msg, "Please upload again.", sep="<br/>")
+      }else{
+        msg <- paste(msg, "Valid.", sep="<br/>")
+        valid <- TRUE
+      }
+    }
+    return(list(msg = msg,
+                valid = valid))
+  })
+  output$up_data_org_valid <- reactive({
+    up_obj <- UpDataOrg()
+    return(up_obj$valid)
+  })
+  outputOptions(output, 'up_data_org_valid', suspendWhenHidden=FALSE)
+  output$up_data_org_msg <- renderUI({
+    up_obj <- UpDataOrg()
+    HTML(up_obj$msg) 
+  })
+  
+  
+  UpDictOrg <- reactive({
+    msg <- NULL 
+    valid <- FALSE
+    d <- NULL
+    if(!is.null(input$up_dict_org)){
+      ext <- tools::file_ext(input$up_dict_org$datapath)
+      req(input$up_dict_org)
+      try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+      d <- read.csv(input$up_dict_org$datapath)
+      # change status message
+      msg <-"Using uploaded dictionary status:"
+      # check dictionary quality by each required columns
+      if(!"varname" %in% colnames(d)){
+        msg <- paste(msg, "invalid -- 'varname' field is missing.", sep="<br/>")
+      }
+      if(!"label" %in% colnames(d)){
+        msg <- paste(msg, "invalid -- 'label' field is missing.", sep="<br/>")
+      }
+      if(!"type" %in% colnames(d)){
+        msg <- paste(msg, "invalid -- 'type' field is missing.", sep="<br/>")
+      }else{
+        if(!"key"%in%unique(d[,"type"])){
+          msg <- paste(msg, "invalid -- 'type' field must include at least one 'key' value.", sep="<br/>")
+        }
+        if(!"num"%in%unique(d[,"type"])){
+          msg <- paste(msg, "invalid -- 'type' field must include at least one 'num' value.", sep="<br/>")
+        }
+        if(!"fct"%in%unique(d[,"type"])){
+          msg <- paste(msg, "invalid -- 'type' field must include at least one 'fct' value.", sep="<br/>")
+        }
+      }
+      
+      if(!"unique_per_sbj" %in% colnames(d)){
+        msg <- paste(msg, "invalid -- 'unique_per_sbj' field is missing.", sep="<br/>")
+      }else{
+        if( length(setdiff(unique(d[,"unique_per_sbj"]), c("TRUE","FALSE",NA,"")))>0 ){
+          msg <- paste(msg, "invalid -- 'unique_per_sbj' field value can only be 'TRUE' or 'FALSE' or empty.", sep="<br/>")
+        }
+      }
+      if(!"unit" %in% colnames(d)){
+        msg <- paste(msg, "warning -- 'unit' field is not specified, system defaults ''.", sep="<br/>")
+      }
+      if(!"source_file" %in% colnames(d)){
+        msg <- paste(msg, "warning -- 'source_file' field is not specified, system defaults 'source'.", sep="<br/>")
+      }else{
+        if(all(d[,"source_file"]=="")){
+          d[,"source_file"] <- "default"
+          msg <- paste(msg, "warning -- 'source_file' field is not specified, system defaults 'source'.", sep="<br/>")
+        }
+      }
+      # final status
+      if(grepl("invalid",msg)){
+        msg <- paste(msg, "Please upload again.", sep="<br/>")
+      }else{
+        msg <- paste(msg, "Valid.", sep="<br/>")
+        valid <- TRUE
+      }
+    }
+    return(list(msg = msg,
+                valid = valid,
+                dict_org = d))
+  })
+  output$up_dict_org_valid <- reactive({
+    up_obj <- UpDictOrg()
+    return(up_obj$valid)
+  })
+  outputOptions(output, 'up_dict_org_valid', suspendWhenHidden=FALSE)
+  output$up_dict_org_msg <- renderUI({
+    up_obj <- UpDictOrg()
+    HTML(up_obj$msg)
+  })
+  
+  observeEvent(input$up_dict_org,{
+    up_obj <- UpDictOrg()
+    dict_org <- up_obj$dict_org
+    updateSelectInput(inputId = "up_time_over_labels",
+                      choices = dict_org$label[which(dict_org$type=="num")])
+  })
+  output$up_time_over_labels_valid <- reactive({
+    valid <- FALSE
+    if(length(input$up_time_over_labels)>0){ valid <- TRUE }
+    return(valid)
+  })
+  outputOptions(output, 'up_time_over_labels_valid', suspendWhenHidden=FALSE)
+  
   # ---- 1. setup ----
   output$dictionary_setup  <- renderDataTable(
-    dict_ml[which(dict_ml$source_file%in%input$setup_source_file),c("varname","label","type","unit","unit_label","unique_per_sbj","source_file")]
+    values$dict_ml[which(values$dict_ml$source_file%in%input$setup_source_file),c("varname","label","type","unit","unit_label","unique_per_sbj","source_file")]
   )
   # Summary Table ----
   output$summary_table <- renderDataTable({
@@ -899,7 +1122,7 @@ shinyServer(function(input, output, session) {
   # ---- 3. supervised ml ----
   # setup ----
   output$dictionary_table_ml <- renderDataTable(
-    dict_ml[,c("label","source_file","varname","type","unit")]
+    values$dict_ml[,c("label","source_file","varname","type","unit")]
   )
   # Univariate Heatmap ----
   output$plot_uniheat <- renderPlot({
@@ -1437,7 +1660,7 @@ shinyServer(function(input, output, session) {
   
   # ---- 4. unsupervised ml ----
   # setup ----
-  output$dictionary_table_unml <- renderDataTable(dict_ml[which(dict_ml$source_file!=""),c("source_file","varname","label","type","unit")])
+  output$dictionary_table_unml <- renderDataTable(values$dict_ml[which(values$dict_ml$source_file!=""),c("source_file","varname","label","type","unit")])
   
   # kmeans clustering ---
   output$unml_wss_plot <- renderPlot({

@@ -65,13 +65,7 @@ if(length(flst)>0){
   sapply(c(paste(path,flst,sep="/")), source, .GlobalEnv)
 }
 
-
-
 # ---- [if you are a data person, you might make changes here :) ] global constants ----
-# [optional] "prj_name" is the name of your project, it's optional and will be shown in "Project Info" page if given.
-prj_name <- "Demo"
-# [optional] "prj_link" is a hyperlink of your project if any, it's optional and will be shown in "Project Info" page if given.
-prj_link <- "https://github.com/JiaxingQiu/MediDSToolbox"
 # [required (if longitudinal)] "time_over_labels" is a list of the labels of time-indicator variables of your data. 
 ### If your data is "longitudinal" / "time-series" data (there are repeated measures from each subject in your study),  
 ### you are required to specify their label here, otherwise a "fake time index" (value of 333) will be assign to your dataframe, 
