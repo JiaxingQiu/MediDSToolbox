@@ -80,13 +80,31 @@ get.dict <- function(data, attr_list=c() ){
     }
   }
   dict_df$varname <- rownames(dict_df) 
-  if(!"unit_label" %in% colnames(dict_df) ){
-    dict_df$unit_label <- ""
+  if(!"label" %in% colnames(dict_df) ){
+    dict_df$label <- ""
   }
-  dict_df$unit_label[which(dict_df$unit=="tag01")] <- "1=Yes; 0=No" 
+  if(!"type" %in% colnames(dict_df) ){
+    dict_df$type <- ""
+  }
+  if(!"unique_per_sbj" %in% colnames(dict_df) ){
+    dict_df$unique_per_sbj <- "FALSE"
+  }
+  if(!"unit" %in% colnames(dict_df) ){
+    dict_df$unit <- ""
+  }
+  if(!"source_file" %in% colnames(dict_df) ){
+    dict_df$source_file <- ""
+  }
+  if("unit" %in% colnames(dict_df)){
+    if(!"unit_label" %in% colnames(dict_df) ){
+      dict_df$unit_label <- ""
+    }
+    dict_df$unit_label[which(dict_df$unit=="tag01")] <- "1=Yes; 0=No" 
+  }
   
   return(dict_df)
 }
+
 
 remove.dict <- function(data){
   for (col in colnames(data)) attributes(data[[col]]) <- NULL

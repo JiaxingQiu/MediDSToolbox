@@ -5,10 +5,9 @@ account: joy-cama-uva
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5209084
-bundleId: 6456592
+bundleId: 6465397
 url: https://joy-cama-uva.shinyapps.io/MediDSToolbox_demo/
-when: 1667153977.03558
-lastSyncTime: 1667153977.03559
+when: 1667355006.74912
+lastSyncTime: 1667355006.74913
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: LICENSE|README.md|archive

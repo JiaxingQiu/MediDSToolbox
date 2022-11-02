@@ -1,6 +1,5 @@
 dictup_shiny <- function(data_org, 
-                         dict_org,
-                         time_over_labels){
+                         dict_org){
   # ---- [don't change] engineer global variables ----
   # reformat varnames and labels
   colnames(data_org) <- gsub("[^[:alnum:]]","_",colnames(data_org))

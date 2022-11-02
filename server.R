@@ -3,25 +3,32 @@ library(shinyjs)
 library(shinydashboardPlus)
 library(shiny)
 library(shinyBS)
+library(shinyWidgets)
 options(shiny.maxRequestSize = 5000*1024^2) # 5G data
 
 
 shinyServer(function(input, output, session) {
   
-  values <- reactiveValues(dict_ml = dict_ml,
-                           data_ml = data_ml,
-                           time_over_labels = time_over_labels)
+  values <- reactiveValues(dict_ml = dict_ml_demo,
+                           data_ml = data_ml_demo,
+                           time_over_labels = time_over_labels_demo)
   
   #-------------------------------------------- Event control --------------------------------------------
   # ---- 0. project upload ----
   observeEvent(input$demo_go,{
-    
+    shinyWidgets::updateProgressBar(session = session, id = "pb_demo_go", value = 10)
     # reset to demo project
-    shiny_obj <- dictup_shiny(data_org, dict_org, time_over_labels)
+    shiny_obj <- dictup_shiny(data_org_demo, dict_org_demo)
     values$data_ml <- shiny_obj$data_ml
     values$dict_ml <- shiny_obj$dict_ml
-    values$time_over_labels <- time_over_labels
-    
+    if(length(time_over_labels_demo)>0){
+      values$time_over_labels <- time_over_labels_demo
+    }else{
+      values$time_over_labels <- c()
+    }
+    # find the valid labels within dict_ml
+    values$time_over_labels <- intersect(values$dict_ml$labels, values$time_over_labels)
+    shinyWidgets::updateProgressBar(session = session, id = "pb_demo_go", value = 50)
     updateSelectInput(inputId = "setup_source_file",
                       choices = unique(values$dict_ml$source_file),
                       selected = unique(values$dict_ml$source_file) )
@@ -51,10 +58,8 @@ shinyServer(function(input, output, session) {
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_star",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num" | (values$dict_ml$unit=="tag01") )] )
-    # updateSelectInput(inputId = "eda_sort_by_label",
-    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
-    # updateSelectInput(inputId = "eda_align_by_label",
-    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
+    updateSelectInput(inputId = "eda_sort_by_label",
+                      choices = values$time_over_labels)
     updateSelectInput(inputId = "eda_group_by_label_star",
                       choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_tag_label",
@@ -97,9 +102,11 @@ shinyServer(function(input, output, session) {
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num"|values$dict_ml$unit=="tag01")],
                       selected = NULL )
     
+    shinyWidgets::updateProgressBar(session = session, id = "pb_demo_go", value = 100)
     
   })
   observeEvent(input$upload_go,{
+    shinyWidgets::updateProgressBar(session = session, id = "pb_upload_go", value = 10)
     # reset dict_org in values
     up_dict_org_obj <- UpDictOrg()
     up_dict_org <- up_dict_org_obj$dict_org
@@ -109,10 +116,17 @@ shinyServer(function(input, output, session) {
     try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
     up_data_org <- read.csv(input$up_data_org$datapath)
     # reset values$dict_ml and values$data_ml
-    shiny_obj <- dictup_shiny(up_data_org, up_dict_org, input$up_time_over_labels)
+    shiny_obj <- dictup_shiny(up_data_org, up_dict_org)
     values$data_ml <- shiny_obj$data_ml
     values$dict_ml <- shiny_obj$dict_ml
-    values$time_over_labels <- input$up_time_over_labels
+    if(length(input$up_time_over_labels)>0){
+      values$time_over_labels <- input$up_time_over_labels
+    }else{
+      values$time_over_labels <- c()
+    }
+    # find the valid labels within dict_ml
+    values$time_over_labels <- intersect(values$dict_ml$labels, values$time_over_labels)
+    shinyWidgets::updateProgressBar(session = session, id = "pb_upload_go", value = 50)
     updateSelectInput(inputId = "setup_source_file",
                       choices = unique(values$dict_ml$source_file),
                       selected = unique(values$dict_ml$source_file) )
@@ -142,10 +156,8 @@ shinyServer(function(input, output, session) {
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_star",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num" | (values$dict_ml$unit=="tag01") )] )
-    # updateSelectInput(inputId = "eda_sort_by_label",
-    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
-    # updateSelectInput(inputId = "eda_align_by_label",
-    #                   choices = values$dict_ml$label[which(values$dict_ml$type=="num"&as.character(values$dict_ml$unique_per_sbj)=="FALSE")] )
+    updateSelectInput(inputId = "eda_sort_by_label",
+                      choices = values$time_over_labels)
     updateSelectInput(inputId = "eda_group_by_label_star",
                       choices = c("None",values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_tag_label",
@@ -187,29 +199,28 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "unml_input_labels",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num"|values$dict_ml$unit=="tag01")],
                       selected = NULL )
-
-
+    shinyWidgets::updateProgressBar(session = session, id = "pb_upload_go", value = 100)
   })
 
   # ---- 1. setup ----
   
   observeEvent(input$setup_trim_by_label, {
-    # if time index is not given by user
-    if(input$setup_trim_by_label=="Fake Time Index"){
-      data_tmp <- assign.dict(values$data_ml, values$dict_ml)
-      data_tmp$fake_time <- 333
-      attr(data_tmp$fake_time,"varname") <- "fake_time"
-      attr(data_tmp$fake_time, "label") <- "Fake Time Index"
-      attr(data_tmp$fake_time, "type") <- "tim"
-      attr(data_tmp$fake_time, "unit") <- "fake unit"
-      attr(data_tmp$fake_time, "source_file") <- "drvd"
-      attr(data_tmp$fake_time, "unique_per_sbj") <- "FALSE"
-      # update global values$data_ml
-      values$data_ml <<- data_tmp
-      # update global dictionary
-      values$dict_ml <<- get.dict(values$data_ml)
-      rm(data_tmp)
-    }
+    # # if time index is not given by user
+    # if(input$setup_trim_by_label=="Fake Time Index"){
+    #   data_tmp <- assign.dict(values$data_ml, values$dict_ml)
+    #   data_tmp$fake_time <- 333
+    #   attr(data_tmp$fake_time,"varname") <- "fake_time"
+    #   attr(data_tmp$fake_time, "label") <- "Fake Time Index"
+    #   attr(data_tmp$fake_time, "type") <- "tim"
+    #   attr(data_tmp$fake_time, "unit") <- "fake unit"
+    #   attr(data_tmp$fake_time, "source_file") <- "drvd"
+    #   attr(data_tmp$fake_time, "unique_per_sbj") <- "FALSE"
+    #   # update global values$data_ml
+    #   values$data_ml <<- data_tmp
+    #   # update global dictionary
+    #   values$dict_ml <<- get.dict(values$data_ml)
+    #   rm(data_tmp)
+    # }
       
     trim_by_col <- values$dict_ml$varname[which(values$dict_ml$label==input$setup_trim_by_label)]
     min_value = min(values$data_ml[,trim_by_col],na.rm=TRUE)
@@ -516,7 +527,7 @@ shinyServer(function(input, output, session) {
     uni_obj$plot_obj
     
   })
-  # ---- ml_select_lambda ----
+  # --- ml_select_lambda ---
   observeEvent(input$ml_select_lasso_by, {
     if(input$ml_select_lasso_by=="cluster"){
       updateSelectInput(inputId = "ml_select_lambda", 
@@ -753,6 +764,11 @@ shinyServer(function(input, output, session) {
   
   # --------------------------------------------- output object ------------------------------------------------
   # ---- 0. project upload ----
+  output$time_over_valid <- reactive({
+    return(length(values$time_over_labels)>0)
+  })
+  outputOptions(output, 'time_over_valid', suspendWhenHidden=FALSE)
+  
   UpDataOrg <- reactive({
     msg <- NULL
     valid <- FALSE
@@ -864,12 +880,21 @@ shinyServer(function(input, output, session) {
     updateSelectInput(inputId = "up_time_over_labels",
                       choices = dict_org$label[which(dict_org$type=="num")])
   })
-  output$up_time_over_labels_valid <- reactive({
-    valid <- FALSE
-    if(length(input$up_time_over_labels)>0){ valid <- TRUE }
-    return(valid)
-  })
-  outputOptions(output, 'up_time_over_labels_valid', suspendWhenHidden=FALSE)
+  
+  output$download_created_dict_org <- downloadHandler(
+    filename = function() {
+      paste0('dict_data_init', Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      ext <- tools::file_ext(input$up_data_org$datapath)
+      req(input$up_data_org)
+      try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
+      df <- read.csv(input$up_data_org$datapath, nrows = 10)
+      dict_init <- get.dict(df)
+      write.csv(dict_init, file, row.names = FALSE)
+    }
+  )
+  
   
   # ---- 1. setup ----
   output$dictionary_setup  <- renderDataTable(

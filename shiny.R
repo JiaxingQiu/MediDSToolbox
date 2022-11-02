@@ -70,7 +70,7 @@ if(length(flst)>0){
 ### If your data is "longitudinal" / "time-series" data (there are repeated measures from each subject in your study),  
 ### you are required to specify their label here, otherwise a "fake time index" (value of 333) will be assign to your dataframe, 
 ### which will make your study no different from subject-wise analysis.
-time_over_labels <- c("Hour since birth")
+time_over_labels_demo <- c("Hour since birth")
 # [required] load .csv format dictionary file from "data" folder, it must have the following columns:
 ### "varname": machine-friendly variable names
 ### "label": human-friendly variable labels
@@ -78,14 +78,14 @@ time_over_labels <- c("Hour since birth")
 ###         ["num": numeric, fct": factor, "tim": time-indicator, "key": subject/cluster-indicator]
 ### "source_file": source group of the variable, where does a variable come from / how is a variable generated
 ### "unique_per_sbj": TRUE/FALSE, whether or not this variable is unique per subject (i.e. patient)
-dict_org <- read.csv("./data/dict_data_demo.csv", stringsAsFactors = FALSE)
+dict_org_demo <- read.csv("./data/dict_data_demo.csv", stringsAsFactors = FALSE)
 # [required] load .csv format data file from "data" folder
-data_org <- read.csv("./data/data_demo.csv", stringsAsFactors = FALSE) 
+data_org_demo <- read.csv("./data/data_demo.csv", stringsAsFactors = FALSE) 
 
 # ---- call dict up shiny function in util folder ----
-shiny_obj <- dictup_shiny(data_org, dict_org, time_over_labels)
-data_org <- shiny_obj$data_org
-dict_org <- shiny_obj$dict_org
-data_ml <- shiny_obj$data_ml
-dict_ml <- shiny_obj$dict_ml
+shiny_obj <- dictup_shiny(data_org_demo, dict_org_demo)
+data_org_demo <- shiny_obj$data_org
+dict_org_demo <- shiny_obj$dict_org
+data_ml_demo <- shiny_obj$data_ml
+dict_ml_demo <- shiny_obj$dict_ml
 

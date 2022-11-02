@@ -5,17 +5,6 @@ library(shiny)
 source("./shiny.R")
 
 
-#### maintain global constants ####
-if(!exists("time_over_labels")){
-  time_over_labels <- c("Fake Time Index")
-}
-if(!exists("prj_name")){
-  prj_name <- "Unnamed Project -- You may specify project name / desciption / link in shiny.R script"
-}
-if(!exists("prj_link")){
-  prj_link <- "https://github.com/JiaxingQiu/MediDSToolbox"
-}
-
 #### header ####
 header <- dashboardHeader(
   title = HTML("Medical Data Science Toolbox"),
@@ -94,16 +83,13 @@ sidebar <- dashboardSidebar(
                                      choices = c())
         )),
     div(id = 'sidebar_eda_star',
-        conditionalPanel("input.sidebar == 'eda_star'",
+        conditionalPanel("input.sidebar == 'eda_star' && output.time_over_valid",
                          selectInput("eda_y_label_star",
                                      "Response (heat)",
                                      choices = c()),
                          selectInput("eda_sort_by_label",
                                      label = "Sort by length of",
-                                     choices = time_over_labels),
-                         # selectInput("eda_align_by_label",
-                         #             label = "Explainer (x)",
-                         #             choices = time_over_labels),
+                                     choices = c()),
                          selectInput("eda_group_by_label_star",
                                      label = "Group by",
                                      choices = c()),
@@ -118,7 +104,7 @@ sidebar <- dashboardSidebar(
                          helpText("Brush and double-click to zoom in/out.")
         )),
     div(id = 'sidebar_eda_allu',
-        conditionalPanel("input.sidebar == 'eda_allu'",
+        conditionalPanel("input.sidebar == 'eda_allu' && output.time_over_valid",
                          selectInput("eda_y_label_allu",
                                      label="Numeric Percentiles",
                                      choices = c() ),
@@ -377,10 +363,10 @@ body <- dashboardBody(
     
     # ---- 0.project upload ----
     tabItem(tabName = "prj_info",
+            tags$h3("Build Your Project or Try Demo"),
             hr(),
-            fluidRow(
-              column(1,actionButton("demo_go", "Try Demo",icon=icon("play-circle")))
-            ),
+            fluidRow( column(4,actionButton("demo_go", "Try Demo",icon=icon("play-circle"))) ),
+            fluidRow( column(4,shinyWidgets::progressBar(id = "pb_demo_go", value = 0, display_pct = TRUE)) ),
             hr(),
             fluidRow(
               column(6, 
@@ -391,11 +377,13 @@ body <- dashboardBody(
               ),
               column(4,
                      conditionalPanel("output.up_data_org_valid",
-                                      downloadButton("init_dict_org","Create Dictionary*"),
+                                      downloadButton("download_created_dict_org","Create Dictionary*"),
                                       tags$p("Hint: (optional) if you don't have a dictionary .csv file locally, we can generate one for you from the uploaded data!")
                      )
               )
             ),
+            hr(),
+            hr(),
             fluidRow(
               column(6, 
                      fileInput("up_dict_org", "Upload Your Dictionary (.csv)",
@@ -405,17 +393,22 @@ body <- dashboardBody(
               ),
               column(4, 
                      conditionalPanel("output.up_dict_org_valid",
+                                      tags$h5(tags$b("Relevent Time Axis(es)")),
                                       selectInput("up_time_over_labels", 
-                                                  label="Time over variable(s)",
+                                                  label=NULL,
                                                   choices = c(),
                                                   selected = c(),
-                                                  multiple = TRUE) )
+                                                  multiple = TRUE) 
+                     )
               )
             ),
             hr(),
-            conditionalPanel("output.up_data_org_valid && output.up_dict_org_valid && output.up_time_over_labels_valid",
+            conditionalPanel("output.up_data_org_valid && output.up_dict_org_valid",
                              fluidRow(
-                               column(1,actionButton("upload_go", "Go",icon=icon("play-circle")))
+                               column(4,actionButton("upload_go", "Go",icon=icon("play-circle")))
+                             ),
+                             fluidRow(
+                               column(4,shinyWidgets::progressBar(id = "pb_upload_go", value = 0, display_pct = TRUE))
                              )
             )
     ),
@@ -440,13 +433,15 @@ body <- dashboardBody(
                                           selectInput("setup_cluster_label",
                                                       label="Cluster by",
                                                       choices = c() ),
-                                          selectInput("setup_trim_by_label",
-                                                      label="Trim time by",
-                                                      choices = c()),
-                                          numericInput("setup_trim_time_unit", "/", 1),
-                                          sliderInput("setup_trim_vec",
-                                                      label="[ from, to )",
-                                                      min = 0,  max = 100, step = 1, value = c(0, 99))
+                                          conditionalPanel("output.time_over_valid",
+                                                           selectInput("setup_trim_by_label",
+                                                                       label="Trim time by",
+                                                                       choices = c()),
+                                                           numericInput("setup_trim_time_unit", "/", 1),
+                                                           sliderInput("setup_trim_vec",
+                                                                       label="[ from, to )",
+                                                                       min = 0,  max = 100, step = 1, value = c(0, 99))
+                                          )
                                    ),
                                    column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_pctcut_num_labels",
@@ -575,7 +570,9 @@ body <- dashboardBody(
             fluidRow(plotOutput("plot_2d_stats", height = "1000px"))),
     tabItem(tabName = "eda_star",
             h3("Exploratory Data Analysis -- Death Star"),
-            fluidRow(column(1,actionButton("eda_star_go", "Go",icon=icon("play-circle")))),
+            conditionalPanel("output.time_over_valid",
+                             fluidRow(column(1,actionButton("eda_star_go", "Go",icon=icon("play-circle")))) 
+            ),
             fluidRow(plotOutput("plot_death_star",
                                 height = "800px",
                                 width="700px",
@@ -585,7 +582,9 @@ body <- dashboardBody(
                                   resetOnNew = TRUE)))),
     tabItem(tabName = "eda_allu",
             h3("Exploratory Data Analysis -- Alluvial Flow"),
-            fluidRow(column(1,actionButton("eda_allu_go", "Go",icon=icon("play-circle")))),
+            conditionalPanel("output.time_over_valid",
+                             fluidRow(column(1,actionButton("eda_allu_go", "Go",icon=icon("play-circle"))))
+            ),
             fluidRow(plotOutput("plot_alluvial", height = "800px"))),
     
     # ---- 3. ml (supervised) ----
