@@ -21,13 +21,9 @@ shinyServer(function(input, output, session) {
     shiny_obj <- dictup_shiny(data_org_demo, dict_org_demo)
     values$data_ml <- shiny_obj$data_ml
     values$dict_ml <- shiny_obj$dict_ml
-    if(length(time_over_labels_demo)>0){
-      values$time_over_labels <- time_over_labels_demo
-    }else{
-      values$time_over_labels <- c()
-    }
+    values$time_over_labels <- time_over_labels_demo
     # find the valid labels within dict_ml
-    values$time_over_labels <- intersect(values$dict_ml$labels, values$time_over_labels)
+    values$time_over_labels <- intersect(values$dict_ml$label, values$time_over_labels)
     shinyWidgets::updateProgressBar(session = session, id = "pb_demo_go", value = 50)
     updateSelectInput(inputId = "setup_source_file",
                       choices = unique(values$dict_ml$source_file),
@@ -125,7 +121,7 @@ shinyServer(function(input, output, session) {
       values$time_over_labels <- c()
     }
     # find the valid labels within dict_ml
-    values$time_over_labels <- intersect(values$dict_ml$labels, values$time_over_labels)
+    values$time_over_labels <- intersect(values$dict_ml$label, values$time_over_labels)
     shinyWidgets::updateProgressBar(session = session, id = "pb_upload_go", value = 50)
     updateSelectInput(inputId = "setup_source_file",
                       choices = unique(values$dict_ml$source_file),
