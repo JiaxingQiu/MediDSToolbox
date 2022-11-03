@@ -196,7 +196,7 @@ sidebar <- dashboardSidebar(
                                      selected="group"),
                          checkboxInput("ml_select_return_performance",
                                        "Return Performance",
-                                       value = FALSE),
+                                       value = TRUE),
                          selectInput("ml_select_tune_by",
                                      "Tune by",
                                      choices=c("cvAUROC"="auc",

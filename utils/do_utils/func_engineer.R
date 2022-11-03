@@ -26,14 +26,16 @@ engineer <- function(
 ){
   
   #### clean up inputs ####
-  trim_step_size <- max(1,as.numeric(trim_step_size),na.rm=TRUE)
-  trim_min <- trim_min*trim_step_size
-  trim_max <- trim_max*trim_step_size
-  if (trim_max<=trim_min){
-    trim_min <- -Inf
-    trim_max <- Inf
-  }
   trim_by_col <- intersect(colnames(data), trim_by_col)
+  if(length(trim_by_col)>0){
+    trim_step_size <- max(1,as.numeric(trim_step_size),na.rm=TRUE)
+    trim_min <- trim_min*trim_step_size
+    trim_max <- trim_max*trim_step_size
+    if (trim_max<=trim_min){
+      trim_min <- -Inf
+      trim_max <- Inf
+    }
+  }
   cluster_col <- intersect(colnames(data), cluster_col)
   num_cols <- intersect(colnames(data), num_cols)
   num_cols <- union(num_cols, trim_by_col)

@@ -26,7 +26,7 @@ front_uni_heatmap_group <- function(
   label_y=TRUE,
   label_y_order = c(), # order of the levels of y
   group_label=NULL,
-  layout_ncol = 5,
+  layout_ncol = 3,
   x_raw_scale = FALSE,
   heat_limits = NULL,
   legend.position="right",

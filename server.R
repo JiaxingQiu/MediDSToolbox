@@ -874,7 +874,7 @@ shinyServer(function(input, output, session) {
     up_obj <- UpDictOrg()
     dict_org <- up_obj$dict_org
     updateSelectInput(inputId = "up_time_over_labels",
-                      choices = dict_org$label[which(dict_org$type=="num")])
+                      choices = dict_org$label[which(dict_org$type=="num"&as.character(dict_org$unique_per_sbj)=="FALSE")])
   })
   
   output$download_created_dict_org <- downloadHandler(

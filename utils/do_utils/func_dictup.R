@@ -81,19 +81,24 @@ get.dict <- function(data, attr_list=c() ){
   }
   dict_df$varname <- rownames(dict_df) 
   if(!"label" %in% colnames(dict_df) ){
-    dict_df$label <- ""
-  }
-  if(!"type" %in% colnames(dict_df) ){
-    dict_df$type <- ""
-  }
-  if(!"unique_per_sbj" %in% colnames(dict_df) ){
-    dict_df$unique_per_sbj <- "FALSE"
+    dict_df$label <- dict_df$varname
   }
   if(!"unit" %in% colnames(dict_df) ){
     dict_df$unit <- ""
   }
-  if(!"source_file" %in% colnames(dict_df) ){
-    dict_df$source_file <- ""
+  if(!"type" %in% colnames(dict_df) ){
+    dict_df$type <- ""
+    for(varname in colnames(data)){
+      # automated assign fct and tag01 to certain variables
+      if(dplyr::n_distinct(as.character(data[complete.cases(data[,varname]),varname]) )<5){
+        dict_df$type[which(dict_df$varname == varname)] <- "fct"
+        if(all(unique(as.numeric(as.character(data[complete.cases(data[,varname]),varname]))) %in% c(0,1) )){
+          dict_df$unit[which(dict_df$varname == varname)] <- "tag01"
+        }
+      }else{
+        dict_df$type[which(dict_df$varname == varname)] <- "num"
+      }
+    }
   }
   if("unit" %in% colnames(dict_df)){
     if(!"unit_label" %in% colnames(dict_df) ){
@@ -101,7 +106,12 @@ get.dict <- function(data, attr_list=c() ){
     }
     dict_df$unit_label[which(dict_df$unit=="tag01")] <- "1=Yes; 0=No" 
   }
-  
+  if(!"unique_per_sbj" %in% colnames(dict_df) ){
+    dict_df$unique_per_sbj <- "FALSE"
+  }
+  if(!"source_file" %in% colnames(dict_df) ){
+    dict_df$source_file <- paste0("Created at ",Sys.time())
+  }
   return(dict_df)
 }
 
