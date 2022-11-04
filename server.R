@@ -833,8 +833,8 @@ shinyServer(function(input, output, session) {
       if(!"unique_per_sbj" %in% colnames(d)){
         msg <- paste(msg, "invalid -- 'unique_per_sbj' field is missing.", sep="<br/>")
       }else{
-        if( length(setdiff(unique(d[,"unique_per_sbj"]), c("TRUE","FALSE",NA,"")))>0 ){
-          msg <- paste(msg, "invalid -- 'unique_per_sbj' field value can only be 'TRUE' or 'FALSE' or empty.", sep="<br/>")
+        if( length(setdiff(unique(d[,"unique_per_sbj"]), c("TRUE","FALSE")))>0 ){
+          msg <- paste(msg, "invalid -- 'unique_per_sbj' field value can only be 'TRUE' or 'FALSE'.", sep="<br/>")
         }
       }
       if(!"unit" %in% colnames(d)){
