@@ -103,6 +103,17 @@ do_lrm_pip <- function(data, # data for model training engineered
   
   # --- lrm_perform (internal performance) ---
   print("--- lrm_perform ---")
+  cv_scores_all_final <- NULL
+  cv_scores_all_final <- model_obj$cv_obj$score_final_cv_permu
+  if(!is.null(cv_scores_all_final)){
+    cv_scores_all_final_none <- model_obj$score_trace_df[which( model_obj$score_trace_df$penalty==max(model_obj$score_trace_df$penalty,na.rm = TRUE) ),]
+    cv_scores_all_final_none$data <- "none"
+    cv_scores_all_final_none <- cv_scores_all_final_none[,colnames(cv_scores_all_final)]
+    cv_scores_all_final <- bind_rows(cv_scores_all_final, cv_scores_all_final_none)
+    cv_scores_all_final$data <- gsub("_linear","",gsub("permutate ","",cv_scores_all_final$data))
+    colnames(cv_scores_all_final)[which(colnames(cv_scores_all_final)=="data")] <- "removed_variable"
+  }
+  
   perform_obj <- NULL
   perform_obj$internal <- NULL
   perform_obj$internal_org <- NULL
@@ -116,7 +127,8 @@ do_lrm_pip <- function(data, # data for model training engineered
                                         y_map_max = y_map_max,
                                         rel_time_col=trim_by_col,
                                         return_fitted_effect=return_fitted_effect,
-                                        return_scores_plot = return_scores_plot)
+                                        return_scores_plot = return_scores_plot,
+                                        cv_scores_all_final = cv_scores_all_final)
   },error=function(e){print(e)})
   tryCatch({
     stopifnot(return_performance)

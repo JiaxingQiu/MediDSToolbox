@@ -7,7 +7,8 @@ lrm_perform <- function(
   x_cols=c(), # list of predictors to see the performance
   return_fitted_effect=FALSE,
   return_tte_plot = TRUE,
-  return_scores_plot = TRUE # feature permutation scores
+  return_scores_plot = TRUE,
+  cv_scores_all_final=NULL # feature permutation scores
 ){
   
   library(tidytext)
@@ -200,26 +201,31 @@ lrm_perform <- function(
   # ----------- feature permutation importance -------------
   tryCatch({
     stopifnot(return_scores_plot)
-    test_obj_raw <- lrm_test(test_data = df,
-                             y_col = y_col,
+    if(!is.null(cv_scores_all_final)){
+      scores_all_final <- cv_scores_all_final
+    }else{
+      test_obj_raw <- lrm_test(test_data = df,
+                               y_col = y_col,
+                               mdl_obj = mdl_obj)
+      scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+      scores_all <- data.frame()
+      for (x_col in setdiff(x_cols,rel_time_col)){
+        df_shuffled <- df
+        # shuffle the predictor
+        df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
+        test_obj <- lrm_test(test_data = df_shuffled,
+                             y_col=y_col,
                              mdl_obj = mdl_obj)
-    scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
-    scores_all <- data.frame()
-    for (x_col in setdiff(x_cols,rel_time_col)){
-      df_shuffled <- df
-      # shuffle the predictor
-      df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
-      test_obj <- lrm_test(test_data = df_shuffled,
-                           y_col=y_col,
-                           mdl_obj = mdl_obj)
-      scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
-      scores$varname <- x_col
-      scores_all <- bind_rows(scores_all, scores)
+        scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+        scores$varname <- x_col
+        scores_all <- bind_rows(scores_all, scores)
+      }
+      scores_all <- scores_all[,union("varname", colnames(scores_all))]
+      scores_raw$varname <- "none"
+      scores_all_final <- bind_rows(scores_all, scores_raw)
+      colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
     }
-    scores_all <- scores_all[,union("varname", colnames(scores_all))]
-    scores_raw$varname <- "none"
-    scores_all_final <- bind_rows(scores_all, scores_raw)
-    colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
+    
     
     # make permutation importance plot 
     df_plot_scores_all <- data.frame()
