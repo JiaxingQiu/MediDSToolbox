@@ -37,7 +37,7 @@ lss_infer <- function(
     lmd_s <- c()
     var_s <- c()
     for (var in setdiff(colnames(lasso_coef),"s") ){
-      lmd_s <- c(lmd_s, max(lasso_coef$s[which(is.na(lasso_coef[,var]))], na.rm=TRUE) )
+      lmd_s <- c(lmd_s, min(lasso_coef$s[which(!is.na(lasso_coef[,var]))], na.rm=TRUE) )# max(lasso_coef$s[which(is.na(lasso_coef[,var]))], na.rm=TRUE)
       var_s <- c(var_s, var)
     }
     lambda_zero_coef <- data.frame(varname = var_s, 
@@ -80,7 +80,7 @@ lss_infer <- function(
     lmd_s <- c()
     var_s <- c()
     for (var in setdiff(colnames(lasso_coef),"s") ){
-      lmd_s <- c(lmd_s, max(lasso_coef$s[which(lasso_coef[,var]==0)], na.rm=TRUE) )
+      lmd_s <- c(lmd_s, min(lasso_coef$s[which(!lasso_coef[,var]==0)], na.rm=TRUE) )
       var_s <- c(var_s, var)
     }
     lambda_zero_coef <- data.frame(varname = var_s, 

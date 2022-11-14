@@ -1,5 +1,7 @@
 dictup_shiny <- function(data_org, 
                          dict_org){
+  
+  
   # ---- [don't change] engineer global variables ----
   # reformat varnames and labels
   colnames(data_org) <- gsub("[^[:alnum:]]","_",colnames(data_org))
@@ -104,7 +106,6 @@ dictup_shiny <- function(data_org,
   dict_ml <- get.dict(data_ml)
   dict_ml$varname_dict <- stringr::str_split_fixed(stringr::str_split_fixed(dict_ml$varname, "_factor_",2)[,1], "___", 2)[,1]
   data_ml <- assign.dict(data_ml, dict_ml)
-  
   
   # ---- [don't change] finalize global variables ----
   # remove bad columns

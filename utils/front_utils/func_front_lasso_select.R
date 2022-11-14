@@ -459,9 +459,29 @@ front_lasso_select <- function(
   
   
   # ---- performances ----
-  if(lasso_by=="none") mdl_obj <- x_select_mdls$optimal_mdls$lasso_optimal
-  if(lasso_by=="group") mdl_obj <- x_select_mdls_grouped$lasso_optimal
-  if(lasso_by=="cluster") mdl_obj <- x_select_mdls_cluster$lasso_optimal
+  cv_scores_all_final <- NULL
+  if(lasso_by=="none") {
+    mdl_obj <- x_select_mdls$optimal_mdls$lasso_optimal
+    cv_scores_all_final <- x_select_mdls$score_final_cv_permu
+    cv_scores_all_final_none <- x_select_mdls$score_final_cv
+    cv_scores_all_final_none$data <- "none"
+    cv_scores_all_final <- bind_rows(cv_scores_all_final, cv_scores_all_final_none)
+  }
+  if(lasso_by=="group") {
+    mdl_obj <- x_select_mdls_grouped$lasso_optimal
+    cv_scores_all_final <- x_select_mdls_grouped$score_final_cv_permu
+    cv_scores_all_final_none <- x_select_mdls_grouped$score_final_cv
+    cv_scores_all_final_none$data <- "none"
+    cv_scores_all_final <- bind_rows(cv_scores_all_final, cv_scores_all_final_none)
+  } 
+  if(lasso_by=="cluster") {
+    mdl_obj <- x_select_mdls_cluster$lasso_optimal
+  }
+  if(!is.null(cv_scores_all_final)){
+    cv_scores_all_final$data <- gsub("_linear","",gsub("permutate ","",cv_scores_all_final$data))
+    colnames(cv_scores_all_final)[which(colnames(cv_scores_all_final)=="data")] <- "removed_variable"
+  }
+  
   
   print("----- lss_perform in -----")
   lss_perform_in <- NULL
@@ -474,7 +494,8 @@ front_lasso_select <- function(
       y_map_max = y_map_max, # response upper cutoff
       rel_time_col=rel_time_col,
       return_effect_plots=return_effect_plots,
-      lasso_by = lasso_by
+      lasso_by = lasso_by,
+      cv_scores_all_final = cv_scores_all_final
     )
   },error=function(e){
     print("Error!")

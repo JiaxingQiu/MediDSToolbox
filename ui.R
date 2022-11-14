@@ -42,7 +42,7 @@ sidebar <- dashboardSidebar(
                                      choices=c("None"="row", 
                                                "Time Unit"="cluster_trim_by_unit", 
                                                "Cluster"="cluster"),
-                                     selected = "cluster"),
+                                     selected = "row"),
                          checkboxInput("setup_trim_ctrl",
                                        "Trim Control Group",
                                        TRUE)
@@ -656,7 +656,11 @@ body <- dashboardBody(
                         tabPanel("Selection",
                                  plotOutput("ml_select_tune_trace_plot", height = "400px"),
                                  plotOutput("ml_select_coef_trace_plot", height = "400px"),
-                                 tableOutput("ml_select_opt_model_df")
+                                 tags$h4("optimal model coefficients"),
+                                 tableOutput("ml_select_opt_model_df"),
+                                 tags$h4("variable vanishing order by lambda"),
+                                 tableOutput("ml_select_lam_df")
+                                 
                         ),
                         tabPanel("Performance",
                                  fluidRow(column(3,selectInput("perform_from_lasso",

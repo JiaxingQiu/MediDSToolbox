@@ -17,7 +17,9 @@ lasso_x_select <- function(
   lambda_value = NULL, # external specified lasso lambda value 
   tune_by = c("auc",
               "logloss", 
-              "misclass" # misclassification error (default)
+              "misclass", # misclassification error (default)
+              "AIC", 
+              "BIC"
               )[1],
   lambda_seq=NULL,
   foldid_col=NULL # data.frame(cluster = c(), fold = c())
@@ -193,9 +195,11 @@ lasso_x_select <- function(
   
   # ---- engineer input arguments ----
   # tune_by
-  if (tune_by%in%c("auc", "logloss", "misclass")){
+  if (tune_by%in%c("auc", "logloss", "misclass")){#, "AIC", "BIC"
     if (tune_by=="misclass") tune_by <- "class"
     if (tune_by=="logloss") tune_by <- "deviance"
+    if (tune_by=="AIC") tune_by <- "AIC"
+    if (tune_by=="BIC") tune_by <- "BIC"
   }else{ 
     # default
     tune_by <- "class"
@@ -221,6 +225,10 @@ lasso_x_select <- function(
     lambda_seq <- lasso_trace$lambda
   }
   stopifnot(!is.null(lambda_seq))
+  
+  
+  
+  
   # --- foldid_vector ---
   foldid_vector <- NULL
   if(!is.null(foldid_col)){

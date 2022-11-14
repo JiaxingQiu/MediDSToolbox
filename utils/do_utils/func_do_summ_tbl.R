@@ -1,11 +1,11 @@
 do_summ_tbl <- function(data, 
                      dict_data,
-                     num_vars=NULL, # list of numeric variables into the summary table
-                     fct_vars=NULL, # list of factor variables into the summary table
-                     num_denom=NULL, # denominator type for numeric variables c("avail")
-                     fct_denom=NULL,  # denominator type for factor variables c("avail", "known")
-                     keys=c('subjectnbr'), # key of a cohort cluster
-                     y=c("primary_outcome_factor"), # stratify by y
+                     num_vars=c(), # list of numeric variables into the summary table
+                     fct_vars=c(), # list of factor variables into the summary table
+                     num_denom=c('avail')[1], # denominator type for numeric variables c("avail")
+                     fct_denom=c("avail", "known")[1],  # denominator type for factor variables c("avail", "known")
+                     keys=c(), # key of a cohort cluster
+                     y=c(), # stratify by y
                      overall=TRUE, 
                      test=FALSE,
                      unknown_level_list = c("Unknown","Other/Unknown", "Unknown or declined to self-identify", "Ambiguous"),
@@ -13,15 +13,17 @@ do_summ_tbl <- function(data,
                      
 ){
   
+  print(data)
   # ---- remove duplicates if any ----
   if (length(y)>0){
+    stopifnot(n_distinct(as.character(data[,y]))>1)
     data <- dplyr::distinct(data[, c(keys, y, num_vars, fct_vars)]) # if y is not in data, or more than 1, error will arise
   } else {
-    data = dplyr::distinct(data[, c(keys, num_vars, fct_vars)]) # if y is not in data, or more than 1, error will arise
+    data <- dplyr::distinct(data[, c(keys, num_vars, fct_vars)]) # if y is not in data, or more than 1, error will arise
   }
   
   # ---- check variable name lists not empty ----
-  if (is.null(num_vars) & is.null(fct_vars)) {
+  if (length(num_vars)==0 & length(fct_vars)==0) {
     warning("No variable name is provided.")
     return()
   }
@@ -63,7 +65,7 @@ do_summ_tbl <- function(data,
       print(paste0("--- find ", nrow(data[which(is.na(data[,num_var])), c(keys, num_var)]) ," NA rows in ", num_var, " (label:", label(data[,num_var]), ") ---"))
     }
   }else{
-    warning("invalid num_denom string option(s), msut be 'avail'.")
+    warning("invalid num_denom string option(s), must be 'avail'.")
   }
   
   # factor
@@ -96,8 +98,7 @@ do_summ_tbl <- function(data,
         label(data[,paste0(fct_var,"_known")]) <- paste0( ifelse(label(data[,fct_var])!="", label(data[,fct_var]), fct_var)," (N: Known-info Levels)")
       }
       # finally print out NA rows
-      print(paste0("--- final NA rows in ", fct_var, " (label:", label(data[,fct_var]), ") ---"))
-      print(nrow(data[which(is.na(data[,fct_var])), c(keys, paste0(fct_var,"_raw"))]))
+      print(paste0("--- final",nrow(data[which(is.na(data[,fct_var])), c(keys, paste0(fct_var,"_raw"))])," NA rows in ", fct_var, " (label:", label(data[,fct_var]), ") ---"))
     } 
   }else{
     warning("invalid fct_denom string option(s), must be 'avail' or 'known'.")

@@ -102,7 +102,7 @@ shinyServer(function(input, output, session) {
     
   })
   observeEvent(input$upload_go,{
-    shinyWidgets::updateProgressBar(session = session, id = "pb_upload_go", value = 10)
+    shinyWidgets::updateProgressBar(session = session, id = "pb_upload_go", value = 20)
     # reset dict_org in values
     up_dict_org_obj <- UpDictOrg()
     up_dict_org <- up_dict_org_obj$dict_org
@@ -408,6 +408,7 @@ shinyServer(function(input, output, session) {
       input$ml_fct_labels_mdl,
       input$ml_tag_labels_mdl
     ))
+    X_labels <- setdiff(X_labels, input$ml_y_label)
     updateSelectInput(inputId = "ml_joint_col2_label", 
                       choices = union("None", X_labels))
     updateSelectInput(inputId = "ml_num_adjust_label",
@@ -426,7 +427,8 @@ shinyServer(function(input, output, session) {
     X_labels_used <- unique(c(
       input$ml_nonlin_rcs3_labels,
       input$ml_nonlin_rcs4_labels,
-      input$ml_nonlin_rcs5_labels
+      input$ml_nonlin_rcs5_labels,
+      input$ml_y_label
     ))
     updateSelectInput(inputId = "ml_linear_num_labels", 
                       choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
@@ -442,7 +444,8 @@ shinyServer(function(input, output, session) {
     X_labels_used <- unique(c(
       input$ml_linear_num_labels,
       input$ml_nonlin_rcs4_labels,
-      input$ml_nonlin_rcs5_labels
+      input$ml_nonlin_rcs5_labels,
+      input$ml_y_label
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs3_labels", 
                       choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
@@ -458,7 +461,8 @@ shinyServer(function(input, output, session) {
     X_labels_used <- unique(c(
       input$ml_linear_num_labels,
       input$ml_nonlin_rcs3_labels,
-      input$ml_nonlin_rcs5_labels
+      input$ml_nonlin_rcs5_labels,
+      input$ml_y_label
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs4_labels", 
                       choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
@@ -474,12 +478,27 @@ shinyServer(function(input, output, session) {
     X_labels_used <- unique(c(
       input$ml_linear_num_labels,
       input$ml_nonlin_rcs3_labels,
-      input$ml_nonlin_rcs4_labels
+      input$ml_nonlin_rcs4_labels,
+      input$ml_y_label
     ))
     updateSelectInput(inputId = "ml_nonlin_rcs5_labels", 
                       choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="num")], X_labels_used),
                       selected = input$ml_nonlin_rcs5_labels)
   })
+  # --- ml_fct_labels_mdl ---
+  observeEvent(input$ml_y_label, {
+    updateSelectInput(inputId = "ml_fct_labels_mdl", 
+                      choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit!="tag01")], input$ml_y_label),
+                      selected = input$ml_fct_labels_mdl)
+  })
+  # --- ml_tag_labels_mdl ---
+  observeEvent(input$ml_y_label, {
+    updateSelectInput(inputId = "ml_tag_labels_mdl", 
+                      choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")], input$ml_y_label),
+                      selected = input$ml_tag_labels_mdl)
+  })
+  
+  
   observeEvent(input$ml_y_max, {
     updateSliderInput(inputId = "ml_uni_heat_limits", 
                       min = 0,
@@ -885,7 +904,7 @@ shinyServer(function(input, output, session) {
       ext <- tools::file_ext(input$up_data_org$datapath)
       req(input$up_data_org)
       try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
-      df <- read.csv(input$up_data_org$datapath, nrows = 10)
+      df <- read.csv(input$up_data_org$datapath)
       dict_init <- get.dict(df)
       write.csv(dict_init, file, row.names = FALSE)
     }
@@ -1172,6 +1191,10 @@ shinyServer(function(input, output, session) {
   output$ml_select_opt_model_df <- renderTable({
     x_select_report <- XselectReports()
     x_select_report$infer_obj$opt_model_df
+  })
+  output$ml_select_lam_df <- renderTable({
+    x_select_report <- XselectReports()
+    x_select_report$infer_obj$lambda_zero_coef[,c("varname", "lambda")]
   })
   
   # lasso performance

@@ -7,7 +7,8 @@ lss_perform <- function(
   y_map_max = 7, # response upper cutoff
   rel_time_col=NULL,
   return_effect_plots = TRUE,
-  lasso_by = c("none", "group", "cluster")[2]
+  lasso_by = c("none", "group", "cluster")[2],
+  cv_scores_all_final=NULL
 ){
   
   library(stringr)
@@ -208,43 +209,44 @@ lss_perform <- function(
     print(e)
   })
   
-  
-  
-  
   # ----------- feature permutation importance -------------
   tryCatch({
-    y_true_org <- as.numeric(as.character( df[,y_col] ) )
-    y_prob_org <- as.numeric(logit2prob(predict(mdl_obj, newx = new_x, type="link")))
-    y_true <- y_true_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
-    y_prob <- y_prob_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
-    test_obj_raw <- mdl_test(y_true = y_true,
-                             y_prob = y_prob,
-                             threshold=base_mean_mdl)
-    scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
-    scores_all <- data.frame()
-    for (x_col in setdiff(x_cols_raw,rel_time_col)){
-      df_shuffled <- df
-      # shuffle the predictor
-      df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
-      Xobjtest <- reconstructX(mdl_obj, df_shuffled)
-      new_x_test = Xobjtest$new_x
-      y_true_org <- as.numeric(as.character( df_shuffled[,y_col] ) )
-      y_prob_org <- as.numeric(logit2prob(predict(mdl_obj, newx = new_x_test, type="link")))
+    if(!is.null(cv_scores_all_final)){
+      scores_all_final <- cv_scores_all_final
+    }else{
+      y_true_org <- as.numeric(as.character( df[,y_col] ) )
+      y_prob_org <- as.numeric(logit2prob(predict(mdl_obj, newx = new_x, type="link")))
       y_true <- y_true_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
       y_prob <- y_prob_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
-      
-      test_obj <-  mdl_test(y_true = y_true,
-                            y_prob = y_prob,
-                            threshold=base_mean_mdl)
-      scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
-      scores$varname <- x_col
-      scores_all <- bind_rows(scores_all, scores)
+      test_obj_raw <- mdl_test(y_true = y_true,
+                               y_prob = y_prob,
+                               threshold=base_mean_mdl)
+      scores_raw <- test_obj_raw$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+      scores_all <- data.frame()
+      for (x_col in setdiff(x_cols_raw,rel_time_col)){
+        df_shuffled <- df
+        # shuffle the predictor
+        df_shuffled[,x_col] <- sample(df[,x_col], size=length(df[,x_col]))
+        Xobjtest <- reconstructX(mdl_obj, df_shuffled)
+        new_x_test = Xobjtest$new_x
+        y_true_org <- as.numeric(as.character( df_shuffled[,y_col] ) )
+        y_prob_org <- as.numeric(logit2prob(predict(mdl_obj, newx = new_x_test, type="link")))
+        y_true <- y_true_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
+        y_prob <- y_prob_org[which(!is.na(y_true_org)&!is.na(y_prob_org))]
+        
+        test_obj <-  mdl_test(y_true = y_true,
+                              y_prob = y_prob,
+                              threshold=base_mean_mdl)
+        scores <- test_obj$res_df[1,c("logloss", "AUROC", "AUPRC", "accuracy", "f1score")]
+        scores$varname <- x_col
+        scores_all <- bind_rows(scores_all, scores)
+      }
+      scores_all <- scores_all[,union("varname", colnames(scores_all))]
+      scores_raw$varname <- "none"
+      scores_all_final <- bind_rows(scores_all, scores_raw)
+      colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
     }
-    scores_all <- scores_all[,union("varname", colnames(scores_all))]
-    scores_raw$varname <- "none"
-    scores_all_final <- bind_rows(scores_all, scores_raw)
-    colnames(scores_all_final)[which(colnames(scores_all_final) == "varname")] <- "removed_variable"
-
+    
     # make permutation importance plot
     df_plot_scores_all <- data.frame()
     for (score_col in setdiff(colnames(scores_all_final), "removed_variable") ){
@@ -253,7 +255,7 @@ lss_perform <- function(
       df_plot_scores$score_by <- score_col
       df_plot_scores_all <- bind_rows(df_plot_scores_all, df_plot_scores)
     }
-
+    
     scores_plot <- ggplot(data=df_plot_scores_all, aes(x=score_value, y=tidytext::reorder_within(removed_variable, score_value, score_by, sep="_________") )) +
       geom_point()+
       geom_vline(data=df_plot_scores_all[which(df_plot_scores_all$removed_variable=="none"),], aes(xintercept=score_value))+
@@ -264,9 +266,9 @@ lss_perform <- function(
 
   },error=function(e){print(e)})
 
-
-
-
+  print("test")
+  
+  
   return(list(
     df_hat = df_hat,
     fitted_eff_plot = fitted_eff_plot,
