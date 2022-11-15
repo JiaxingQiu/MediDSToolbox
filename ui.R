@@ -49,12 +49,22 @@ sidebar <- dashboardSidebar(
         )),
     # ---- 2. eda ----
     menuItem("Explore Data", tabName = "eda", startExpanded = FALSE,
-             menuSubItem('1D Stats', tabName = 'eda_1dstats'),
-             menuSubItem('2D Stats', tabName = 'eda_2dstats'),
+             menuSubItem('0 Explainer Statistics', tabName = 'eda_0dstats'),
+             menuSubItem('1 Explainer Statistics', tabName = 'eda_1dstats'),
+             menuSubItem('2 Explainers Statistics', tabName = 'eda_2dstats'),
              menuSubItem('Death Star', tabName = 'eda_star'),
              menuSubItem('Alluvial Flow', tabName = 'eda_allu')),
     ## Show panel only when sidebar is selected
     useShinyjs(),
+    div(id = 'sidebar_eda_0dstats',
+        conditionalPanel("input.sidebar == 'eda_0dstats'",
+                         selectInput("eda_y_label_stats0d",
+                                     "Response",
+                                     choices = c()),
+                         selectInput("eda_group_by_label_stats0d",
+                                     label="Group by",
+                                     choices = c())
+        )),
     div(id = 'sidebar_eda_1dstats',
         conditionalPanel("input.sidebar == 'eda_1dstats'",
                          selectInput("eda_y_label_stats1d",
@@ -343,7 +353,7 @@ body <- dashboardBody(
                    tags$ul(
                      tags$li("train restricted cubic spline logistic regression if binary response is selected;"), 
                      tags$li("train restricted cubic spline linear regression if continuous numeric response is selected;"), 
-                     tags$li("train non-linear univariate regression, and plot effect probablity against the percentile of each variable in heatmap."),
+                     tags$li("train non-linear univariate regression, and plot effect probability against the percentile of each variable in heatmap."),
                      tags$li("explore clues of predictor variables in terms of predicting the response variable, including correlation information, redundancy analysis, missingness and spearman squared correlation information each predictor carry;"), 
                      tags$li("model development and evaluation use subject-wise 5-10 fold cross-validation;"),
                      tags$li("train multiple models every defined step size using given window size, report model performance and featuer importance overtime;")
@@ -486,6 +496,12 @@ body <- dashboardBody(
                                           checkboxInput("setup_impute_per_cluster", 
                                                         "Impute within clusters", 
                                                         value = FALSE)
+                                   ),
+                                   column(4, style='border-right: 1px solid grey',
+                                          selectInput("setup_standardize_df",
+                                                      "Standardize (ML)",
+                                                      choices = c("None", "Standard(msd)", "Robust(IQR)", "Percentile"),
+                                                      selected = "None")
                                    )
                                  )
                         )
@@ -517,8 +533,14 @@ body <- dashboardBody(
             )
     ),
     # ---- 2. eda ----
+    tabItem(tabName = "eda_0dstats",
+            h3("Exploratory Data Analysis -- Response Distribution Statistics"),
+            fluidRow(column(1,actionButton("eda_stats0d_go", "Go",icon=icon("play-circle")))),
+            plotOutput("eda_0d_p",
+                       height = "500px")
+    ),
     tabItem(tabName = "eda_1dstats",
-            h3("Exploratory Data Analysis -- 1D Statistics"),
+            h3("Exploratory Data Analysis -- 1 Explainer Statistics"),
             fluidRow(column(1,actionButton("eda_stats1d_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Mean", 
@@ -565,7 +587,7 @@ body <- dashboardBody(
             )
     ),
     tabItem(tabName = "eda_2dstats",
-            h3("Exploratory Data Analysis -- LOESS 2D Statistics"),
+            h3("Exploratory Data Analysis -- LOESS 2 Explainers Statistics"),
             fluidRow(column(1,actionButton("eda_stats2d_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_2d_stats", height = "1000px"))),
     tabItem(tabName = "eda_star",

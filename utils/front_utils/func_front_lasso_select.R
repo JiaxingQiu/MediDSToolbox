@@ -25,7 +25,7 @@ front_lasso_select <- function(
   imputeby_zero = c(),
   imputeby_mean = c(), 
   impute_per_cluster=FALSE,
-  standardize_df = NULL, # data.frame(varname=c(), center=c(), scale=c())
+  standardize_df = "None", # can be c(NULL, "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
   # --- local ---
   lambda=c("auto","min","1se")[1],
   lambda_value = NULL,
@@ -37,7 +37,6 @@ front_lasso_select <- function(
               "BIC")[1],
   lambda_seq=NULL,
   trim_ctrl = TRUE,
-  standardize = FALSE, # set to TRUE to standardize data by internal engineered dataset if standardize_df is also null
   test_data=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=3,
@@ -68,11 +67,16 @@ front_lasso_select <- function(
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   
-  # ---- create standardize_df ----
-  if(standardize & is.null(standardize_df)){
-    print("--- Make standardize_df by internal engineered dataset ---")
+  # ---- create standardize_df from input data ----
+  # standardize_df can be can be c("None", "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
+  if( standardize_df=="None" ){ # standardize_df is NULL
+    print("--- Not standardize ---")
     standardize_df <- NULL
-    print("---- 1. making internal engineered dataset without standardization----")
+  }
+  else if(standardize_df=="Standard(msd)"){
+    print("--- Make standardize_df of Standard(msd) from internal engineered dataset ---")
+    standardize_df <- NULL
+    print("---- 1. engineer internal data without standardization----")
     tryCatch({
       if(trim_ctrl){
         data_in <- engineer(data = data,
@@ -156,6 +160,133 @@ front_lasso_select <- function(
       print(e)
     })
   }
+  else if(standardize_df=="Robust(IQR)"){
+    print("--- Make standardize_df of Robust(IQR) from internal engineered dataset ---")
+    standardize_df <- NULL
+    print("---- 1. engineer internal data without standardization----")
+    tryCatch({
+      if(trim_ctrl){
+        data_in <- engineer(data = data,
+                            num_cols = num_cols,
+                            fct_cols = fct_cols,
+                            cluster_col = cluster_col,
+                            trim_by_col = trim_by_col,
+                            trim_min = trim_vec[1],
+                            trim_max = trim_vec[2],
+                            trim_step_size = time_unit,
+                            pctcut_num_cols = pctcut_num_cols,
+                            pctcut_num_vec = pctcut_num_vec,
+                            pctcut_num_coerce = pctcut_num_coerce,
+                            filter_tag_cols = filter_tag_cols,
+                            imputation = imputation,
+                            imputeby_median = imputeby_median,
+                            imputeby_zero = imputeby_zero,
+                            imputeby_mean = imputeby_mean, 
+                            impute_per_cluster = impute_per_cluster,
+                            winsorizing = winsorizing,
+                            aggregate_per = aggregate_per,
+                            standardize_df = standardize_df) # standardize_df is null here
+      }else{
+        if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
+          data_event <- engineer(data = data[which(data[,y_col]==1),],
+                                 num_cols = num_cols,
+                                 fct_cols = fct_cols,
+                                 cluster_col = cluster_col,
+                                 trim_by_col = trim_by_col,
+                                 trim_min=trim_vec[1],
+                                 trim_max=trim_vec[2],
+                                 trim_step_size = time_unit,
+                                 pctcut_num_cols = pctcut_num_cols,
+                                 pctcut_num_vec = pctcut_num_vec,
+                                 pctcut_num_coerce = pctcut_num_coerce,
+                                 filter_tag_cols = filter_tag_cols,
+                                 imputation = imputation,
+                                 imputeby_median = imputeby_median,
+                                 imputeby_zero = imputeby_zero,
+                                 imputeby_mean = imputeby_mean, 
+                                 impute_per_cluster = impute_per_cluster,
+                                 winsorizing = winsorizing,
+                                 aggregate_per = aggregate_per,
+                                 standardize_df = standardize_df)# standardize_df is null here
+          data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
+                                 num_cols = num_cols,
+                                 fct_cols = fct_cols,
+                                 cluster_col = cluster_col,
+                                 trim_by_col = trim_by_col,
+                                 trim_min=-Inf,
+                                 trim_max=Inf,
+                                 trim_step_size = time_unit,
+                                 trim_keepna = TRUE,
+                                 pctcut_num_cols = pctcut_num_cols,
+                                 pctcut_num_vec = pctcut_num_vec,
+                                 pctcut_num_coerce = pctcut_num_coerce,
+                                 filter_tag_cols = filter_tag_cols,
+                                 imputation = imputation,
+                                 imputeby_median = imputeby_median,
+                                 imputeby_zero = imputeby_zero,
+                                 imputeby_mean = imputeby_mean, 
+                                 impute_per_cluster = impute_per_cluster,
+                                 winsorizing = winsorizing,
+                                 aggregate_per = aggregate_per,
+                                 standardize_df = standardize_df)# standardize_df is null here
+          data_in <- bind_rows(data_cntrl, data_event)
+        }
+      }
+      data_in <- assign.dict(data_in, dict_data)
+    },error=function(e){
+      print("Error!")
+      print(e)
+    })
+    print("---- 2. generate standardization dataframe ----")
+    tryCatch({
+      standardize_df <- data.frame(varname = num_cols, 
+                                   center=apply(data_in[,num_cols],2,median,na.rm=TRUE),
+                                   scale=(apply(data_in[,num_cols],2,quantile,0.75,na.rm=TRUE)-apply(data_in[,num_cols],2,quantile,0.25,na.rm=TRUE)))
+    },error=function(e){
+      print("Error!")
+      print(e)
+    })
+  }
+  else if(standardize_df=="Percentile"){
+    print("--- Convert engineered data to percentile ---")
+    standardize_df <- NULL
+    tryCatch({
+      data <- engineer(data = data,
+                       num_cols = num_cols,
+                       fct_cols = fct_cols,
+                       cluster_col = cluster_col,
+                       trim_by_col = trim_by_col,
+                       trim_min = trim_vec[1],
+                       trim_max = trim_vec[2],
+                       trim_step_size = time_unit,
+                       pctcut_num_cols = pctcut_num_cols,
+                       pctcut_num_vec = pctcut_num_vec,
+                       pctcut_num_coerce = pctcut_num_coerce,
+                       filter_tag_cols = filter_tag_cols,
+                       imputation = imputation,
+                       imputeby_median = imputeby_median,
+                       imputeby_zero = imputeby_zero,
+                       imputeby_mean = imputeby_mean, 
+                       impute_per_cluster = impute_per_cluster,
+                       winsorizing = winsorizing,
+                       aggregate_per = aggregate_per,
+                       standardize_df = NULL) # standardize_df is null here
+      for(num_col in num_cols){
+        tryCatch({
+          data[[num_col]] <- est_pctl(data[[num_col]])
+        },error=function(e){
+          print(paste0("skip percentiling",num_col))
+          print(e)
+        })
+      }
+    },error=function(e){
+      print("Error!")
+      print(e)
+    })
+  }
+  
+  # until now standardize_df can be NULL or a dataframe 
+  
   
   # ---- engineering ----
   data_in <- NULL

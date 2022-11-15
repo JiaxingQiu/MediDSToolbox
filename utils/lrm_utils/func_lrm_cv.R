@@ -203,8 +203,8 @@ lrm_cv <- function(df,
   # cross-validated scores by permutation importance
   score_final_cv_permu <- data.frame()
   for(permu_x in unique(cv_yhat_df_permu$permu_x) ){
-    s <- mdl_test(y_true = cv_yhat_df_permu$y_true[which(cv_yhat_df_permu$permu_x==permu_x)],
-                  y_prob = cv_yhat_df_permu$y_prob[which(cv_yhat_df_permu$permu_x==permu_x)],
+    s <- mdl_test(y_true = cv_yhat_df_permu$y_true[which(cv_yhat_df_permu$permu_x==permu_x & complete.cases(cv_yhat_df_permu[,c("y_true","y_prob")]))],
+                  y_prob = cv_yhat_df_permu$y_prob[which(cv_yhat_df_permu$permu_x==permu_x & complete.cases(cv_yhat_df_permu[,c("y_true","y_prob")]))],
                   threshold = mean(df_mdl[,y_col],na.rm=TRUE))
     s <- s$res_df
     s$data <- paste0("permutate ",permu_x)

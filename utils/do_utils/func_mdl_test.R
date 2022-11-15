@@ -9,6 +9,12 @@ mdl_test <- function(
   
   # ---- test data is engineered the same way to have valid scores ----
   tryCatch({
+    y_true <- as.numeric(y_true)
+    y_prob <- as.numeric(y_prob)
+    stopifnot(length(y_prob)==length(y_true))
+    
+    y_true <- y_true[!is.na(y_true)&!is.na(y_prob)] # only keep complete values
+    y_prob <- y_prob[!is.na(y_true)&!is.na(y_prob)] # only keep complete values
     
     y_prob <- round(as.numeric(as.character(y_prob)),6)
     stopifnot(all(y_prob>=0 & y_prob<=1))

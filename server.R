@@ -38,6 +38,10 @@ shinyServer(function(input, output, session) {
                       choices = values$dict_ml$label[which(values$dict_ml$unit=="tag01")])
     updateSelectInput(inputId = "setup_strat_by",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]))
+    updateSelectInput(inputId = "eda_y_label_stats0d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$type=="fct") )])
+    updateSelectInput(inputId = "eda_group_by_label_stats0d",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats1d",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$unit=="tag01") )])
     updateSelectInput(inputId = "eda_x_label_stats1d",
@@ -136,6 +140,10 @@ shinyServer(function(input, output, session) {
                       choices = values$dict_ml$label[which(values$dict_ml$unit=="tag01")])
     updateSelectInput(inputId = "setup_strat_by",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]))
+    updateSelectInput(inputId = "eda_y_label_stats0d",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$type=="fct") )])
+    updateSelectInput(inputId = "eda_group_by_label_stats0d",
+                      choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats1d",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$unit=="tag01") )])
     updateSelectInput(inputId = "eda_x_label_stats1d",
@@ -304,6 +312,25 @@ shinyServer(function(input, output, session) {
     )
   })
   # ---- 2. eda ----
+  stats0dViz <- eventReactive(input$eda_stats0d_go, {
+    front_viz_0d_stats(data = values$data_ml,
+                       dict_data = values$dict_ml,
+                       y_label = input$eda_y_label_stats0d,
+                       cluster_label = input$setup_cluster_label,
+                       trim_by_label = input$setup_trim_by_label,
+                       trim_vec = as.numeric(input$setup_trim_vec),
+                       time_unit = input$setup_trim_time_unit,
+                       pctcut_num_labels = input$setup_pctcut_num_labels,
+                       pctcut_num_vec = as.numeric(input$setup_pctcut_num_vec),
+                       pctcut_num_coerce = input$setup_pctcut_num_coerce,
+                       filter_tag_labels = input$setup_filter_tag_labels,
+                       imputation = input$setup_imputation,
+                       impute_per_cluster = input$setup_impute_per_cluster,
+                       winsorizing = input$setup_winsorizing,
+                       aggregate_per = input$setup_aggregate_per,
+                       group_by_label = input$eda_group_by_label_stats0d
+    )
+  })
   stats1dViz <- eventReactive(input$eda_stats1d_go, {
     front_viz_1d_stats(data = values$data_ml,
                        dict_data = values$dict_ml,
@@ -497,7 +524,14 @@ shinyServer(function(input, output, session) {
                       choices = setdiff(values$dict_ml$label[which(values$dict_ml$type=="fct"&values$dict_ml$unit=="tag01")], input$ml_y_label),
                       selected = input$ml_tag_labels_mdl)
   })
-  
+  observeEvent(input$ml_y_map_func, {
+    if(input$ml_y_map_func=="probability"){
+      updateNumericInput(inputId = "ml_y_max", 
+                         min = 0,
+                         max = 1,
+                         value = 1 )
+    }
+  })
   
   observeEvent(input$ml_y_max, {
     updateSliderInput(inputId = "ml_uni_heat_limits", 
@@ -592,11 +626,11 @@ shinyServer(function(input, output, session) {
       filter_tag_labels = input$setup_filter_tag_labels,
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
+      standardize_df = input$setup_standardize_df,
       winsorizing=input$setup_winsorizing,
       aggregate_per = aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
-      standardize=TRUE,
       test_data=test_data,
       y_map_func=input$ml_y_map_func,
       y_map_max=input$ml_y_max,
@@ -986,6 +1020,16 @@ shinyServer(function(input, output, session) {
   #   } 
   # })
   # ---- 2. eda ----
+  output$eda_0d_p <- renderPlot({
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   eda_0d_obj <- stats0dViz()
+                   setProgress(1)
+                 })
+    eda_0d_obj
+  })
+  
   output$eda_1d_p_violin <- renderPlot({
     withProgress(message = 'Calculation in progress',
                  detail = 'This may take a while...', value = 0.1, {

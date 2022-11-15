@@ -82,7 +82,7 @@ front_viz_1d_stats <- function(
   
   
   
-  # --- conditional distribution plots ----
+  # ---- conditional distribution plots ----
   plot_1d_stats_obj <- NULL
   try({
     if(!optimized_smoother){

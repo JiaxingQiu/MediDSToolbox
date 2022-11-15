@@ -21,7 +21,7 @@ engineer <- function(
   imputeby_zero = c(),
   imputeby_mean = c(), 
   impute_per_cluster=FALSE,
-  standardize_df = NULL,
+  standardize_df = NULL, # can be c(NULL, a dataframe)
   sample_per_cluster = NULL
 ){
   
@@ -188,7 +188,6 @@ engineer <- function(
   
   #### standardization ####
   if(!is.null(standardize_df)){
-    print("--- Standardize by external dataframe ---")
     tryCatch({
       stopifnot(all(c("varname", "center", "scale")%in%colnames(standardize_df)))
       for(col in unique(standardize_df$varname) ){
