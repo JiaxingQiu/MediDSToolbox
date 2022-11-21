@@ -196,6 +196,11 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_select',
         conditionalPanel("input.sidebar == 'ml_select'",
+                         selectInput("ml_select_standardize_df",
+                                     "Standardize",
+                                     choices = c("None", "Standard(msd)", "Robust(IQR)", "Percentile"),
+                                     selected = "Standard(msd)"),
+                         
                          selectInput("ml_select_lasso_by",
                                      "Special LASSO",
                                      choices = c(
@@ -349,7 +354,7 @@ body <- dashboardBody(
                    )),
             tags$hr(),
             tags$h3("Supervised Machine Learning"),
-            tags$p("Following Regression Modeling Strstegy by Frank E Harrell, compute restricted cubic spline regression that satisfys most user cased in medical machine learning.",
+            tags$p("Following Regression Modeling Strategy by Frank E Harrell, compute restricted cubic spline regression that satisfys most user cased in medical machine learning.",
                    tags$ul(
                      tags$li("train restricted cubic spline logistic regression if binary response is selected;"), 
                      tags$li("train restricted cubic spline linear regression if continuous numeric response is selected;"), 
@@ -496,12 +501,6 @@ body <- dashboardBody(
                                           checkboxInput("setup_impute_per_cluster", 
                                                         "Impute within clusters", 
                                                         value = FALSE)
-                                   ),
-                                   column(4, style='border-right: 1px solid grey',
-                                          selectInput("setup_standardize_df",
-                                                      "Standardize (ML)",
-                                                      choices = c("None", "Standard(msd)", "Robust(IQR)", "Percentile"),
-                                                      selected = "None")
                                    )
                                  )
                         )
@@ -669,6 +668,8 @@ body <- dashboardBody(
     
     tabItem(tabName = "ml_uni",
             h3("Machine Learning (supervised) -- Univariable Percentile Heatmap"),
+            tags$p("C = within-sample AUROC"),
+            tags$p("*hint: you can find univariate cross-validated AUROC by Ridge Regression with only one predictor(X)"),
             fluidRow(column(1,actionButton("ml_uni_go", "Go",icon=icon("play-circle")))),
             fluidRow(plotOutput("plot_uniheat", height = "800px"))),
     tabItem(tabName = "ml_select",
@@ -698,6 +699,7 @@ body <- dashboardBody(
                                           column(6, plotOutput("perform_tte_plot_lasso",height = "400px"))
                                           ),
                                  plotOutput("perform_tradeoff_plot_lasso", height = "300px"),
+                                 tags$h4("Cross-validated Feature Permutation Importance"),
                                  plotOutput("perform_scores_plot_lasso",height = "600px"),
                                  tableOutput("perform_scores_tbl_lasso"),
                                  plotOutput("perform_fitted_eff_plot_lasso",height = "1000px")
@@ -751,6 +753,7 @@ body <- dashboardBody(
                                           column(6, plotOutput("perform_tte_plot",height = "400px"))
                                  ),
                                  plotOutput("perform_tradeoff_plot", height = "300px"),
+                                 tags$h4("Cross-validated Feature Permutation Importance"),
                                  plotOutput("perform_scores_plot",height = "600px"),
                                  tableOutput("perform_scores_tbl"),
                                  plotOutput("perform_fitted_eff_plot",height = "1000px")

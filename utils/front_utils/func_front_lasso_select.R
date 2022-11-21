@@ -609,8 +609,18 @@ front_lasso_select <- function(
     mdl_obj <- x_select_mdls_cluster$lasso_optimal
   }
   if(!is.null(cv_scores_all_final)){
-    cv_scores_all_final$data <- gsub("_linear","",gsub("permutate ","",cv_scores_all_final$data))
+    cv_scores_all_final$data <- gsub("_rcs[0-9]+","",gsub("_linear","",gsub("permutate ","",cv_scores_all_final$data)))
     colnames(cv_scores_all_final)[which(colnames(cv_scores_all_final)=="data")] <- "removed_variable"
+    # special case of LASSO, remove zeroed out coefs
+    opt_df <- infer_obj$opt_model_df
+    selected_vars <- opt_df$varname[which(!opt_df$coef==0)]
+    permu_vars <- c()
+    for(v in cv_scores_all_final$removed_variable){
+      if(any(grepl(v, selected_vars))){
+        permu_vars <- c(permu_vars,v)
+      }
+    }
+    cv_scores_all_final <- cv_scores_all_final[which(cv_scores_all_final$removed_variable%in%c("none",permu_vars)),]
   }
   
   

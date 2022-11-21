@@ -603,8 +603,6 @@ shinyServer(function(input, output, session) {
       try({validate(need(ext == "csv", "Please upload a csv file"))},TRUE)
       test_data <- read.csv(input$ex_test_csv$datapath)
     }
-    aggregate_per <- ifelse(input$setup_aggregate_per%in%c("cluster_trim_by_unit", "cluster"), input$setup_aggregate_per, "cluster")
-    
     front_lasso_select(
       data = values$data_ml,
       dict_data = values$dict_ml,
@@ -626,9 +624,9 @@ shinyServer(function(input, output, session) {
       filter_tag_labels = input$setup_filter_tag_labels,
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
-      standardize_df = input$setup_standardize_df,
+      standardize_df = input$ml_select_standardize_df,
       winsorizing=input$setup_winsorizing,
-      aggregate_per = aggregate_per,
+      aggregate_per = input$setup_aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       test_data=test_data,
