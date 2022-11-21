@@ -113,13 +113,13 @@ viz_death_star <- function(
   # data$init_time <-  data$relative_time - data$offset # causing troubles 
   
   
-  plot_obj <- ggplot(data, aes(x=relative_time/time_unit, y=new_idx)) +
+  plot_obj <- ggplot(data, aes(x=floor(relative_time/time_unit), y=new_idx)) +
     geom_tile(aes(fill=measure_final)) + 
     scale_fill_gradientn(colours = topo.colors(30),labels=scaleFUN, na.value =NA) +
     xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
                 " by ",
                 ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),
-                ifelse(time_unit>1, paste0("/",time_unit),"") ))+
+                ifelse(time_unit>1, paste0(" / ",time_unit),"") ))+
     ylab('subject / cluster index')+
     labs(fill=y_label) +
     theme(legend.position = "top" ) 
@@ -139,7 +139,7 @@ viz_death_star <- function(
     geom_point(data=p_star$data[which(rowSums(p_star$data[,default_tag_cols]==1)>0),c('relative_time','new_idx')],color='red',size=0.1, shape=4) +
     #geom_point(data=p_star$data[which(p_star$data$mark==1),c('relative_time','new_idx')], color='black', size=0.1, shape=19) +
     geom_tile(data=p_star$data[which(p_star$data$mark==1),c('relative_time','new_idx','mark')],
-              aes(x=relative_time/time_unit, y=new_idx, fill=mark),fill="black")+
+              aes(x=floor(relative_time/time_unit), y=new_idx, fill=mark), fill="black")+
     #geom_text(aes(label=group_text), hjust=-0.5, vjust = 0, size=5) + 
     scale_x_continuous(expand = c(0, 0))+
     scale_y_continuous(expand = c(0, 0), breaks=y_breaks, labels = stringr::str_wrap(y_labels, width=10))+
