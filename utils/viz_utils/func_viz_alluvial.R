@@ -108,6 +108,7 @@ viz_alluvial <- function(
     plot_obj <- ggplot(df_all,
                        aes(x = time_group, stratum = status, alluvium = cluster,
                            fill = status, label = status)) +
+      labs(x="Time", y="Number of Subjects")+
       geom_flow() +
       geom_stratum(alpha = .5) +
       geom_text(stat = 'stratum',
@@ -115,8 +116,9 @@ viz_alluvial <- function(
                 size=4,
                 hjust="left") +
       #scale_x_discrete(expand = c(.1, .1)) +
-      theme(legend.position = "none",
-            axis.title.x=element_blank()) 
+      theme(legend.position = "none"#,
+            #axis.title.x=element_blank()
+            ) 
     
   }
   
