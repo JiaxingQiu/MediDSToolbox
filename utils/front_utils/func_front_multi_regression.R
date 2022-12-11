@@ -383,7 +383,7 @@ front_multi_regression <- function(
   devel_cali_plot <- results$model_obj$cv_obj$calibration_curve
   devel_cv_eval_trace_tbl <- results$model_obj$cv_obj$cv_eval_trace # trace of score per fold while cross validation
   devel_final_model_obj <- results$model_obj$mdl_obj # final model object trained on all data, for print, anova and save locally
-  devel_penal_trace_tbl <- results$model_obj$score_trace_df # trace of score while tuning penalty
+  devel_penal_trace_tbl <- results$model_obj$score_trace_df # trace of cv score while tuning penalty
   
   # model inference reports
   infer_effect_plot_1d <- results$infer_obj$eff_plot_1d
