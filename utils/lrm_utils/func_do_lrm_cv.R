@@ -107,16 +107,18 @@ do_lrm_cv <- function(df=df,
           }
         }
         print(paste0("--- penalty --- ", penalty, " --- ",tune_by," --- ", current_score))
+        score_trace <- res_score_df[,c("logloss","AUROC","AUPRC","accuracy","f1score")]
+        score_trace$penalty <- penalty
+        score_trace$AIC <- AIC(mdl_all)
+        score_trace$BIC <- BIC(mdl_all)
+        score_trace$tune_by <- tune_by
+        score_trace$current_score <- current_score
+        score_trace_all <- bind_rows(score_trace_all, score_trace)
       }else{
         print(paste0("--- penalty --- ", penalty, " --- ",tune_by, " --- failed"))
       }
-      score_trace <- res_score_df[,c("logloss","AUROC","AUPRC","accuracy","f1score")]
-      score_trace$penalty <- penalty
-      score_trace$AIC <- AIC(mdl_all)
-      score_trace$BIC <- BIC(mdl_all)
-      score_trace$tune_by <- tune_by
-      score_trace_all <- bind_rows(score_trace_all, score_trace)
     }
+    
   }else{
     # automatically tune penalty 
     failed <- 0 # count of failed model penalty
@@ -205,6 +207,7 @@ do_lrm_cv <- function(df=df,
       score_trace$AIC <- AIC(mdl_all)
       score_trace$BIC <- BIC(mdl_all)
       score_trace$tune_by <- tune_by
+      score_trace$current_score <- current_score
       score_trace_all <- bind_rows(score_trace_all, score_trace)
       
     }
@@ -215,7 +218,10 @@ do_lrm_cv <- function(df=df,
   # finalize the optimized model
   fml <- cv_obj$model_info$formula
   cluster_col <- cv_obj$model_info$cluster_col
-  penalty <- cv_obj$model_info$penalty
+  penalty <- 0
+  if(nrow(score_trace_all)>0){
+    penalty <- score_trace_all$penalty[which(score_trace_all$current_score==max(score_trace_all$current_score))] #cv_obj$model_info$penalty
+  }
   dd <- datadist(df)
   options(datadist=dd, na.action=na.omit)
   mdl_final <- NULL
