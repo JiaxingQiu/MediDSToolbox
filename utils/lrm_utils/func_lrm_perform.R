@@ -1,3 +1,10 @@
+# define logit reversing function
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+
 lrm_perform <- function(
   mdl_obj,
   df,
@@ -20,12 +27,6 @@ lrm_perform <- function(
   df_hat <- NULL
   tte_plot <- NULL
   
-  # define logit reversing function
-  logit2prob <- function(logit){
-    odds <- exp(logit)
-    prob <- odds / (1 + odds)
-    return(prob)
-  }
   # find column name for response variable
   y_col <- as.character( mdl_obj$sformula )[2]
   if (length(intersect(x_cols, setdiff(colnames(df), y_col)))==0){

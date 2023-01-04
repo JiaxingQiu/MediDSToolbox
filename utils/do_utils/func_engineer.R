@@ -164,26 +164,35 @@ engineer <- function(
   for(num_col in num_cols){ data[which(!is.finite(data[,num_col])), num_col] <- NA } # clean inf to NA
   print("--- Imputation ---")
   data <- data_engineered
-  if(!impute_per_cluster){
-    print("---- by cohort ----")
-    # special imputation
-    data <- data %>% mutate_at(vars(all_of(imputeby_median_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
-    data <- data %>% mutate_at(vars(all_of(imputeby_mean_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
-    data <- data %>% mutate_at(vars(all_of(imputeby_zero_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
-    # global imputation
-    if(imputation=="Mean") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
-    if(imputation=="Median") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
-    if(imputation=="Zero") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
-  }else{
-    print("---- by cluster ----")
-    data <- data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(imputeby_median_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
-    data <- data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(imputeby_mean_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
-    data <- data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(imputeby_zero_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
-    # cluster-wise imputation
-    if(imputation=="Mean") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., mean(.,na.rm = TRUE)) ) %>% as.data.frame()
-    if(imputation=="Median") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., median(.,na.rm = TRUE)) ) %>% as.data.frame()
-    if(imputation=="Zero")  data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., 0)) %>% as.data.frame()
-  }
+  tryCatch({
+    if(!impute_per_cluster){
+      print("---- by cohort ----")
+      # special imputation
+      data <- data %>% mutate_at(vars(all_of(imputeby_median_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+      data <- data %>% mutate_at(vars(all_of(imputeby_mean_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+      data <- data %>% mutate_at(vars(all_of(imputeby_zero_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+      # global imputation
+      if(imputation=="Mean") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+      if(imputation=="Median") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+      if(imputation=="Zero") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+    }else{
+      print("---- by cluster ----")
+      
+      # cluster-wise imputation
+      if(imputation=="Mean") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., mean(.,na.rm = TRUE)) ) %>% as.data.frame()
+      if(imputation=="Median") data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)), ~ifelse(is.na(.), median(., na.rm = TRUE),.) ) %>% as.data.frame()
+      if(imputation=="Zero")  data %>% group_by(vars(cluster_col)) %>% mutate_at(vars(all_of(num_cols)),  ~tidyr::replace_na(., 0)) %>% as.data.frame()
+      
+      # then global imputation
+      if(imputation=="Mean") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., mean(.,na.rm = TRUE))) %>% as.data.frame()
+      if(imputation=="Median") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., median(.,na.rm = TRUE))) %>% as.data.frame()
+      if(imputation=="Zero") data <- data %>% mutate_at(vars(all_of(num_cols)), ~tidyr::replace_na(., 0)) %>% as.data.frame()
+    }
+  },error=function(e){
+    print(e)
+    print("Skip imputation due to error")
+  })
+  
   data_engineered <- data
   
   #### standardization ####

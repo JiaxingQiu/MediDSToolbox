@@ -70,3 +70,10 @@ mdl_test <- function(
   
   return(list("res_df"=res_df))
 }
+
+# define logit reversing function
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}

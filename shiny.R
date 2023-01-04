@@ -23,7 +23,10 @@ library(caret)
 library(pROC)
 library(tableone)
 library(ggfortify)
-
+library(glmmLasso)
+library(gglasso)
+library(glmnet)
+library(vip)
 
 # ---- [don't change] source global functions -----
 # logsitic regression modeling utilities

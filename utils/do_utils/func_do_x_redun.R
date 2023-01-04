@@ -1,6 +1,6 @@
 do_x_redun <- function(df = data_ml, 
                        dict_df = dict_ml, 
-                       x_cols=c(x_num_cols, x_fct_cols) , 
+                       x_cols=c() , 
                        r_abs=0.8, 
                        type=c("pearson","spearman")[1], 
                        rank=TRUE, 

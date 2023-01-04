@@ -181,6 +181,7 @@ front_uni_heatmap_group <- function(
             )+
             theme(legend.position = legend.position) +
             theme_minimal() 
+          plot_list[[i]][['x_map']] <- data.frame(breaks= c(0,0.25,0.5,0.75,1), labels=x_label_map[which(x_label_map$var_name==var_name),c("q0","q25","q50","q75","q100")])
           if("c_score" %in% colnames(plot_df_all)){
             plot_list[[i]] <- plot_list[[i]] + geom_text(data=plot_df_all[which(plot_df_all$var_name==var_name),], aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
           }
@@ -206,8 +207,9 @@ front_uni_heatmap_group <- function(
       
       for(var_name in sort(unique(plot_df_all$var_name))){
         plot_df_all_var <- plot_df_all[which(plot_df_all$var_name==var_name),]
-        plot_df_all_var$raw_value <- as.numeric(sub("\\(", "", stringr::str_split_fixed(cut(plot_df_all_var$raw_value, 15),",",2)[,1]))
-        plot_df_all_var$raw_value_rank <- cut(plot_df_all_var$raw_value, 15, labels = FALSE)
+        plot_df_all_var$raw_value_continue <- plot_df_all_var$raw_value
+        plot_df_all_var$raw_value <- as.numeric(sub("\\(", "", stringr::str_split_fixed(cut(plot_df_all_var$raw_value_continue, 15),",",2)[,1]))
+        plot_df_all_var$raw_value_rank <- cut(plot_df_all_var$raw_value_continue, 15, labels = FALSE)
         x_map_label <- as.data.frame(distinct(plot_df_all_var[,c("raw_value_rank","raw_value")]))
         x_map_label <- x_map_label[which(x_map_label$raw_value_rank%in%c(1,5,10,15)),]
         if(max(x_map_label$raw_value,na.rm=TRUE)<=1){
@@ -220,8 +222,8 @@ front_uni_heatmap_group <- function(
         plot_df_all_final <- data.frame()
         for(l in unique(plot_df_all_var$level)){
           plot_df_all_var_l <- plot_df_all_var[which(plot_df_all_var$level==l),]
-          plot_df_all_final_l <- plot_df_all_var_l[,c("raw_value_rank","yhat")]#data.frame(approx(plot_df_all_var_l$raw_value_rank, plot_df_all_var_l$yhat, n=max(plot_df_all_var_l$raw_value_rank,na.rm=TRUE)))
-          colnames(plot_df_all_final_l) <- c("raw_value_rank","yhat")
+          plot_df_all_final_l <- plot_df_all_var_l[,c("raw_value_rank","raw_value","raw_value_continue","yhat")]#data.frame(approx(plot_df_all_var_l$raw_value_rank, plot_df_all_var_l$yhat, n=max(plot_df_all_var_l$raw_value_rank,na.rm=TRUE)))
+          colnames(plot_df_all_final_l) <- c("raw_value_rank","raw_value","raw_value_continue","yhat")
           plot_df_all_final_l$level <- l
           if("c_label" %in% colnames(plot_df_all)){
             plot_df_all_final_l$c_label <- NA
@@ -244,6 +246,7 @@ front_uni_heatmap_group <- function(
                                na.value = NA)  +
           scale_x_continuous(breaks=x_map_label$raw_value_rank,labels=x_map_label$raw_value) +
           theme_minimal() 
+        plot_list[[i]][['x_map']] <- data.frame(breaks=x_map_label$raw_value_rank, labels=x_map_label$raw_value)
         if("c_label" %in% colnames(plot_df_all)){
           plot_list[[i]] <- plot_list[[i]] + geom_text(data=plot_df_all_final, aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
         }
