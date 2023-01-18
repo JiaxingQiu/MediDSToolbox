@@ -30,6 +30,7 @@ front_uni_heatmap_group <- function(
   x_raw_scale = FALSE,
   heat_limits = NULL,
   legend.position="right",
+  round_c=2,# decimal places to keep for c-stat
   sample_per_cluster = NULL
 ){
   
@@ -71,6 +72,7 @@ front_uni_heatmap_group <- function(
                                      y_map_func=y_map_func,
                                      y_map_max=y_map_max,
                                      label_y=label_y,
+                                     round_c=round_c,
                                      sample_per_cluster=sample_per_cluster)
     
     return(list(plot_obj = heatmap_obj$plot_obj,
@@ -111,6 +113,7 @@ front_uni_heatmap_group <- function(
                                          y_map_func=y_map_func,
                                          y_map_max=y_map_max,
                                          label_y=label_y,
+                                         round_c=round_c,
                                          sample_per_cluster=sample_per_cluster)
         plot_df <- heatmap_obj$df_result_all_sort
       },error=function(e){

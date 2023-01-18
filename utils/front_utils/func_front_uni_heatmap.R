@@ -26,6 +26,7 @@ front_uni_heatmap <- function(
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=Inf,
   label_y=TRUE,
+  round_c=2,# decimal places to keep for c-stat
   sample_per_cluster = NULL
 ){
   library(RColorBrewer)
@@ -134,7 +135,7 @@ front_uni_heatmap <- function(
       var_order <- df_result_all %>% group_by(var_name) %>% summarise(max_c=max(c_score)) %>% arrange(max_c) %>% as.data.frame()
       df_result_all$c_label <- NA
       for (var in unique(df_result_all$var_name) ){
-        c <- round(unique(df_result_all$c_score[which(df_result_all$var_name==var)]),2)
+        c <- round(unique(df_result_all$c_score[which(df_result_all$var_name==var)]),round_c)
         df_result_all$c_label[which(df_result_all$var_name==var)][1] <- paste0("C = ", c)
       }
     }else {
@@ -199,7 +200,7 @@ front_uni_heatmap <- function(
       for(var_name in sort(unique(plot_df_all$var_name))){
         tryCatch({
           plot_df_all_var <- plot_df_all[which(plot_df_all$var_name==var_name),]
-          plot_df_all_final <- data.frame(approx(plot_df_all_var$raw_value, round(plot_df_all_var$yhat,2), n=15))
+          plot_df_all_final <- data.frame(approx(plot_df_all_var$raw_value, round(plot_df_all_var$yhat,4), n=15)) # 2
           colnames( plot_df_all_final ) <- c("raw_value","yhat")
           plot_df_all_final$level <- unique(plot_df_all_var$level)
           plot_df_all_final$var_name <- var_name

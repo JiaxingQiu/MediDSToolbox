@@ -166,7 +166,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
         mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-        df_fit <- rms::Predict(mdl,num_col, fun=plogis)
+        df_fit <- rms::Predict(mdl, num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
         df_result$c_score <- mdl$stats[["C"]]
@@ -205,6 +205,19 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
     }
   }
   if(is.null(df_result)) print(paste0("uni_tag_num_rcs failed on ", num_col))
+  # only keep 2 decimal places
+  df_result <- df_result %>% group_by(pctl) %>% summarise(prob=mean(prob,na.rm=TRUE)) %>% as.data.frame()
+  # check boundaries 0 and 1
+  if(min(df_result$pctl)>0){
+    ld <- data.frame(pctl=seq(0,min(df_result$pctl),0.01), prob=rep(df_result$prob[which(df_result$pctl==min(df_result$pctl))],length(seq(0,min(df_result$pctl),0.01))))
+    df_result <- bind_rows(ld,df_result)
+  }
+  if(max(df_result$pctl)<1){
+    ud <- data.frame(pctl=seq(min(1,max(df_result$pctl)+0.01),1,0.01), prob=rep(df_result$prob[which(df_result$pctl==max(df_result$pctl))],length(seq(min(1,max(df_result$pctl)+0.01),1,0.01))))
+    df_result <- bind_rows(df_result,ud)
+  }
+  df_result<-df_result[!duplicated(df_result),]
+  stopifnot(length(df_result$pctl)==101) # from 0th to 100th
   return(df_result)
 }
 
