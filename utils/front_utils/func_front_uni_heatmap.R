@@ -178,6 +178,7 @@ front_uni_heatmap <- function(
       if("c_score" %in% colnames(df_result_all_sort)){
         plot_obj <- plot_obj + geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE)
       }
+      plot_list <- NULL
     }else{
       # add raw data back 
       df_result_all_sort$raw_value <- NA
@@ -234,8 +235,23 @@ front_uni_heatmap <- function(
     
   }
   
-  
+  # assign names to plot list by var_name
+  nl <- c()
+  for (i in 1:length(plot_list) ) {
+    nl <- c(nl, unique(plot_list[[i]]$data$var_name))
+  }
+  names(plot_list) <- nl
+  # add c_label to plot_list according to df_result_all_sort
+  for(name in names(plot_list)){
+    cl <- df_result_all_sort$c_label[which(df_result_all_sort$var_name==name)]
+    c_l <- cl[which(!is.na(cl))]
+    plot_list[[name]]$data$c_label <- NA
+    plot_list[[name]]$data$c_label[1] <- c_l
+  }
+
+    
   return(list(plot_obj = plot_obj,
+              plot_list = plot_list,
               df_result_all_sort = df_result_all_sort))
   
 }

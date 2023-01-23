@@ -76,6 +76,7 @@ front_uni_heatmap_group <- function(
                                      sample_per_cluster=sample_per_cluster)
     
     return(list(plot_obj = heatmap_obj$plot_obj,
+                plot_list = heatmap_obj$plot_list,
                 df_result_all_sort = heatmap_obj$df_result_all_sort))
   }else{
     print("-- grouped uni-heat --")
