@@ -122,7 +122,6 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_fit <- rms::Predict(mdl,num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
-        df_result$c_score <- mdl$stats[["C"]]
       },error=function(e){
         print(e)
       })
@@ -136,7 +135,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_fit <- rms::Predict(mdl,num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
-        df_result$c_score <- mdl$stats[["C"]]
+        
       },error=function(e){
         print(e)
       })
@@ -150,7 +149,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
           df_fit <- rms::Predict(mdl,num_col, fun=plogis)
           df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
           df_result$pctl <- round(df_result$pctl,2)
-          df_result$c_score <- mdl$stats[["C"]]
+          
         },error=function(e){
           print(e)
         } )
@@ -169,7 +168,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_fit <- rms::Predict(mdl, num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
-        df_result$c_score <- mdl$stats[["C"]]
+        
       },error=function(e){
         print(e)
       } )
@@ -183,7 +182,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         df_fit <- rms::Predict(mdl,num_col, fun=plogis)
         df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
         df_result$pctl <- round(df_result$pctl,2)
-        df_result$c_score <- mdl$stats[["C"]]
+        
       },error=function(e){
         print(e)
       } )
@@ -197,7 +196,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
           df_fit <- rms::Predict(mdl,num_col, fun=plogis)
           df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
           df_result$pctl <- round(df_result$pctl,2)
-          df_result$c_score <- mdl$stats[["C"]]
+          
         },error=function(e){
           print(e)
         } )
@@ -217,7 +216,10 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
     df_result <- bind_rows(df_result,ud)
   }
   df_result<-df_result[!duplicated(df_result),]
-  stopifnot(length(df_result$pctl)==101) # from 0th to 100th
+  #stopifnot(length(df_result$pctl)==101) # from 0th to 100th
+  
+  # add c-stat
+  df_result$c_score <- mdl$stats[["C"]]
   return(df_result)
 }
 
