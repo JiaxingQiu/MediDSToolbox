@@ -1,20 +1,29 @@
+# define logit function
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+# define inv-logit function
+prob2logit <- function(prob){
+  logit <- log(prob/(1-prob))
+  return(logit)
+}
+
+
+
 uni_tag_nums <- function(data, 
                          num_cols, 
                          tag_col, 
                          cluster_col, 
                          num_adjust_col=NULL, 
                          method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
-                         pct=TRUE,
                          y_map_func=c("fold_risk", "probability", "log_odds")[1],
-                         y_map_max=3
+                         y_map_max=3,
+                         new_dd=NULL  # new datadist to be predicted on if given
 ){
   library(dplyr)
   # tag (1 default primary outcome) ~ num (pctl)
-  # define logit reversing function
-  prob2logit <- function(prob){
-    logit <- log(prob/(1-prob))
-    return(logit)
-  }
   base_mean <- base::mean(as.numeric( as.character( data[[tag_col]] ) ),na.rm=TRUE)
   print(paste0("--- baseline responce mean --- ", base_mean))
   if(y_map_func == "log_odds"){
@@ -48,16 +57,8 @@ uni_tag_nums <- function(data,
         df_mdl <- dplyr::distinct(df_mdl)
       }
     },error=function(e){print(e)})
-    if(pct){
-      df_mdl[[num_col]] <- est_pctl(df_mdl[[num_col]])
-    }else{
-      # num_col might be estimated percentile already
-      # df_mdl[[num_col]] <- (df_mdl[[num_col]]-min(df_mdl[[num_col]],na.rm=TRUE))/(max(df_mdl[[num_col]],na.rm=TRUE)-min(df_mdl[[num_col]],na.rm=TRUE))
-      # df_mdl[which( df_mdl[[num_col]]<0 | df_mdl[[num_col]]>1),num_col]<- NA
-      print("-- using raw scale --")
-      df_mdl[[num_col]] <- as.numeric(df_mdl[[num_col]])
-    }
-    
+    # always use raw scale of num_col to train the regression model, if user want to train on percentile scale, convert outside this function
+    df_mdl[[num_col]] <- as.numeric(df_mdl[[num_col]])
     df_mdl <- df_mdl[complete.cases(df_mdl[[tag_col]]),]
     stopifnot(all(unique(as.numeric(as.character( df_mdl[[tag_col]])))%in% c(0,1))) #assert tag y is 01 binary
     afford_dof <- n_distinct(df_mdl[which(df_mdl[[tag_col]]==1), cluster_col])/15
@@ -67,17 +68,28 @@ uni_tag_nums <- function(data,
     dof <- max(3, max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)) # at least 3 knots
     print(paste0("---- initiate degree of freedom ", dof, " ---- "))
     
-    # calculate prediction matrix
+    # get the new_x vector from new_dd dataframe
+    new_x <- NULL
+    if(!is.null(new_dd)){
+      tryCatch({
+        new_x <- new_dd[[num_col]]
+      },error=function(e){
+        print(e)
+      })
+    }
+    
+    # calculate prediction data frame, always make predictions in scale of percentiles
     df_result <- NULL
     tryCatch({
       if (method=="bootstrap"){
-        df_result <- uni_tag_num_bootstrap(df_mdl, num_col, tag_col)
+        #df_result <- uni_tag_num_bootstrap(df_mdl, num_col, tag_col)
       }else if(method=="loess"){
-        df_result <- uni_tag_num_loess(df_mdl, num_col, tag_col)
+        df_result <- uni_tag_num_loess(df_mdl, num_col, tag_col, new_x=new_x)
       }else if (method=="logit_rcs"){
-        df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col)
+        df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col, new_x=new_x)
+        df_result$y_prob <- logit2prob(df_result$y_logodds)
       }else if(method=="mean"){
-        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
+        #df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
       }
     }, error=function(e){
       print(e)
@@ -85,7 +97,6 @@ uni_tag_nums <- function(data,
     
     if (!is.null(df_result)){
       print(paste0("---- final dof used: ",dof," ----"))
-      df_result$var_name <- num_col
       if(is.null(df_result_all)) {
         df_result_all <- df_result
       }else{
@@ -98,30 +109,28 @@ uni_tag_nums <- function(data,
   
   # final returned result dataframe or NULL object
   if(!is.null(df_result_all)){
-    df_result_all$yhat <- ymap(df_result_all$prob)
-  }else{
-    print("uni_tag_nums returns NULL")
+    df_result_all$y_hat <- ymap(df_result_all$y_prob)
+    # rearrange column orders
+    main_cols <- intersect(c("x_name", "x_pctl", "x_raw", "y_hat", "y_prob", "y_logodds", "c_score"),colnames(df_result_all))
+    df_result_all <- df_result_all[,c(main_cols,setdiff(colnames(df_result_all),main_cols))]
   }
-  
   return(df_result_all)
 }
 
 
-uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_adjust_col=NULL){
+uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_adjust_col=NULL, new_x=NULL){
   df_mdl$num_col <- df_mdl[[num_col]]
   df_mdl$tag_col <- df_mdl[[tag_col]]
   df_mdl <- df_mdl[,c("num_col", "tag_col", cluster_col, num_adjust_col)] # only keep columns that will be used later
+  mdl <- NULL # model object to monitor
   df_result <- NULL
-  while((is.null(df_result))&(dof>=3)){
+  while((is.null(mdl))&(dof>=3)){
     if (length(num_adjust_col)==0){
       tryCatch({
         fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")"))
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
         mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-        df_fit <- rms::Predict(mdl,num_col, fun=plogis)
-        df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
-        df_result$pctl <- round(df_result$pctl,2)
       },error=function(e){
         print(e)
       })
@@ -132,23 +141,17 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
         mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-        df_fit <- rms::Predict(mdl,num_col, fun=plogis)
-        df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
-        df_result$pctl <- round(df_result$pctl,2)
         
       },error=function(e){
         print(e)
       })
-      if(is.null(df_result)){
+      if(is.null(mdl)){
         tryCatch({
           df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
           fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
           dd <- rms::datadist(df_mdl)
           base::options(datadist=dd, na.action=na.omit)
           mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-          df_fit <- rms::Predict(mdl,num_col, fun=plogis)
-          df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
-          df_result$pctl <- round(df_result$pctl,2)
           
         },error=function(e){
           print(e)
@@ -158,16 +161,13 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
     dof <- dof - 1
   }
   # if none of >=3 knots work or given dof is < 3, use linear term
-  if(is.null(df_result)){
+  if(is.null(mdl)){
     if (length(num_adjust_col)==0){
       tryCatch({
         fml <- formula(paste0("as.factor(tag_col) ~ I(num_col)"))
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
         mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-        df_fit <- rms::Predict(mdl, num_col, fun=plogis)
-        df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
-        df_result$pctl <- round(df_result$pctl,2)
         
       },error=function(e){
         print(e)
@@ -179,23 +179,17 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
         mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-        df_fit <- rms::Predict(mdl,num_col, fun=plogis)
-        df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
-        df_result$pctl <- round(df_result$pctl,2)
         
       },error=function(e){
         print(e)
       } )
-      if(is.null(df_result)){
+      if(is.null(mdl)){
         tryCatch({
           df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
           fml <- formula(paste0("as.factor(tag_col) ~ I(num_col) + I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
           dd <- rms::datadist(df_mdl)
           base::options(datadist=dd, na.action=na.omit)
           mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
-          df_fit <- rms::Predict(mdl,num_col, fun=plogis)
-          df_result <- data.frame(pctl=df_fit$num_col, prob=df_fit$yhat)
-          df_result$pctl <- round(df_result$pctl,2)
           
         },error=function(e){
           print(e)
@@ -203,50 +197,73 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
       }
     }
   }
-  if(is.null(df_result)) print(paste0("uni_tag_num_rcs failed on ", num_col))
-  # only keep 2 decimal places
-  df_result <- df_result %>% group_by(pctl) %>% summarise(prob=mean(prob,na.rm=TRUE)) %>% as.data.frame()
-  # check boundaries 0 and 1
-  if(min(df_result$pctl)>0){
-    ld <- data.frame(pctl=seq(0,min(df_result$pctl),0.01), prob=rep(df_result$prob[which(df_result$pctl==min(df_result$pctl))],length(seq(0,min(df_result$pctl),0.01))))
-    df_result <- bind_rows(ld,df_result)
-  }
-  if(max(df_result$pctl)<1){
-    ud <- data.frame(pctl=seq(min(1,max(df_result$pctl)+0.01),1,0.01), prob=rep(df_result$prob[which(df_result$pctl==max(df_result$pctl))],length(seq(min(1,max(df_result$pctl)+0.01),1,0.01))))
-    df_result <- bind_rows(df_result,ud)
-  }
-  df_result<-df_result[!duplicated(df_result),]
-  #stopifnot(length(df_result$pctl)==101) # from 0th to 100th
+  if(is.null(mdl)) stop(paste0("Error: uni_tag_num_rcs failed on ", num_col))
   
+  # make prediction at each percentile (newdata df_result)
+  df_result <- data.frame(num_pctl=seq(0,1,0.01), num_col=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  # if new_x is provided externally
+  if(!is.null(new_x)){
+    # keep reasonable scale and boundaries
+    new_x <- new_x[which(new_x>=min(df_mdl$num_col,na.rm=TRUE))]
+    new_x <- new_x[which(new_x<=max(df_mdl$num_col,na.rm=TRUE))]
+    df_result <- data.frame(num_pctl=seq(1,length(new_x),1),num_col=new_x) # in this case, x_pctl will be the index of new_x
+  }
+  # add y_logodds
+  df_result$y_logodds <- rms::predictrms(mdl, newdata = df_result)
   # add c-stat
   df_result$c_score <- mdl$stats[["C"]]
+  # add x variable name
+  df_result$x_name <- num_col
+  # add y_prob
+  df_result$y_prob <- logit2prob(df_result$y_logodds)
+  # # check dimension
+  # stopifnot(dim(df_result)[1]==101) # from 0th to 100th
+  # refine column names
+  colnames(df_result)[which(colnames(df_result)=="num_pctl")] <- "x_pctl"
+  colnames(df_result)[which(colnames(df_result)=="num_col")] <- "x_raw"
+  
+  # reformat object to return
+  if(!is.null(df_result)){
+    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", "y_logodds", "c_score")
+    df_result <- df_result[,keep_cols]
+  }
+  
   return(df_result)
 }
 
 
-uni_tag_num_loess <- function(df_mdl, num_col, tag_col){
+uni_tag_num_loess <- function(df_mdl, num_col, tag_col, new_x=NULL){
   
   df_result <- NULL
-  df_mdl$num_col <- est_pctl(df_mdl[[num_col]])
+  df_mdl$num_col <- as.numeric(df_mdl[[num_col]])
   df_mdl$tag_col <- df_mdl[[tag_col]]
+
+  fml <- formula("tag_col ~ num_col")
+  mdl <- loess(fml, data=df_mdl, span=0.25)
+  df_result <- data.frame(x_pctl=seq(0,1,0.01), x_raw=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  # if new_x is provided externally
+  if(!is.null(new_x)){
+    # keep reasonable scale and boundaries
+    new_x <- new_x[which(new_x>=min(df_mdl$num_col,na.rm=TRUE))]
+    new_x <- new_x[which(new_x<=max(df_mdl$num_col,na.rm=TRUE))]
+    df_result <- data.frame(x_pctl=seq(1,length(new_x),1),x_raw=new_x) # in this case, x_pctl will be the index of new_x
+  }
+  y_prob <- predict(mdl,df_result$x_raw)
+  y_prob[which(y_prob<=0)] <- 1e-6 # note! loess treat 0,1 outcome as numeric, there might be predicted prob below 0
+  df_result$y_prob <- y_prob
+  
+  df_result$x_name <- num_col
+  df_result$y_logodds <- prob2logit(df_result$y_prob)
+  df_result$c_score <- NA
   tryCatch({
-    fml <- formula("tag_col ~ num_col")
-    mdl <- loess(fml, data=df_mdl, span=0.25)
-    newx <- c(seq(0,100,1)/100)[2:101]
-    yhat <- predict(mdl,newx)
-    df_result <- data.frame(pctl=newx, prob=yhat)
-    df_result$pctl <- round(df_result$pctl,2)
-    df_result$c_score <- NA
-    tryCatch({
-      y_prob <- df_result$prob
-      y_true <- df_mdl$tag_col
-      res_df <- mdl_test(y_true, y_prob)
-      df_result$c_score <- res_df$AUROC
-    },error=function(e){
-      print(e)
-    })
-    
-  },error=function(e){message(paste0("skip ",num_col, "for ", tag_col, " because: ", e))})
+    df_result$c_score <- mdl_test(y_true=df_mdl$tag_col, y_prob=predict(mdl,df_mdl$num_col) )$res_df$AUROC
+  },error=function(e){print(e)})
+
+  # reformat object to return
+  if(!is.null(df_result)){
+    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", "y_logodds", "c_score")
+    df_result <- df_result[,keep_cols]
+  }
   
   return(df_result)
 }
@@ -261,19 +278,19 @@ uni_tag_num_bootstrap <- function(df_mdl, num_col, tag_col, ncut=50){
   ls <- cuts[1:length(cuts)-1]
   prob_vec <- c()
   for (i in 1:ncut){
-    prob <- NA
+    y_prob <- NA
     out_lst <- df_mdl[which(df_mdl$num_col>=ls[i] & df_mdl$num_col<us[i]),'num_output']
     if (length(out_lst)>0){
-      prob <- mean(sample(out_lst,100,replace=TRUE))
+      y_prob <- mean(sample(out_lst,100,replace=TRUE))
     }
-    prob_vec <- c(prob_vec,prob)
+    prob_vec <- c(prob_vec,y_prob)
   }
-  df_result <- data.frame(pctl=us, prob=prob_vec)
-  df_result$pctl <- round(df_result$pctl,2)
+  df_result <- data.frame(x_pctl=us, y_prob=prob_vec)
+  df_result$x_pctl <- round(df_result$x_pctl,2)
   
   # expand it to be 100 bins
-  inter <- approx(df_result$pctl, df_result$prob, method="constant", n=100)
-  df_result <- data.frame(pctl=round(inter$x,2),prob=inter$y)
+  inter <- approx(df_result$x_pctl, df_result$y_prob, method="constant", n=100)
+  df_result <- data.frame(x_pctl=round(inter$x,2),y_prob=inter$y)
   
   return(df_result)
 }
@@ -302,13 +319,13 @@ uni_tag_num_mean <- function(df_mdl, num_col, tag_col, frac_avail = 0.7){
   df_mdl$num_col <- round(est_pctl_vec, n_digit_opt)
   df_mdl$tag_col <- df_mdl[[tag_col]]
   df_result_raw <- df_mdl %>% group_by(num_col) %>% summarise(prob_raw = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
-  colnames(df_result_raw) <- c("pctl","prob")
+  colnames(df_result_raw) <- c("x_pctl","y_prob")
   # interpolate to fill gaps in 
-  inter <- approx(df_result_raw$pctl, df_result_raw$prob, method="linear", n=10^n_digit_opt)
-  df_result <- data.frame(pctl=round(inter$x,n_digit_opt),prob=inter$y)
+  inter <- approx(df_result_raw$x_pctl, df_result_raw$y_prob, method="linear", n=10^n_digit_opt)
+  df_result <- data.frame(x_pctl=round(inter$x,n_digit_opt),y_prob=inter$y)
   # expand it to be 100 bins
-  inter <- approx(df_result$pctl, df_result$prob, method="constant", n=100)
-  df_result <- data.frame(pctl=round(inter$x,2),prob=inter$y)
+  inter <- approx(df_result$x_pctl, df_result$y_prob, method="constant", n=100)
+  df_result <- data.frame(x_pctl=round(inter$x,2),y_prob=inter$y)
   
   return(df_result)
   
