@@ -21,12 +21,11 @@ front_uni_heatmap_group <- function(
   trim_ctrl=TRUE,
   num_adjust_label=NULL, 
   method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
-  pct=TRUE, # regress on percentile or raw scale
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=Inf,
   #label_y_order = c(), # order of the levels of y
   group_label=NULL,
-  group_level=c(),# order of levels of group
+  group_levels=c(),# order of levels of group
   layout_ncol = 3,
   heat_limits = NULL,
   sort_c=TRUE, # order the plot from top to bottom by c-stat, otherwise by maximum of y_hat
@@ -62,6 +61,7 @@ front_uni_heatmap_group <- function(
                                    winsorizing=winsorizing,
                                    aggregate_per=aggregate_per,
                                    # --- local ---
+                                   new_dd = new_dd,
                                    trim_ctrl=trim_ctrl,
                                    num_adjust_label=num_adjust_label,
                                    method=method,
@@ -82,19 +82,27 @@ front_uni_heatmap_group <- function(
   if(length(group_col)>0){
     #### make the plot ####
     print("-- grouped uni-heat --")
-    group_levels <- unique(as.character( data[,group_col] ))
+    if(length(group_levels)==0){
+      group_levels <- unique(as.character( data[,group_col] ))
+    }else{
+      group_levels <- group_levels[which(group_levels%in%unique(as.character( data[,group_col] )))]
+    }
     # create new data dist for all groups to make prediction on the same data scale of x
     df_all <- heatmap_obj_all$df_result_all_sort[,c("x_name", "x_raw")]
     
-    for(x in unique(df_all$x_name)){
-      new_dd_x <- data.frame(x = df_all$x_raw[which(df_all$x_name==x)])
-      colnames(new_dd_x) <- x
-      if(is.null(new_dd)){
-        new_dd <- new_dd_x
-      }else{
-        new_dd <- bind_cols(new_dd, new_dd_x)
+    if(is.null(new_dd)){
+      for(x in unique(df_all$x_name)){
+        new_dd_x <- data.frame(x = df_all$x_raw[which(df_all$x_name==x)])
+        colnames(new_dd_x) <- x
+        if(is.null(new_dd)){
+          new_dd <- new_dd_x
+        }else{
+          new_dd <- bind_cols(new_dd, new_dd_x)
+        }
       }
     }
+    # until now new_dd is always provided
+    # x_pctl will be integers
     # collect plot data for each level in a list
     plot_df_all <- data.frame()
     for(g in group_levels){
@@ -131,7 +139,7 @@ front_uni_heatmap_group <- function(
                                          sample_per_cluster=sample_per_cluster)
         plot_df <- heatmap_obj$df_result_all_sort
         if(!is.null(plot_df)){
-          plot_df$level <- g
+          plot_df$group_level <- g
           plot_df_all <- bind_rows(plot_df_all, plot_df)
         }else{
           print(paste0("failed level ",group_levels[i], " in ", group_label) )
@@ -142,45 +150,77 @@ front_uni_heatmap_group <- function(
     }
     
     #### make level stratified plots ####
+    group_levels <- intersect(group_levels, unique(plot_df_all$group_level))
+    group_level_df <- data.frame(group_lorder=rev(seq(1,length(group_levels),1)), group_level = group_levels)
+    plot_df_all <- merge(plot_df_all, group_level_df, all.x = TRUE)
+    
     # fix heat color legend 
     if( length(heat_limits)<2 ){
       heat_limits <- c(min(plot_df_all$y_hat,na.rm = TRUE), min(y_map_max, max(plot_df_all$y_hat,na.rm = TRUE))) 
     }
     theme_obj <- theme_minimal()+
       theme(plot.subtitle = element_text(hjust = 0.5, face="bold", colour="black", size = 15),
+            axis.ticks.length=unit(-0.25, "cm"),
             axis.text.y = element_text(face="bold", colour="black", size=12),
             axis.title.y = element_blank(),
             axis.text.x = element_text(face="bold", colour="black", size=12),
             axis.title.x = element_text(face="bold", colour="black", size=14),
             legend.title = element_text(face="bold", colour="black", size=14),
             legend.text = element_text(face="bold", colour="black", size=12)) 
+    # make sure yellow is assigned to fold risk of 1
+    if( max(plot_df_all$y_hat, na.rm=TRUE) > 1){
+      color_values <- as.numeric(c(seq(min(plot_df_all$y_hat, na.rm=TRUE), 1, length.out=4),
+                                   seq(1, max(plot_df_all$y_hat, na.rm=TRUE), length.out=4)))
+    }else{
+      color_values <- as.numeric(seq(min(plot_df_all$y_hat, na.rm=TRUE), max(plot_df_all$y_hat, na.rm=TRUE), length.out=8))
+    }
+    
     scale_fill_gradientn_obj <- scale_fill_gradientn(limits = heat_limits, 
+                                                     values=scales::rescale(color_values),
                                                      colours = rev(palette_diy(8)),
                                                      na.value = NA)
     plot_list <- list()
     for(x in unique(plot_df_all$x_name)){
       subdf <- plot_df_all[which(plot_df_all$x_name==x),]
-      plot_list[[x]] <- ggplot(subdf, aes(x=x_pctl,y=stringr::str_wrap(gsub("[^[:alnum:]]+"," ",level), width=20) ))+
+      plot_list[[x]] <- ggplot(subdf, aes(x=x_pctl,y=group_lorder))+ # stringr::str_wrap(gsub("[^[:alnum:]]+"," ",level))
         geom_tile(aes(fill=y_hat)) +
-        geom_text(aes(label=c_label), hjust="left", na.rm = TRUE, check_overlap = TRUE, size = 5) + 
-        labs(subtitle=gsub("[^[:alnum:]]+"," ",x),fill=y_map_func,x=NULL,y=NULL)+
+        geom_text(aes(label=c_label), hjust=0, vjust=-0.2, na.rm = TRUE, check_overlap = TRUE, size = 5) + 
+        labs(subtitle=gsub("[^[:alnum:]]+"," ",x),fill=gsub("[^[:alnum:]]+"," ",y_map_func),x=NULL,y=NULL)+
         theme_obj + 
-        scale_fill_gradientn_obj
+        scale_fill_gradientn_obj+
+        scale_y_continuous(expand = c(0,0),
+                           breaks = group_level_df$group_lorder, 
+                           labels = stringr::str_wrap(group_level_df$group_level,width=5) )
       
       # map x raw value back to each x axis in the plot list
       x_label_map <- NULL
-      breaks <- as.numeric(c(round(quantile(subdf$x_pctl,0,na.rm=TRUE)),
-                  round(quantile(subdf$x_pctl,0.25,na.rm=TRUE)),
-                  round(quantile(subdf$x_pctl,0.5,na.rm=TRUE)),
-                  round(quantile(subdf$x_pctl,0.75,na.rm=TRUE)),
-                  round(quantile(subdf$x_pctl,1,na.rm=TRUE))))
+      breaks <- as.numeric(c(min(subdf$x_pctl,na.rm=TRUE),
+                             round(quantile(subdf$x_pctl,0.05,na.rm=TRUE)),
+                             round(quantile(subdf$x_pctl,0.25,na.rm=TRUE)),
+                             round(quantile(subdf$x_pctl,0.5,na.rm=TRUE)),
+                             round(quantile(subdf$x_pctl,0.75,na.rm=TRUE)),
+                             round(quantile(subdf$x_pctl,0.95,na.rm=TRUE)),
+                             max(subdf$x_pctl,na.rm=TRUE) ))
       x_label_map <- subdf %>% 
         filter(x_pctl%in%breaks) %>% 
-        group_by(x_pctl) %>% summarise(x_raw = round(mean(x_raw,na.rm=TRUE),2)) %>%
+        group_by(x_pctl) %>% summarise(x_raw = round(mean(x_raw,na.rm=TRUE),1)) %>%
         as.data.frame()
+      x_label_map <- merge(data.frame(x_pctl=breaks), x_label_map, all.x=TRUE)
       
       plot_list[[x]] <- plot_list[[x]] +
-        scale_x_continuous(breaks = x_label_map$x_pctl, labels = x_label_map$x_raw )
+        scale_x_continuous(breaks = x_label_map$x_pctl[-c(2,6)], 
+                           labels = x_label_map$x_raw[-c(2,6)],
+                           sec.axis = sec_axis(~.,
+                                               breaks = x_label_map$x_pctl[c(2,6)], 
+                                               labels = x_label_map$x_raw[c(2,6)] ) )
+      
+      
+      if("y_logodds_signif"%in%colnames(subdf)){
+        plot_list[[x]] <-  plot_list[[x]] +
+          geom_point(aes(y=ifelse(y_logodds_signif%in%c(1),NA,group_lorder) ))
+      }
+      
+      
     }
     
     layout_ncol <- min(length(plot_list), layout_ncol)

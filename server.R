@@ -547,12 +547,12 @@ shinyServer(function(input, output, session) {
     uni_obj <- front_uni_heatmap_group(
       data=values$data_ml,
       dict_data=values$dict_ml,
-      num_labels=input$ml_num_labels, 
-      y_label=input$ml_y_label, 
+      num_labels=input$ml_num_labels,
+      y_label=input$ml_y_label,
       cluster_label=input$setup_cluster_label,
       # --- engineer ---
-      trim_by_label = input$setup_trim_by_label, 
-      trim_vec = as.numeric(input$setup_trim_vec),  
+      trim_by_label = input$setup_trim_by_label,
+      trim_vec = as.numeric(input$setup_trim_vec),
       time_unit=input$setup_trim_time_unit,
       pctcut_num_labels = input$setup_pctcut_num_labels,
       pctcut_num_vec = as.numeric(input$setup_pctcut_num_vec),
@@ -564,17 +564,15 @@ shinyServer(function(input, output, session) {
       aggregate_per = input$setup_aggregate_per,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
-      num_adjust_label=input$ml_num_adjust_label, 
-      method=input$ml_method, 
+      num_adjust_label=input$ml_num_adjust_label,
+      method=input$ml_method,
       heat_limits = heat_limits,
       y_map_func = input$ml_y_map_func,
       y_map_max = input$ml_y_max,
       group_label = input$ml_uni_group_label,
-      sample_per_cluster = NULL,#input$ml_uni_sample_per_cluster,
-      pct = input$ml_uni_pct
+      sample_per_cluster = NULL,#input$ml_uni_sample_per_cluster
     )
-    uni_obj$plot_obj
-    
+    return(uni_obj)
   })
   # --- ml_select_lambda ---
   observeEvent(input$ml_select_lasso_by, {
@@ -1211,9 +1209,18 @@ shinyServer(function(input, output, session) {
     withProgress(message = 'Calculation in progress',
                  detail = 'This may take a while...', value = 0.1, {
                    Sys.sleep(0.25)
-                   plot_obj <- uniHeatmap()
+                   uni_obj <- uniHeatmap()
                    setProgress(1)
                  })
+    if(!input$ml_uni_raw_scale){
+      plot_obj <- uni_obj$plot_obj
+    }else{
+      plot_obj <- ggpubr::ggarrange(plotlist=uni_obj$plot_list,
+                                    ncol=3,
+                                    nrow=ceiling(length(uni_obj$plot_list)/3),
+                                    common.legend = TRUE,
+                                    legend = "right")
+    }
     plot_obj
   })
   # Feature Selection ----

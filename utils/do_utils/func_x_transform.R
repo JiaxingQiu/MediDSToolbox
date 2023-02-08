@@ -1,5 +1,6 @@
-# estimate the percentile of a population based on a certain numeric value
+# transformation functions that could be used on a randome variable
 
+# estimate the percentile of a population based on a certain numeric value
 est_pctl <- function(num_vec){
   
   res_pctl <- NULL
@@ -21,4 +22,21 @@ est_pctl <- function(num_vec){
   }
  
   return(res_pctl)
+}
+
+
+# estimate a pseudo normal distribution of a random variable by rankit 
+rankit <- function(x){
+  xx <- qnorm((rank(x)-0.5)/sum(!is.na(x)),mean=mean(x,na.rm=TRUE),sd=sd(x,na.rm = TRUE))
+  return(xx)
+}
+
+# robust scaler
+robust_scale <- function(x){
+  xx <- (x - median(x,na.rm = TRUE)) / (quantile(x,0.75,na.rm=TRUE)-quantile(x,0.25,na.rm=TRUE))
+}
+
+# normal (standardize) scaler
+normal_scale <- function(x){
+  xx <- (x - mean(x,na.rm = TRUE)) / sd(x,na.rm = TRUE)
 }

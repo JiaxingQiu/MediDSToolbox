@@ -122,6 +122,15 @@ dictup_shiny <- function(data_org,
   dict_ml <- get.dict(data_ml)
   stopifnot(all(!dict_ml$source_file==""))
   
+  # ---- additional cleansing dict ----
+  dict_ml$label <- gsub("_level__", "", dict_ml$label)
+  for(fct_var in dict_ml$varname[which(dict_ml$type=="fct")]){
+    data_ml[[fct_var]] <- gsub("_level__", "", data_ml[[fct_var]])
+  }
+  dict_org$label <- gsub("_level__", "", dict_org$label)
+  for(fct_var in dict_org$varname[which(dict_org$type=="fct")]){
+    data_org[[fct_var]] <- gsub("_level__", "", data_org[[fct_var]])
+  }
   return(list(data_ml = data_ml,
               dict_ml = dict_ml,
               data_org = data_org,

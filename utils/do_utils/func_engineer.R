@@ -22,6 +22,7 @@ engineer <- function(
   imputeby_mean = c(), 
   impute_per_cluster=FALSE,
   standardize_df = NULL, # can be c(NULL, a dataframe)
+  scaler = c("none", "normal", "robust", "rankit", "percent")[1],
   sample_per_cluster = NULL
 ){
   
@@ -195,7 +196,7 @@ engineer <- function(
   
   data_engineered <- data
   
-  #### standardization ####
+  #### standardization by df ####
   if(!is.null(standardize_df)){
     tryCatch({
       stopifnot(all(c("varname", "center", "scale")%in%colnames(standardize_df)))
@@ -214,6 +215,30 @@ engineer <- function(
       print(e)
       print("skip standardization -- error in input standardize dataframe ")
     })
+  }
+  
+  ### automatic standardization ###
+  if(is.null(standardize_df)&(!scaler=="none")){
+    for(c in num_cols){
+      tryCatch({
+        if(scaler=="normal"){
+          data_engineered[,c] <- normal_scale(data_engineered[,c])
+        }
+        if(scaler=="robust"){
+          data_engineered[,c] <- robust_scale(data_engineered[,c])
+        }
+        if(scaler=="rankit"){
+          data_engineered[,c] <- rankit(data_engineered[,c])
+        }
+        if(scaler=="percent"){
+          data_engineered[,c] <- est_pctl(data_engineered[,c])
+        }
+      },error = function(e){
+        print(e)
+        print(paste0(scaler," scaler failed on", c))
+      })
+    }
+    
   }
   
   if(!is.null(sample_per_cluster)){

@@ -89,7 +89,7 @@ uni_tag_nums <- function(data,
         df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col, new_x=new_x)
         df_result$y_prob <- logit2prob(df_result$y_logodds)
       }else if(method=="mean"){
-        #df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
+        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
       }
     }, error=function(e){
       print(e)
@@ -110,6 +110,10 @@ uni_tag_nums <- function(data,
   # final returned result dataframe or NULL object
   if(!is.null(df_result_all)){
     df_result_all$y_hat <- ymap(df_result_all$y_prob)
+    if("y_logodds_upper"%in%colnames(df_result_all) & "y_logodds_lower"%in%colnames(df_result_all)){
+      df_result_all$y_hat_upper <- ymap( logit2prob(df_result_all$y_logodds_upper) )
+      df_result_all$y_hat_lower <- ymap( logit2prob(df_result_all$y_logodds_lower) )
+    }
     # rearrange column orders
     main_cols <- intersect(c("x_name", "x_pctl", "x_raw", "y_hat", "y_prob", "y_logodds", "c_score"),colnames(df_result_all))
     df_result_all <- df_result_all[,c(main_cols,setdiff(colnames(df_result_all),main_cols))]
@@ -200,16 +204,22 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   if(is.null(mdl)) stop(paste0("Error: uni_tag_num_rcs failed on ", num_col))
   
   # make prediction at each percentile (newdata df_result)
-  df_result <- data.frame(num_pctl=seq(0,1,0.01), num_col=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  df_result <- data.frame(num_pctl=seq(0,100,1), num_col=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
   # if new_x is provided externally
   if(!is.null(new_x)){
+    # in this case, x_pctl will be the index of new_x
+    df_result <- data.frame(num_pctl=seq(1,length(new_x),1),num_col=new_x) 
     # keep reasonable scale and boundaries
-    new_x <- new_x[which(new_x>=min(df_mdl$num_col,na.rm=TRUE))]
-    new_x <- new_x[which(new_x<=max(df_mdl$num_col,na.rm=TRUE))]
-    df_result <- data.frame(num_pctl=seq(1,length(new_x),1),num_col=new_x) # in this case, x_pctl will be the index of new_x
+    df_result <- df_result[which(df_result$num_col>=min(df_mdl$num_col,na.rm=TRUE) &df_result$num_col<=max(df_mdl$num_col,na.rm=TRUE) ),]
   }
   # add y_logodds
-  df_result$y_logodds <- rms::predictrms(mdl, newdata = df_result)
+  df_result$y_logodds <- rms::predictrms(mdl, newdata = df_result, conf.int = 0.95)$linear.predictors
+  df_result$y_logodds_upper <- rms::predictrms(mdl, newdata = df_result, conf.int = 0.95)$upper
+  df_result$y_logodds_lower <- rms::predictrms(mdl, newdata = df_result, conf.int = 0.95)$lower
+  # add "significancy"
+  df_result$y_logodds_baseline <- log(mean(as.numeric(as.character(mdl$y)),na.rm=TRUE)/(1-mean(as.numeric(as.character(mdl$y)),na.rm=TRUE)) )
+  df_result$y_logodds_signif <- ifelse(df_result$y_logodds_lower<=df_result$y_logodds_baseline&df_result$y_logodds_upper>=df_result$y_logodds_baseline, 0, 1)
+  
   # add c-stat
   df_result$c_score <- mdl$stats[["C"]]
   # add x variable name
@@ -224,7 +234,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   
   # reformat object to return
   if(!is.null(df_result)){
-    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", "y_logodds", "c_score")
+    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", colnames(df_result)[startsWith(colnames(df_result),"y_logodds")], "c_score")
     df_result <- df_result[,keep_cols]
   }
   
@@ -240,13 +250,14 @@ uni_tag_num_loess <- function(df_mdl, num_col, tag_col, new_x=NULL){
 
   fml <- formula("tag_col ~ num_col")
   mdl <- loess(fml, data=df_mdl, span=0.25)
-  df_result <- data.frame(x_pctl=seq(0,1,0.01), x_raw=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  df_result <- data.frame(x_pctl=seq(0,100,1), x_raw=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  
   # if new_x is provided externally
   if(!is.null(new_x)){
+    # in this case, x_pctl will be the index of new_x
+    df_result <- data.frame(x_pctl=seq(1,length(new_x),1),x_raw=new_x) 
     # keep reasonable scale and boundaries
-    new_x <- new_x[which(new_x>=min(df_mdl$num_col,na.rm=TRUE))]
-    new_x <- new_x[which(new_x<=max(df_mdl$num_col,na.rm=TRUE))]
-    df_result <- data.frame(x_pctl=seq(1,length(new_x),1),x_raw=new_x) # in this case, x_pctl will be the index of new_x
+    df_result <- df_result[which(df_result$x_raw>=min(df_mdl$num_col,na.rm=TRUE) &df_result$x_raw<=max(df_mdl$num_col,na.rm=TRUE) ),]
   }
   y_prob <- predict(mdl,df_result$x_raw)
   y_prob[which(y_prob<=0)] <- 1e-6 # note! loess treat 0,1 outcome as numeric, there might be predicted prob below 0
@@ -267,6 +278,69 @@ uni_tag_num_loess <- function(df_mdl, num_col, tag_col, new_x=NULL){
   
   return(df_result)
 }
+
+uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=10){
+  
+  # find deciles of event group
+  df_mdl$tag_col <- as.numeric(as.character(df_mdl[[tag_col]])) # force tag col to be 01
+  df_mdl$tag_col[which(df_mdl$tag_col==min(df_mdl$tag_col,na.rm=TRUE))] <- 0
+  df_mdl$tag_col[which(df_mdl$tag_col==max(df_mdl$tag_col,na.rm=TRUE))] <- 1
+  df_mdl$num_col <- as.numeric(df_mdl[[num_col]])
+  if(n_distinct(df_mdl$num_col[which(df_mdl$tag_col==1)])<nbin){
+    stop(paste0("less than ",nbin," unique values in the event group!"))
+  }
+  breaks <- as.numeric(quantile(df_mdl[which(df_mdl$tag_col==1),num_col],seq(0,1,length.out=nbin),na.rm=TRUE))
+  df_mdl$x_pctl <- NA
+  for(i in 1:(length(breaks)-1) ){
+    if(i==1){
+      df_mdl$x_pctl[which(df_mdl$num_col<=breaks[i+1])] <- i
+    }else if(i==length(breaks)-1){
+      df_mdl$x_pctl[which(df_mdl$num_col>=breaks[i])] <- i
+    }else{
+      df_mdl$x_pctl[which(df_mdl$num_col>=breaks[i] & df_mdl$num_col<=breaks[i+1])] <- i
+    }
+  }
+  df_result <- df_mdl %>% filter(!is.na(x_pctl)) %>% group_by(x_pctl) %>% summarise(x_raw=mean(num_col,na.rm=TRUE),
+                                                                                    y_prob=mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
+  df_result$x_name <- num_col
+  df_result$y_logodds <- prob2logit(df_result$y_prob)
+  # reformat object to return
+  if(!is.null(df_result)){
+    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", "y_logodds")
+    df_result <- df_result[,keep_cols]
+  }
+  
+  # # tuning the binwidth for percentile
+  # # if percentile surpass the missingness threshold (0.8)
+  # est_pctl_vec <- est_pctl(df_mdl[[num_col]])
+  # print("---- tuning resolution / n_digit ----")
+  # n_digits <- c()
+  # for(n_digit in c(4,3,2,1)){
+  #   est_pctl_vec_bin_values <- unique(round(est_pctl_vec,n_digit))
+  #   est_pctl_vec_bin_values <- est_pctl_vec_bin_values[which(!is.na(est_pctl_vec_bin_values))]
+  #   binwidth <- 1/(10^n_digit)
+  #   n_bins <- length(est_pctl_vec_bin_values)
+  #   frac_bins <- round(length(est_pctl_vec_bin_values)/(10^n_digit+1),3)  
+  #   print(paste0("binwidth=",binwidth, "; n_bins=",n_bins, "; frac_bins=",frac_bins) )
+  #   if(frac_bins >= frac_avail) n_digits <- c(n_digits, n_digit)
+  # }
+  # 
+  # n_digit_opt <- n_digits[1]
+  # df_mdl$num_col <- round(est_pctl_vec, n_digit_opt)
+  # df_mdl$tag_col <- df_mdl[[tag_col]]
+  # df_result_raw <- df_mdl %>% group_by(num_col) %>% summarise(prob_raw = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
+  # colnames(df_result_raw) <- c("x_pctl","y_prob")
+  # # interpolate to fill gaps in 
+  # inter <- approx(df_result_raw$x_pctl, df_result_raw$y_prob, method="linear", n=10^n_digit_opt)
+  # df_result <- data.frame(x_pctl=round(inter$x,n_digit_opt),y_prob=inter$y)
+  # # expand it to be 100 bins
+  # inter <- approx(df_result$x_pctl, df_result$y_prob, method="constant", n=100)
+  # df_result <- data.frame(x_pctl=round(inter$x,2),y_prob=inter$y)
+  
+  return(df_result)
+  
+}
+
 
 uni_tag_num_bootstrap <- function(df_mdl, num_col, tag_col, ncut=50){
   df_mdl$num_col <- df_mdl[[num_col]]
@@ -293,41 +367,5 @@ uni_tag_num_bootstrap <- function(df_mdl, num_col, tag_col, ncut=50){
   df_result <- data.frame(x_pctl=round(inter$x,2),y_prob=inter$y)
   
   return(df_result)
-}
-
-
-
-
-uni_tag_num_mean <- function(df_mdl, num_col, tag_col, frac_avail = 0.7){
-  
-  # tuning the binwidth for percentile
-  # if percentile surpass the missingness threshold (0.8)
-  est_pctl_vec <- est_pctl(df_mdl[[num_col]])
-  print("---- tuning resolution / n_digit ----")
-  n_digits <- c()
-  for(n_digit in c(4,3,2,1)){
-    est_pctl_vec_bin_values <- unique(round(est_pctl_vec,n_digit))
-    est_pctl_vec_bin_values <- est_pctl_vec_bin_values[which(!is.na(est_pctl_vec_bin_values))]
-    binwidth <- 1/(10^n_digit)
-    n_bins <- length(est_pctl_vec_bin_values)
-    frac_bins <- round(length(est_pctl_vec_bin_values)/(10^n_digit+1),3)  
-    print(paste0("binwidth=",binwidth, "; n_bins=",n_bins, "; frac_bins=",frac_bins) )
-    if(frac_bins >= frac_avail) n_digits <- c(n_digits, n_digit)
-  }
-  
-  n_digit_opt <- n_digits[1]
-  df_mdl$num_col <- round(est_pctl_vec, n_digit_opt)
-  df_mdl$tag_col <- df_mdl[[tag_col]]
-  df_result_raw <- df_mdl %>% group_by(num_col) %>% summarise(prob_raw = mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
-  colnames(df_result_raw) <- c("x_pctl","y_prob")
-  # interpolate to fill gaps in 
-  inter <- approx(df_result_raw$x_pctl, df_result_raw$y_prob, method="linear", n=10^n_digit_opt)
-  df_result <- data.frame(x_pctl=round(inter$x,n_digit_opt),y_prob=inter$y)
-  # expand it to be 100 bins
-  inter <- approx(df_result$x_pctl, df_result$y_prob, method="constant", n=100)
-  df_result <- data.frame(x_pctl=round(inter$x,2),y_prob=inter$y)
-  
-  return(df_result)
-  
 }
 

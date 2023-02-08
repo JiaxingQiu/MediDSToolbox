@@ -156,8 +156,8 @@ sidebar <- dashboardSidebar(
         )),
     div(id = 'sidebar_ml_uni',
         conditionalPanel("input.sidebar == 'ml_uni'",
-                         checkboxInput("ml_uni_pct",
-                                       "X by percentile",
+                         checkboxInput("ml_uni_raw_scale",
+                                       "Add raw scale to X",
                                        value = TRUE),
                          checkboxInput("ml_uni_custom_heat",
                                        "Customize Heat Limits",
@@ -172,11 +172,12 @@ sidebar <- dashboardSidebar(
                          selectInput("ml_method",
                                      "Method (smoother)",
                                      choices = c(
-                                       "Y - Average Estimated" = "mean",
+                                       "Y - Empirical (Decile Average)" = "mean",
                                        "Y - RCS Smoothed" = "logit_rcs", 
-                                       "Y - LOESS Smoothed" = "loess", 
-                                       "Y - Bootstrap Estimated" = "bootstrap",
-                                       "X - Data Availability" = 'Kernel Density Estimates'),
+                                       "Y - LOESS Smoothed" = "loess"#, 
+                                       #"Y - Bootstrap Estimated" = "bootstrap",
+                                       #"X - Data Availability" = 'Kernel Density Estimates'
+                                       ),
                                      selected = "logit_rcs"),
                          selectInput("ml_num_adjust_label",
                                      "Adjust for",
@@ -491,7 +492,7 @@ body <- dashboardBody(
                                                                 "Cluster"="cluster")),
                                           checkboxInput("setup_winsorizing",
                                                         "Winsorize all numeric",
-                                                        value = FALSE)
+                                                        value = TRUE)
                                    ),
                                    column(4, style='border-right: 1px solid grey',
                                           selectInput("setup_imputation",
