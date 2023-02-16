@@ -37,6 +37,7 @@ do_lrm_cv <- function(df=df,
   tag_y_col <- rownames(dict_df[which(dict_df$mdl_term_init=="y"),])
   cluster_col <- rownames(dict_df[which(dict_df$mdl_term_init=="cluster"),])
   
+  df[,tag_y_col] <- as.numeric(df[,tag_y_col])
   # fine tune formula string object
   fml_obj <- lrm_formula(data = df,
                         rcs5_x_cols = rcs5_x_cols,

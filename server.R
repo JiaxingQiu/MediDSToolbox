@@ -38,14 +38,16 @@ shinyServer(function(input, output, session) {
                       choices = values$dict_ml$label[which(values$dict_ml$unit=="tag01")])
     updateSelectInput(inputId = "setup_strat_by",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]))
+    updateSelectInput(inputId = "setup_aggregate_conditioned_on_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct")] )
     updateSelectInput(inputId = "eda_y_label_stats0d",
-                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$type=="fct") )])
+                      choices = values$dict_ml$label[which(values$dict_ml$type %in% c("num","fct") )])
     updateSelectInput(inputId = "eda_group_by_label_stats0d",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats1d",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$unit=="tag01") )])
     updateSelectInput(inputId = "eda_x_label_stats1d",
-                      choices = values$dict_ml$label[which(values$dict_ml$type!="")] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type %in% c("num","fct"))] )
     updateSelectInput(inputId = "eda_group_by_label_stats1d",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats2d",
@@ -140,14 +142,16 @@ shinyServer(function(input, output, session) {
                       choices = values$dict_ml$label[which(values$dict_ml$unit=="tag01")])
     updateSelectInput(inputId = "setup_strat_by",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]))
+    updateSelectInput(inputId = "setup_aggregate_conditioned_on_labels",
+                      choices = values$dict_ml$label[which(values$dict_ml$type=="fct")] )
     updateSelectInput(inputId = "eda_y_label_stats0d",
-                      choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$type=="fct") )])
+                      choices = values$dict_ml$label[which(values$dict_ml$type %in% c("num","fct"))])
     updateSelectInput(inputId = "eda_group_by_label_stats0d",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats1d",
                       choices = values$dict_ml$label[which(values$dict_ml$type=="num"|(values$dict_ml$unit=="tag01") )])
     updateSelectInput(inputId = "eda_x_label_stats1d",
-                      choices = values$dict_ml$label[which(values$dict_ml$type!="")] )
+                      choices = values$dict_ml$label[which(values$dict_ml$type %in% c("num","fct") )] )
     updateSelectInput(inputId = "eda_group_by_label_stats1d",
                       choices = c("None", values$dict_ml$label[which(values$dict_ml$type=="fct")]) )
     updateSelectInput(inputId = "eda_y_label_stats2d",
@@ -305,7 +309,8 @@ shinyServer(function(input, output, session) {
       imputation=input$setup_imputation,
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
-      aggregate_per = input$setup_summ_aggregate_per,
+      aggregate_per = input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       trim_ctrl = input$setup_trim_ctrl,
       stratify_by = input$setup_strat_by
@@ -328,6 +333,7 @@ shinyServer(function(input, output, session) {
                        impute_per_cluster = input$setup_impute_per_cluster,
                        winsorizing = input$setup_winsorizing,
                        aggregate_per = input$setup_aggregate_per,
+                       aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
                        group_by_label = input$eda_group_by_label_stats0d
     )
   })
@@ -348,6 +354,7 @@ shinyServer(function(input, output, session) {
                        impute_per_cluster = input$setup_impute_per_cluster,
                        winsorizing = input$setup_winsorizing,
                        aggregate_per = input$setup_aggregate_per,
+                       aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
                        group_by_label = input$eda_group_by_label_stats1d
     ) 
   })
@@ -367,6 +374,11 @@ shinyServer(function(input, output, session) {
                        pctcut_num_vec = as.numeric(input$setup_pctcut_num_vec),
                        pctcut_num_coerce = input$setup_pctcut_num_coerce,
                        filter_tag_labels = input$setup_filter_tag_labels,
+                       imputation = input$setup_imputation,
+                       impute_per_cluster = input$setup_impute_per_cluster,
+                       winsorizing = input$setup_winsorizing,
+                       aggregate_per = input$setup_aggregate_per,
+                       aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
                        group_by_label = input$eda_group_by_label_stats2d
                       
     ) 
@@ -562,6 +574,7 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
       aggregate_per = input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       num_adjust_label=input$ml_num_adjust_label,
@@ -625,6 +638,7 @@ shinyServer(function(input, output, session) {
       standardize_df = input$ml_select_standardize_df,
       winsorizing=input$setup_winsorizing,
       aggregate_per = input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       test_data=test_data,
@@ -656,6 +670,7 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
       aggregate_per = input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       r2=input$ml_r2,
       rcs5_low=paste0(input$ml_rcs_vec[1],"%"),
@@ -699,6 +714,7 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
       aggregate_per = input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       r2=input$ml_r2,
@@ -742,6 +758,7 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
       aggregate_per = input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       trim_ctrl = input$ml_trim_ctrl,
       r2=input$ml_r2,
@@ -798,6 +815,7 @@ shinyServer(function(input, output, session) {
       impute_per_cluster=input$setup_impute_per_cluster,
       winsorizing=input$setup_winsorizing,
       aggregate_per=input$setup_aggregate_per,
+      aggregate_conditioned_on_labels = input$setup_aggregate_conditioned_on_labels,
       # --- local ---
       input_labels=input$unml_input_labels,
       nc_vec = input$unml_nc_vec,

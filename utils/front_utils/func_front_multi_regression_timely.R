@@ -22,6 +22,7 @@ front_multi_regression_timely <- function(
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   # --- local ---
   trim_ctrl = TRUE,
   r2=0.9,
@@ -100,6 +101,7 @@ front_multi_regression_timely <- function(
                                           impute_per_cluster = impute_per_cluster,
                                           winsorizing = winsorizing,
                                           aggregate_per = aggregate_per,
+                                          aggregate_conditioned_on_labels = aggregate_conditioned_on_labels,
                                           # --- local ---
                                           r2=r2,
                                           rcs5_low=rcs5_low,

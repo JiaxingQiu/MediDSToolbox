@@ -16,6 +16,7 @@ front_uni_heatmap <- function(
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   # --- local ---
   new_dd = NULL, # new datadist to be predicted on if given
   trim_ctrl=TRUE,
@@ -50,6 +51,7 @@ front_uni_heatmap <- function(
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
   num_adjust_col <- dict_data$varname[which(dict_data$label==num_adjust_label)]
   num_cols <- union(num_cols, num_adjust_col)
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
   
   plot_obj <- NULL
   plot_list <- NULL
@@ -73,6 +75,7 @@ front_uni_heatmap <- function(
                         impute_per_cluster = impute_per_cluster,
                         winsorizing = winsorizing,
                         aggregate_per = aggregate_per,
+                        aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                         sample_per_cluster=sample_per_cluster)
   }else{
     if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
@@ -92,6 +95,7 @@ front_uni_heatmap <- function(
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
                              aggregate_per = aggregate_per,
+                             aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                              sample_per_cluster=sample_per_cluster)
       data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                              num_cols = num_cols,
@@ -110,6 +114,7 @@ front_uni_heatmap <- function(
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
                              aggregate_per = aggregate_per,
+                             aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                              sample_per_cluster=sample_per_cluster)
       data_in <- bind_rows(data_cntrl, data_event)
     }

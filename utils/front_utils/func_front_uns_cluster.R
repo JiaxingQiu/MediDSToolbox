@@ -15,6 +15,7 @@ front_uns_cluster <- function(
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   # --- local ---
   input_labels=dict_ml$label[which(dict_ml$varname%in%colnames(data_ml%>%select(starts_with("ih_")&ends_with("_dur_prop"))))],
   nc_vec = c(2,15),
@@ -41,6 +42,7 @@ front_uns_cluster <- function(
   stopifnot(length(input_cols)>=1)
   num_cols <- intersect(input_cols, dict_data$varname[which(dict_data$type=="num")])
   fct_cols <- intersect(input_cols, dict_data$varname[which(dict_data$type=="fct"&dict_data$unit=="tag01")])
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
   
   # ---- engineering ----
   data_in <- engineer(data = data,
@@ -58,7 +60,8 @@ front_uns_cluster <- function(
                       imputation = imputation,
                       impute_per_cluster = impute_per_cluster,
                       winsorizing = winsorizing,
-                      aggregate_per = aggregate_per)
+                      aggregate_per = aggregate_per,
+                      aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
   data <- assign.dict(data_in, dict_data, overwrite = TRUE)
   
   # number of clusters boundaries

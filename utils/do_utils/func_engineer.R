@@ -16,6 +16,7 @@ engineer <- function(
   #--- decorate data ---
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_cols = c(),
   imputation=c("None", "Mean", "Median", "Zero")[1], # global imputation strategy for the rest of vars not specified in imputeby_...
   imputeby_median = c(),
   imputeby_zero = c(),
@@ -47,6 +48,7 @@ engineer <- function(
   imputeby_median_cols <- intersect(num_cols,intersect(colnames(data), imputeby_median))
   imputeby_zero_cols <- intersect(num_cols,intersect(colnames(data), imputeby_zero))
   imputeby_mean_cols <- intersect(num_cols,intersect(colnames(data), imputeby_mean))
+  aggregate_conditioned_on_cols <- intersect(fct_cols, aggregate_conditioned_on_cols) # aggregation should be done by combination of groups in these columns
   
   # initiate dataframe to return "data_engineered"
   # in the returned dataframe, only trim_by_col, num_cols, fct_cols, cluster_col will be in the columns
@@ -54,6 +56,33 @@ engineer <- function(
   data_engineered <- data
   
   print("------ Engineering ------")
+  #### coerce data type
+  if(length(num_cols)>0){
+    for(col in num_cols){
+      data[, col] <- as.numeric(data[, col]) # make it numeric
+    }
+  }
+  if(length(trim_by_col)>0){
+    data[,trim_by_col] <- as.numeric(data[,trim_by_col])
+  }
+  if(length(cluster_col)>0){
+    data[,cluster_col] <- as.character(data[,cluster_col])
+  }
+  if(length(fct_cols)>0){
+    # (tag) - max
+    tag_cols <- c()
+    cat_cols <- c()
+    for (col in fct_cols){
+      if(all(unique(as.character(data[,col]) )%in%c("0","1",NA) )) {
+        tag_cols <- c(tag_cols, col)
+        data[, col] <- as.numeric(data[, col]) # make it numeric 0 1
+      }else {
+        cat_cols <- c(cat_cols, col)
+        data[, col] <- as.character(data[, col]) # make it character
+      }
+    }
+  }
+  
   #### trim data by trim_by_col(relative time indicator) ####
   if (length(trim_by_col)>0){
     if (trim_keepna){
@@ -116,6 +145,11 @@ engineer <- function(
     }else if (aggregate_per=="cluster"){
       data$key_col <- data[,cluster_col]
     }
+    # add conditional groups to key col
+    if(length(aggregate_conditioned_on_cols)>0){
+      data$key_col <- apply(data[, c("key_col",aggregate_conditioned_on_cols)], 1, paste, collapse = "-" )
+    }
+    
     # key 
     df_key <- data.frame(key_col = unique(data$key_col), stringsAsFactors = FALSE)
     # num - mean
@@ -127,16 +161,6 @@ engineer <- function(
     }
     # fct 
     if(length(fct_cols)>0){
-      # (tag) - max
-      tag_cols <- c()
-      cat_cols <- c()
-      for (fct_col in fct_cols){
-        if(all(unique(as.character(data[,fct_col]) )%in%c("0","1",NA) )) {
-          tag_cols <- c(tag_cols, fct_col)
-        }else {
-          cat_cols <- c(cat_cols, fct_col)
-        }
-      }
       df_tag <- data %>% group_by(key_col) %>% 
         summarise_at(vars(all_of(tag_cols)), ~max(.)) %>%
         mutate_at(vars(all_of(tag_cols)), function(x) ifelse(is.infinite(x), NA, x)) %>%

@@ -17,7 +17,8 @@ front_viz_2d_stats <- function(
   imputation=c("None","Mean", "Median", "Zero")[1],
   impute_per_cluster=FALSE,
   winsorizing=TRUE,
-  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1]
+  aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c()
 ){
   # ---- Usage ----
   
@@ -46,6 +47,7 @@ front_viz_2d_stats <- function(
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels & dict_data$unit=="tag01")]
   num_cols <- unique(intersect( dict_data$varname[which(dict_data$type=="num")], c(x_col1, x_col2, y_col)))
   fct_cols <- unique(intersect( dict_data$varname[which(dict_data$type=="fct")], c(x_col1, x_col2, y_col, group_by_col)))
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
   
   data <- engineer(data = data,
                    num_cols = num_cols,
@@ -62,7 +64,8 @@ front_viz_2d_stats <- function(
                    imputation = imputation,
                    impute_per_cluster = impute_per_cluster,
                    winsorizing = winsorizing,
-                   aggregate_per = aggregate_per)
+                   aggregate_per = aggregate_per,
+                   aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
   
   
   

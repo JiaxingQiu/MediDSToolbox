@@ -20,6 +20,7 @@ front_lasso_select <- function(
   filter_tag_labels=c(),
   winsorizing=FALSE,
   aggregate_per=c("cluster_trim_by_unit", "cluster","row")[2], # should set to be cluster wise or time unit wise
+  aggregate_conditioned_on_labels = c(),
   imputation=c("None","Mean", "Median", "Zero")[1],
   imputeby_median = c(),
   imputeby_zero = c(),
@@ -66,6 +67,7 @@ front_lasso_select <- function(
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
   
   # ---- create standardize_df from input data ----
   # standardize_df can be can be c("None", "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
@@ -98,6 +100,7 @@ front_lasso_select <- function(
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
                             aggregate_per = aggregate_per,
+                            aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                             standardize_df = standardize_df) # standardize_df is null here
       }else{
         if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
@@ -120,6 +123,7 @@ front_lasso_select <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)# standardize_df is null here
           data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                  num_cols = num_cols,
@@ -141,6 +145,7 @@ front_lasso_select <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)# standardize_df is null here
           data_in <- bind_rows(data_cntrl, data_event)
         }
@@ -185,6 +190,7 @@ front_lasso_select <- function(
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
                             aggregate_per = aggregate_per,
+                            aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                             standardize_df = standardize_df) # standardize_df is null here
       }else{
         if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
@@ -207,6 +213,7 @@ front_lasso_select <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)# standardize_df is null here
           data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                  num_cols = num_cols,
@@ -228,6 +235,7 @@ front_lasso_select <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)# standardize_df is null here
           data_in <- bind_rows(data_cntrl, data_event)
         }
@@ -270,6 +278,7 @@ front_lasso_select <- function(
                        impute_per_cluster = impute_per_cluster,
                        winsorizing = winsorizing,
                        aggregate_per = aggregate_per,
+                       aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                        standardize_df = NULL) # standardize_df is null here
       for(num_col in num_cols){
         tryCatch({
@@ -330,6 +339,7 @@ front_lasso_select <- function(
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
                           aggregate_per = aggregate_per,
+                          aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                           standardize_df = standardize_df)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
@@ -352,6 +362,7 @@ front_lasso_select <- function(
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
                                aggregate_per = aggregate_per,
+                               aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                standardize_df = standardize_df)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
@@ -373,6 +384,7 @@ front_lasso_select <- function(
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
                                aggregate_per = aggregate_per,
+                               aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                standardize_df = standardize_df)
         data_in <- bind_rows(data_cntrl, data_event)
       }
@@ -423,6 +435,7 @@ front_lasso_select <- function(
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
                             aggregate_per = aggregate_per,
+                            aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                             standardize_df = standardize_df)
       }else{
         if (all(unique(as.character(test_data[,y_col])) %in% c(1,0,NA))){
@@ -445,6 +458,7 @@ front_lasso_select <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)
           data_cntrl <- engineer(data = test_data[which(test_data[,y_col]==0),],
                                  num_cols = num_cols,
@@ -466,6 +480,7 @@ front_lasso_select <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols=aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)
           data_ex <- bind_rows(data_cntrl, data_event)
         }

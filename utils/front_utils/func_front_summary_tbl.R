@@ -14,6 +14,7 @@ front_summary_tbl <- function(
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   # --- local ---
   trim_ctrl=TRUE,
   stratify_by=c("None")[1],
@@ -53,7 +54,8 @@ front_summary_tbl <- function(
   }
   pctcut_num_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% pctcut_num_labels)] )
   filter_tag_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% filter_tag_labels)] )
-    
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
+  
   # ---- prepare engineered training and validation dataset (internal data) ----
   if(trim_ctrl){
     data <- engineer(data = data,
@@ -71,7 +73,8 @@ front_summary_tbl <- function(
                      imputation = imputation,
                      impute_per_cluster = impute_per_cluster,
                      winsorizing = winsorizing,
-                     aggregate_per = aggregate_per)
+                     aggregate_per = aggregate_per,
+                     aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
   }else{
     tryCatch({
       stopifnot(length(stratify_col)>0)
@@ -91,7 +94,8 @@ front_summary_tbl <- function(
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
-                             aggregate_per = aggregate_per)
+                             aggregate_per = aggregate_per,
+                             aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
       data_cntrl <- engineer(data = data[which(data[,stratify_col]==0),],
                              num_cols = num_cols,
                              fct_cols = fct_cols,
@@ -108,7 +112,8 @@ front_summary_tbl <- function(
                              imputation = imputation,
                              impute_per_cluster = impute_per_cluster,
                              winsorizing = winsorizing,
-                             aggregate_per = aggregate_per)
+                             aggregate_per = aggregate_per,
+                             aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
       data <- bind_rows(data_cntrl, data_event)
       }
     },error=function(e){
@@ -130,7 +135,8 @@ front_summary_tbl <- function(
                        imputation = imputation,
                        impute_per_cluster = impute_per_cluster,
                        winsorizing = winsorizing,
-                       aggregate_per = aggregate_per)
+                       aggregate_per = aggregate_per,
+                       aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
     })
   }
   data_engineered <- assign.dict(data, dict_data)

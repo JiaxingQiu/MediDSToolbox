@@ -20,7 +20,7 @@ lrm_infer <-  function(
   eff_plot_diy <- NULL
   
   # calculate baseline mean of modeling data
-  base_mean <- mean(mdl_obj$y,na.rm=TRUE)
+  base_mean <- mean(as.numeric(mdl_obj$y),na.rm=TRUE)
   print(paste0("-- baseline response mean -- ", base_mean))
   
   # define the right mapping function for y-axis

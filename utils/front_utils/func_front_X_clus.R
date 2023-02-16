@@ -16,6 +16,7 @@ front_X_clus <- function(
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   # --- local ---
   r2=0.9,
   rcs5_low="70%",
@@ -44,6 +45,7 @@ front_X_clus <- function(
   trim_by_col <- dict_data$varname[which(dict_data$label==trim_by_label)]
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
   
   print("---- prepare engineered train and validation dataset (internal) ----")
   tryCatch({
@@ -63,7 +65,8 @@ front_X_clus <- function(
                           imputation = imputation,
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
-                          aggregate_per = aggregate_per)
+                          aggregate_per = aggregate_per,
+                          aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
         data_event <- engineer(data = data[which(data[,y_col]==1),],
@@ -81,7 +84,8 @@ front_X_clus <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregate_per = aggregate_per)
+                               aggregate_per = aggregate_per,
+                               aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
                                fct_cols = fct_cols,
@@ -98,7 +102,8 @@ front_X_clus <- function(
                                imputation = imputation,
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
-                               aggregate_per = aggregate_per)
+                               aggregate_per = aggregate_per,
+                               aggregate_conditioned_on_cols = aggregate_conditioned_on_cols)
         data_in <- bind_rows(data_cntrl, data_event)
       }
     }

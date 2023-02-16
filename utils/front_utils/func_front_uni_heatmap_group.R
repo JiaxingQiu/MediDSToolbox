@@ -16,6 +16,7 @@ front_uni_heatmap_group <- function(
   impute_per_cluster=FALSE,
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   # --- local ---
   new_dd = NULL,
   trim_ctrl=TRUE,
@@ -60,6 +61,7 @@ front_uni_heatmap_group <- function(
                                    impute_per_cluster=impute_per_cluster,
                                    winsorizing=winsorizing,
                                    aggregate_per=aggregate_per,
+                                   aggregate_conditioned_on_labels = aggregate_conditioned_on_labels,
                                    # --- local ---
                                    new_dd = new_dd,
                                    trim_ctrl=trim_ctrl,
@@ -126,6 +128,7 @@ front_uni_heatmap_group <- function(
                                          impute_per_cluster=impute_per_cluster,
                                          winsorizing=winsorizing,
                                          aggregate_per=aggregate_per,
+                                         aggregate_conditioned_on_labels = aggregate_conditioned_on_labels,
                                          # --- local ---
                                          new_dd = new_dd,
                                          trim_ctrl=trim_ctrl,

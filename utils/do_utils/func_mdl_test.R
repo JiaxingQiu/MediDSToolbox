@@ -4,11 +4,11 @@ mdl_test <- function(
   threshold=0.5
 ){
   
+  stopifnot(!is.na(threshold))
   # create score dataframe
   res_df <- data.frame(message="external validation initiated")
   
   # ---- test data is engineered the same way to have valid scores ----
-  
   y_true <- as.numeric(y_true)
   y_prob <- as.numeric(y_prob)
   stopifnot(length(y_prob)==length(y_true))

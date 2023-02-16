@@ -20,6 +20,7 @@ front_multi_regression <- function(
   filter_tag_labels=c(),
   winsorizing=TRUE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
+  aggregate_conditioned_on_labels = c(),
   imputation=c("None","Mean", "Median", "Zero")[1],
   imputeby_median = c(),
   imputeby_zero = c(),
@@ -81,6 +82,7 @@ front_multi_regression <- function(
   fct_cols <- setdiff(union(y_col_tag, x_cols), num_cols)
   pctcut_num_cols <- dict_data$varname[which(dict_data$label%in%pctcut_num_labels)]
   filter_tag_cols <- dict_data$varname[which(dict_data$label%in%filter_tag_labels)]
+  aggregate_conditioned_on_cols <- intersect(colnames(data), dict_data$varname[which(dict_data$label %in% aggregate_conditioned_on_labels)])
   
   # ---- engineering ----
   data_in <- NULL
@@ -125,6 +127,7 @@ front_multi_regression <- function(
                           impute_per_cluster = impute_per_cluster,
                           winsorizing = winsorizing,
                           aggregate_per = aggregate_per,
+                          aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                           standardize_df = standardize_df)
     }else{
       if (all(unique(as.character(data[,y_col])) %in% c(1,0,NA))){
@@ -147,6 +150,7 @@ front_multi_regression <- function(
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
                                aggregate_per = aggregate_per,
+                               aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                                standardize_df = standardize_df)
         data_cntrl <- engineer(data = data[which(data[,y_col]==0),],
                                num_cols = num_cols,
@@ -168,6 +172,7 @@ front_multi_regression <- function(
                                impute_per_cluster = impute_per_cluster,
                                winsorizing = winsorizing,
                                aggregate_per = aggregate_per,
+                               aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                                standardize_df = standardize_df)
         data_in <- bind_rows(data_cntrl, data_event)
       }
@@ -219,6 +224,7 @@ front_multi_regression <- function(
                             impute_per_cluster = impute_per_cluster,
                             winsorizing = winsorizing,
                             aggregate_per = aggregate_per,
+                            aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                             standardize_df = standardize_df)
       }else{
         if (all(unique(as.character(test_data[,y_col])) %in% c(1,0,NA))){
@@ -241,6 +247,7 @@ front_multi_regression <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)
           data_cntrl <- engineer(data = test_data[which(test_data[,y_col]==0),],
                                  num_cols = num_cols,
@@ -262,6 +269,7 @@ front_multi_regression <- function(
                                  impute_per_cluster = impute_per_cluster,
                                  winsorizing = winsorizing,
                                  aggregate_per = aggregate_per,
+                                 aggregate_conditioned_on_cols = aggregate_conditioned_on_cols,
                                  standardize_df = standardize_df)
           data_ex <- bind_rows(data_cntrl, data_event)
         }
