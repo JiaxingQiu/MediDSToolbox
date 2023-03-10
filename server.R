@@ -1241,6 +1241,19 @@ shinyServer(function(input, output, session) {
     }
     plot_obj
   })
+  # Univariate Signature of Illness ----
+  output$plot_unisig <- renderPlot({
+    withProgress(message = 'Calculation in progress',
+                 detail = 'This may take a while...', value = 0.1, {
+                   Sys.sleep(0.25)
+                   uni_obj <- uniHeatmap()
+                   setProgress(1)
+                 })
+    return(uni_obj$plot_obj_signat)
+    # w <- 800
+    # h <- ceiling( n_distinct(uni_obj$plot_df$x_name)/4 )*200
+  })
+  
   # Feature Selection ----
   output$ml_select_tune_trace_plot <- renderPlot({
     withProgress(message = 'Calculation in progress',
@@ -1426,7 +1439,7 @@ shinyServer(function(input, output, session) {
   })
   
   
-  # Variable Clus ----
+  # Variable Clues ----
   output$dof_plot <- renderPlot({
     withProgress(message = 'Calculation in progress',
                  detail = 'This may take a while...', value = 0.1, {

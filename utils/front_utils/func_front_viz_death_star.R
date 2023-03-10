@@ -15,7 +15,7 @@ front_viz_death_star <- function(
   # user control
   y_label, # num or fct(tag) y / response variable
   sort_by_label, 
-  align_by_label, 
+  align_by_label=trim_by_label, 
   group_by_label = "None", #"None" # fct
   tag_label = "None",
   scale = c("Raw","Percentile (2D)", "Percentile (1D)")[1],

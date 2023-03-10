@@ -60,10 +60,12 @@ engineer <- function(
   if(length(num_cols)>0){
     for(col in num_cols){
       data[, col] <- as.numeric(data[, col]) # make it numeric
+      data[which(is.infinite(data[, col])), col] <- NA
     }
   }
   if(length(trim_by_col)>0){
     data[,trim_by_col] <- as.numeric(data[,trim_by_col])
+    data[which(is.infinite(data[, trim_by_col])), trim_by_col] <- NA
   }
   if(length(cluster_col)>0){
     data[,cluster_col] <- as.character(data[,cluster_col])
@@ -115,8 +117,10 @@ engineer <- function(
   
   #### winsorize numeric columns except trim by col ####
   if(winsorizing){
-    print("--- Winsorize all the numeric variables ---")
-    data[,setdiff(num_cols,trim_by_col)] <- winsorize(data[,setdiff(num_cols,trim_by_col)])
+    if(length(setdiff(num_cols,trim_by_col))>0){
+      print("--- Winsorize all the numeric variables ---")
+      data[,setdiff(num_cols,trim_by_col)] <- winsorize(data[,setdiff(num_cols,trim_by_col)])
+    }
   }
   
   #### subset data by binary filters ####

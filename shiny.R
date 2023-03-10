@@ -27,6 +27,7 @@ library(glmmLasso)
 library(gglasso)
 library(glmnet)
 library(vip)
+library(tidytext)
 
 # ---- [don't change] source global functions -----
 # logsitic regression modeling utilities

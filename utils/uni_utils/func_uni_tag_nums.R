@@ -114,6 +114,10 @@ uni_tag_nums <- function(data,
       df_result_all$y_hat_upper <- ymap( logit2prob(df_result_all$y_logodds_upper) )
       df_result_all$y_hat_lower <- ymap( logit2prob(df_result_all$y_logodds_lower) )
     }
+    if("y_logodds_baseline"%in%colnames(df_result_all)){
+      df_result_all$y_hat_baseline <- ymap( logit2prob(df_result_all$y_logodds_baseline) )
+      df_result_all$y_hat_signif <- ifelse(df_result_all$y_hat_lower<=df_result_all$y_hat_baseline&df_result_all$y_hat_upper>=df_result_all$y_hat_baseline, 0, 1)
+    }
     # rearrange column orders
     main_cols <- intersect(c("x_name", "x_pctl", "x_raw", "y_hat", "y_prob", "y_logodds", "c_score"),colnames(df_result_all))
     df_result_all <- df_result_all[,c(main_cols,setdiff(colnames(df_result_all),main_cols))]

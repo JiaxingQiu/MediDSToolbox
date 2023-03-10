@@ -239,12 +239,76 @@ front_uni_heatmap_group <- function(
     plot_df <- plot_df_all
   }
   
+  # ------- create signature of illness plot --------
+  plot_signat <- uni_signature_illness(data=data, plot_df=plot_df)
+  
+  plot_signat$plot_obj <- plot_signat$plot_obj + labs(x=NULL,y=gsub("_"," ",y_map_func))
+  
   return(list(plot_obj = plot_obj,
               plot_list = plot_list,
-              plot_df = plot_df))
+              plot_df = plot_df,
+              plot_obj_signat = plot_signat$plot_obj,
+              plot_df_signat = plot_signat$plot_df))
 }
 
 
+
+uni_signature_illness <- function(data, # original data frame
+                                  plot_df # created plot data frame
+                                  ){
+  
+  
+  # prepare upper and lower cuts for x value
+  plot_df_cuts <- plot_df %>% group_by(x_name) %>%
+    summarise(x_raw_qt_l =unique(x_raw[x_pctl==2]),
+              x_raw_qt_l_txt = "2th",
+              x_raw_qt_u=unique(x_raw[x_pctl==98]),
+              x_raw_qt_u_txt = "98th") %>% 
+    as.data.frame()
+  # get 2.5th and 97.5th percentile values
+  tryCatch({
+    plot_df$x_raw_qt_l <- NA
+    plot_df$x_raw_qt_u <- NA
+    for(x in unique(plot_df$x_name)){
+      plot_df[which(plot_df$x_name==x),"x_raw_qt_l"] <- as.numeric(quantile(data[,x], 0.025,na.rm=TRUE))
+      plot_df[which(plot_df$x_name==x),"x_raw_qt_u"] <- as.numeric(quantile(data[,x], 0.975,na.rm=TRUE))
+    }
+    plot_df_cuts <- distinct(plot_df[,c("x_name","x_raw_qt_l","x_raw_qt_u" )])
+    plot_df_cuts$x_raw_qt_l_txt <- "2.5th"
+    plot_df_cuts$x_raw_qt_u_txt <- "97.5th"
+  },error=function(e){
+    print(e)
+    print("failed to use 2.5th and 97.5th percentile, using 2th and 98th instead")
+  })
+  
+  # prepare red curves
+  plot_df$y_hat_red <- ifelse(plot_df$y_logodds_signif==1,1,NA)*plot_df$y_hat
+  # get baseline hline for x
+  plot_df_base <- plot_df %>% group_by(x_name) %>% summarise(y_hat_baseline = mean(y_hat_baseline,na.rm=TRUE)) %>% as.data.frame()
+  
+  plot_obj <- ggplot(data = plot_df, aes(x=x_raw, y=y_hat))+
+    theme_bw() +
+    geom_line(color="white")+
+    geom_line(aes(y=y_hat_red), color="red") +
+    geom_vline(data=plot_df_cuts, mapping = aes(xintercept=x_raw_qt_l), linetype="dashed")+
+    geom_text(data=plot_df_cuts, mapping=aes(x=x_raw_qt_l, y=max(plot_df$y_hat_red,na.rm=TRUE)-0.05, label=x_raw_qt_l_txt),hjust=0)+
+    geom_vline(data=plot_df_cuts, mapping = aes(xintercept=x_raw_qt_u),linetype="dashed")+
+    geom_text(data=plot_df_cuts, mapping=aes(x=x_raw_qt_u, y=max(plot_df$y_hat_red,na.rm=TRUE)-0.05, label=x_raw_qt_u_txt),hjust=1)+
+    geom_hline(data = plot_df_base, mapping = aes(yintercept=y_hat_baseline), linetype="solid") + 
+    facet_wrap(~stringr::str_wrap( gsub("_"," ",x_name), width = 15 ), scales = "free_x", ncol=4) +
+    geom_ribbon(aes(ymin=y_hat_lower, ymax=y_hat_upper), alpha=0.2) +
+    coord_cartesian(ylim=c(min(plot_df$y_hat_red,na.rm=TRUE)-0.1,max(plot_df$y_hat_red,na.rm=TRUE)+0.1))+
+    theme(strip.text.x = element_text(size = 20),
+          axis.text = element_text(size = 10),
+          axis.title = element_text(size = 15) )
+  
+  # merge additional lines back to data frame
+  plot_df <- merge(plot_df[,c("x_name",setdiff(colnames(plot_df), colnames(plot_df_base)))], plot_df_base, all.x = TRUE, all.y = FALSE)
+  plot_df <- merge(plot_df[,c("x_name",setdiff(colnames(plot_df), colnames(plot_df_cuts)))], plot_df_cuts, all.x = TRUE, all.y = FALSE)
+  
+  return(list(plot_obj = plot_obj,
+              plot_df = plot_df))
+}
 
 
 # ############################################ not run #############################################

@@ -76,7 +76,7 @@ front_viz_0d_stats <- function(
     q3 <- as.numeric(quantile(data[,y_col], 0.75, na.rm = TRUE))
     iqr <- q3 - q1
     bin_width <- (2*iqr)/(sum(!is.na(data[,y_col]))^(1/3))
-    bins <- min(100,ceiling((max(data[,y_col],na.rm=TRUE) - min(data[,y_col],na.rm=TRUE))/bin_width))
+    bins <- min(min(100,n_distinct(data[,y_col])),ceiling((max(data[,y_col],na.rm=TRUE) - min(data[,y_col],na.rm=TRUE))/bin_width))
     data$bin <- cut(data$y, bins)
     height <- data %>% group_by(bin)%>%summarise(ny = sum(!is.na(y))) %>% select(ny) %>% max(na.rm = TRUE)
     hist_plot <- ggplot(data = data, aes(x=y, fill=group)) + 

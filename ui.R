@@ -133,7 +133,7 @@ sidebar <- dashboardSidebar(
     menuItem("ML (supervised)", tabName = "ml", startExpanded = FALSE,
              menuSubItem('Select X and Y', tabName = 'ml_setup'),
              menuSubItem('Uni-Predictor Effect', tabName = 'ml_uni'), # univariable regression
-             menuSubItem('Multi-Predictors Clus', tabName = 'ml_clus'),
+             menuSubItem('Multi-Predictors Selection', tabName = 'ml_clus'),
              menuSubItem('RCS LASSO Regression', tabName = 'ml_select'),
              menuSubItem('RCS Ridge Regression', tabName = 'ml_multi'), # multivariable regression
              menuSubItem('RCS Ridge Regression over Time', tabName = 'ml_timely')),
@@ -612,7 +612,7 @@ body <- dashboardBody(
     
     # ---- 3. ml (supervised) ----
     tabItem(tabName = "ml_setup",
-            h3("Machine Learning (supervised) -- Variable Selection"),
+            h3("Machine Learning (supervised) -- Set Up Predictors and Response"),
             tabsetPanel(type = "tabs",
                         tabPanel("Setup", 
                                  hr(),
@@ -669,11 +669,16 @@ body <- dashboardBody(
     ),
     
     tabItem(tabName = "ml_uni",
-            h3("Machine Learning (supervised) -- Univariable Percentile Heatmap"),
+            h3("Machine Learning (supervised) -- Univariable Risk"),
             tags$p("C = within-sample AUROC"),
-            tags$p("*hint: you can find univariate cross-validated AUROC by Ridge Regression with only one predictor(X)"),
+            tags$p("*hint: you can find cross-validated AUROC by Ridge Regression with only one predictor(X)"),
             fluidRow(column(1,actionButton("ml_uni_go", "Go",icon=icon("play-circle")))),
-            fluidRow(plotOutput("plot_uniheat", height = "800px"))),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Heatmap",
+                                 plotOutput("plot_uniheat", height = "800px")),
+                        tabPanel("Signature of illness",
+                                 plotOutput("plot_unisig", height = "600px")))
+            ),
     tabItem(tabName = "ml_select",
             h3("Machine Learning (supervised) -- RCS LASSO Regression (Feature Selection)"),
             fluidRow(column(1,actionButton("ml_select_go", "Go",icon=icon("play-circle")))),
@@ -709,7 +714,7 @@ body <- dashboardBody(
                         )),
     
     tabItem(tabName = "ml_clus",
-            h3("Machine Learning (supervised) -- Predictor clus"),
+            h3("Machine Learning (supervised) -- Predictor Selection"),
             fluidRow(column(1,actionButton("ml_clus_go", "Go",icon=icon("play-circle")))),
             tabsetPanel(type = "tabs",
                         tabPanel("Correlation", 
