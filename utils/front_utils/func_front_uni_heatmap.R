@@ -141,6 +141,7 @@ front_uni_heatmap <- function(
                                   y_map_max=y_map_max,
                                   new_dd=new_dd)
     stopifnot(!is.null(df_result_all))
+    
     if ( "c_score" %in% colnames(df_result_all)){
       df_result_all$c_label <- NA
       for (x in unique(df_result_all$x_name) ){

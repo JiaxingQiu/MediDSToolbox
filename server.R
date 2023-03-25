@@ -1249,6 +1249,10 @@ shinyServer(function(input, output, session) {
                    uni_obj <- uniHeatmap()
                    setProgress(1)
                  })
+    uni_obj$plot_obj_signat <- uni_obj$plot_obj_signat +
+        theme(strip.text.x = element_text(size = 20),
+              axis.text = element_text(size = 10),
+              axis.title = element_text(size = 15) )
     return(uni_obj$plot_obj_signat)
     # w <- 800
     # h <- ceiling( n_distinct(uni_obj$plot_df$x_name)/4 )*200

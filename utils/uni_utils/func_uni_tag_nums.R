@@ -96,7 +96,16 @@ uni_tag_nums <- function(data,
     })
     
     if (!is.null(df_result)){
-      print(paste0("---- final dof used: ",dof," ----"))
+      df_result$afford_dof <- afford_dof
+      df_result$nsbj_event <- n_distinct(df_mdl[which(df_mdl[[tag_col]]==1), cluster_col])
+      # add empirical c 
+      df_result$c_empir <- NA
+      try({
+        y_true = df_mdl[complete.cases(df_mdl[,c(num_col, tag_col)]),tag_col]
+        y_pred = df_mdl[complete.cases(df_mdl[,c(num_col, tag_col)]),num_col]
+        df_result$c_empir <- as.numeric( round(pROC::auc(pROC::roc(y_true, round(y_pred,6))),6) )
+      },TRUE)
+      
       if(is.null(df_result_all)) {
         df_result_all <- df_result
       }else{
@@ -119,7 +128,7 @@ uni_tag_nums <- function(data,
       df_result_all$y_hat_signif <- ifelse(df_result_all$y_hat_lower<=df_result_all$y_hat_baseline&df_result_all$y_hat_upper>=df_result_all$y_hat_baseline, 0, 1)
     }
     # rearrange column orders
-    main_cols <- intersect(c("x_name", "x_pctl", "x_raw", "y_hat", "y_prob", "y_logodds", "c_score"),colnames(df_result_all))
+    main_cols <- intersect(c("x_name", "x_pctl", "x_raw", "y_hat", "y_prob", "y_logodds", "c_score", "c_empir"),colnames(df_result_all))
     df_result_all <- df_result_all[,c(main_cols,setdiff(colnames(df_result_all),main_cols))]
   }
   return(df_result_all)
@@ -135,20 +144,20 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   while((is.null(mdl))&(dof>=3)){
     if (length(num_adjust_col)==0){
       tryCatch({
-        fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")"))
+        fml <- paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")")
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
-        mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
+        mdl <- rms::robcov(rms::lrm(formula(fml), x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
       },error=function(e){
         print(e)
       })
     }else{
       tryCatch({
         df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
-        fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")*num_adjust_col")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
+        fml <- paste0("as.factor(tag_col) ~ rcs(num_col,",dof,")*num_adjust_col") #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
-        mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
+        mdl <- rms::robcov(rms::lrm(formula(fml), x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
         
       },error=function(e){
         print(e)
@@ -156,10 +165,10 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
       if(is.null(mdl)){
         tryCatch({
           df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
-          fml <- formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
+          fml <- paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + I(num_adjust_col)") #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
           dd <- rms::datadist(df_mdl)
           base::options(datadist=dd, na.action=na.omit)
-          mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
+          mdl <- rms::robcov(rms::lrm(formula(fml), x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
           
         },error=function(e){
           print(e)
@@ -170,12 +179,13 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   }
   # if none of >=3 knots work or given dof is < 3, use linear term
   if(is.null(mdl)){
+    dof=1
     if (length(num_adjust_col)==0){
       tryCatch({
-        fml <- formula(paste0("as.factor(tag_col) ~ I(num_col)"))
+        fml <- paste0("as.factor(tag_col) ~ I(num_col)")
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
-        mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
+        mdl <- rms::robcov(rms::lrm(formula(fml), x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
         
       },error=function(e){
         print(e)
@@ -183,10 +193,10 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
     }else{
       tryCatch({
         df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
-        fml <- formula(paste0("as.factor(tag_col) ~ I(num_col)*I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
+        fml <- paste0("as.factor(tag_col) ~ I(num_col)*I(num_adjust_col)")#formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
         dd <- rms::datadist(df_mdl)
         base::options(datadist=dd, na.action=na.omit)
-        mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
+        mdl <- rms::robcov(rms::lrm(formula(fml), x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
         
       },error=function(e){
         print(e)
@@ -194,10 +204,10 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
       if(is.null(mdl)){
         tryCatch({
           df_mdl$num_adjust_col <- df_mdl[[num_adjust_col]]
-          fml <- formula(paste0("as.factor(tag_col) ~ I(num_col) + I(num_adjust_col)")) #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
+          fml <- paste0("as.factor(tag_col) ~ I(num_col) + I(num_adjust_col)") #formula(paste0("as.factor(tag_col) ~ rcs(num_col,",dof,") + num_adjust_col"))
           dd <- rms::datadist(df_mdl)
           base::options(datadist=dd, na.action=na.omit)
-          mdl <- rms::robcov(rms::lrm(fml, x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
+          mdl <- rms::robcov(rms::lrm(formula(fml), x=TRUE, y=TRUE, data=df_mdl), cluster=df_mdl[[cluster_col]])
           
         },error=function(e){
           print(e)
@@ -206,9 +216,12 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
     }
   }
   if(is.null(mdl)) stop(paste0("Error: uni_tag_num_rcs failed on ", num_col))
+  # last try, using glm package instead
+  
+  
   
   # make prediction at each percentile (newdata df_result)
-  df_result <- data.frame(num_pctl=seq(0,100,1), num_col=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  df_result <- data.frame(num_pctl=seq(0,100,0.5), num_col=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.005),na.rm=TRUE)))
   # if new_x is provided externally
   if(!is.null(new_x)){
     # in this case, x_pctl will be the index of new_x
@@ -230,6 +243,11 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   df_result$x_name <- num_col
   # add y_prob
   df_result$y_prob <- logit2prob(df_result$y_logodds)
+  
+  # add model formula info
+  print(paste0("---- final dof used: ",dof," ----"))
+  df_result$fml <- gsub("tag_col",tag_col,gsub("num_col",num_col,as.character(fml) ))
+  
   # # check dimension
   # stopifnot(dim(df_result)[1]==101) # from 0th to 100th
   # refine column names
@@ -237,10 +255,9 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   colnames(df_result)[which(colnames(df_result)=="num_col")] <- "x_raw"
   
   # reformat object to return
-  if(!is.null(df_result)){
-    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", colnames(df_result)[startsWith(colnames(df_result),"y_logodds")], "c_score")
-    df_result <- df_result[,keep_cols]
-  }
+  keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", colnames(df_result)[startsWith(colnames(df_result),"y_logodds")], "c_score", "fml")
+  df_result <- df_result[,keep_cols]
+
   
   return(df_result)
 }
@@ -254,7 +271,7 @@ uni_tag_num_loess <- function(df_mdl, num_col, tag_col, new_x=NULL){
 
   fml <- formula("tag_col ~ num_col")
   mdl <- loess(fml, data=df_mdl, span=0.25)
-  df_result <- data.frame(x_pctl=seq(0,100,1), x_raw=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.01),na.rm=TRUE)))
+  df_result <- data.frame(x_pctl=seq(0,100,0.5), x_raw=as.numeric(quantile(df_mdl$num_col, probs=seq(0,1,0.005),na.rm=TRUE)))
   
   # if new_x is provided externally
   if(!is.null(new_x)){
