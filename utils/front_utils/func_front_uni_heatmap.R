@@ -22,6 +22,7 @@ front_uni_heatmap <- function(
   trim_ctrl=TRUE,
   num_adjust_label=NULL, 
   method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
+  nknots=NULL,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=Inf,
   layout_ncol = 5,
@@ -30,6 +31,11 @@ front_uni_heatmap <- function(
   round_c=2,# decimal places to keep for c-stat
   sample_per_cluster = NULL
 ){
+  
+  if(!method=="logit_rcs"){
+    nknots <- NULL
+  }
+  
   library(RColorBrewer)
   palette_diy <- colorRampPalette(brewer.pal(10, "Spectral"))
   
@@ -137,6 +143,7 @@ front_uni_heatmap <- function(
                                   cluster_col, 
                                   num_adjust_col, 
                                   method=method, 
+                                  nknots=nknots,
                                   y_map_func=y_map_func, 
                                   y_map_max=y_map_max,
                                   new_dd=new_dd)

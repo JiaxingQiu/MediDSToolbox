@@ -18,10 +18,14 @@ uni_tag_nums <- function(data,
                          cluster_col, 
                          num_adjust_col=NULL, 
                          method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
+                         nknots=NULL,
                          y_map_func=c("fold_risk", "probability", "log_odds")[1],
                          y_map_max=3,
                          new_dd=NULL  # new datadist to be predicted on if given
 ){
+  if(!method=="logit_rcs"){
+    nknots <- NULL
+  }
   library(dplyr)
   # tag (1 default primary outcome) ~ num (pctl)
   base_mean <- base::mean(as.numeric( as.character( data[[tag_col]] ) ),na.rm=TRUE)
@@ -66,6 +70,9 @@ uni_tag_nums <- function(data,
     # initiate dof
     dof_list <- c(3,4,5,6)
     dof <- max(3, max(dof_list[which(dof_list<=afford_dof)],na.rm=TRUE)) # at least 3 knots
+    if(!is.null(nknots)){
+      dof <- nknots
+    }
     print(paste0("---- initiate degree of freedom ", dof, " ---- "))
     
     # get the new_x vector from new_dd dataframe
@@ -216,8 +223,6 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
     }
   }
   if(is.null(mdl)) stop(paste0("Error: uni_tag_num_rcs failed on ", num_col))
-  # last try, using glm package instead
-  
   
   
   # make prediction at each percentile (newdata df_result)
@@ -245,6 +250,7 @@ uni_tag_num_rcs <- function(df_mdl, num_col, tag_col, cluster_col, dof=6, num_ad
   df_result$y_prob <- logit2prob(df_result$y_logodds)
   
   # add model formula info
+  if(dof==2) dof <- 3
   print(paste0("---- final dof used: ",dof," ----"))
   df_result$fml <- gsub("tag_col",tag_col,gsub("num_col",num_col,as.character(fml) ))
   
