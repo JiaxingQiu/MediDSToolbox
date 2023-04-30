@@ -13,7 +13,7 @@ front_uni_heatmap_group <- function(
   pctcut_num_coerce = TRUE,
   filter_tag_labels=c(),
   imputation="None",
-  impute_per_cluster=FALSE,
+  impute_per_cluster=FALSE, 
   winsorizing=FALSE,
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   aggregate_conditioned_on_labels = c(),
@@ -45,6 +45,8 @@ front_uni_heatmap_group <- function(
   plot_obj <- NULL
   plot_list <- NULL
   plot_df <- NULL
+  plot_obj_signat <- NULL
+  plot_df_signat <- NULL
   
   #### make the plot ####
   print("-- overall non-grouped uni-heat --")
@@ -283,14 +285,23 @@ front_uni_heatmap_group <- function(
   
   plot_df_sort$x_label <- factor(plot_df_sort$x_label, levels=unique(plot_df_sort$x_label))
   
-  plot_signat <- uni_signature_illness(plot_df=plot_df_sort)
-  plot_signat$plot_obj <- plot_signat$plot_obj + labs(x=NULL,y=gsub("_"," ",y_map_func))
+  # try create signiture of illness plot 
+  tryCatch({
+    
+    plot_signat <- uni_signature_illness(plot_df=plot_df_sort)
+    plot_signat$plot_obj <- plot_signat$plot_obj + labs(x=NULL,y=gsub("_"," ",y_map_func))
+    plot_obj_signat = plot_signat$plot_obj
+    plot_df_signat = plot_signat$plot_df
+    
+  },error=function(e){
+    print("signature of illness plot skipped")
+  })
   
   return(list(plot_obj = plot_obj,
               plot_list = plot_list,
               plot_df = plot_df,
-              plot_obj_signat = plot_signat$plot_obj,
-              plot_df_signat = plot_signat$plot_df))
+              plot_obj_signat = plot_obj_signat,
+              plot_df_signat = plot_df_signat))
 }
 
 
