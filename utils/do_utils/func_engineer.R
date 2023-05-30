@@ -9,6 +9,7 @@ engineer <- function(
   trim_max = Inf, # to)
   trim_step_size = 1,
   trim_keepna = FALSE, # whether or not to keep NA in relative time variable
+  trim_first = TRUE, # TRUE = trim the data at the beginning before other engineering; FALSE = trim the data as the last step
   pctcut_num_cols=c(),
   pctcut_num_vec=c(0.1, 99.9),
   pctcut_num_coerce = TRUE,
@@ -87,10 +88,13 @@ engineer <- function(
   
   #### trim data by trim_by_col(relative time indicator) ####
   if (length(trim_by_col)>0){
-    if (trim_keepna){
-      data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
-    }else{
-      data <- data[which(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max),]
+    if(trim_first){
+      print("trimming data at the beginning")
+      if (trim_keepna){
+        data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
+      }else{
+        data <- data[which(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max),]
+      }
     }
   }
   #### cutoff numeric variables by percentiles ####
@@ -245,7 +249,7 @@ engineer <- function(
     })
   }
   
-  ### automatic standardization ###
+  ### standardization ###
   if(is.null(standardize_df)&(!scaler=="none")){
     for(c in num_cols){
       tryCatch({
@@ -281,6 +285,20 @@ engineer <- function(
     })
     
   }
+  
+  #### trim data by trim_by_col(relative time indicator) if trim_first is FALSE ####
+  data <- data_engineered
+  if (length(trim_by_col)>0){
+    if(!trim_first){
+      print("trimming data at the end")
+      if (trim_keepna){
+        data <- data[which((data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max)|is.na(data[,trim_by_col])),]
+      }else{
+        data <- data[which(data[,trim_by_col]>=trim_min & data[,trim_by_col]<trim_max),]
+      }
+    }
+  }
+  data_engineered <- data
   
   
   # ---- return final engineered dataset ----

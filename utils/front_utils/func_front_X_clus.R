@@ -7,6 +7,7 @@ front_X_clus <- function(
   # --- engineer ---
   trim_by_label=NULL,
   trim_vec = c(-Inf, Inf), # trim relative time [from, to)
+  trim_first = TRUE, # TRUE = trim the data at the beginning before other engineering; FALSE = trim the data as the last step
   time_unit = 1, # the increment scale of relative time
   pctcut_num_labels = c(),
   pctcut_num_vec = c(0.1, 99.9),
@@ -57,6 +58,7 @@ front_X_clus <- function(
                           trim_by_col = trim_by_col,
                           trim_min = trim_vec[1],
                           trim_max = trim_vec[2],
+                          trim_first = trim_first,
                           trim_step_size = time_unit,
                           pctcut_num_cols = pctcut_num_cols,
                           pctcut_num_vec = pctcut_num_vec,
@@ -76,6 +78,7 @@ front_X_clus <- function(
                                trim_by_col = trim_by_col,
                                trim_min=trim_vec[1],
                                trim_max=trim_vec[2],
+                               trim_first = trim_first,
                                trim_step_size = time_unit,
                                pctcut_num_cols = pctcut_num_cols,
                                pctcut_num_vec = pctcut_num_vec,

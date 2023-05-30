@@ -57,6 +57,7 @@ do_lrm_cv <- function(df=df,
     penalty_list <- c(lambda_value)
     for(penalty in penalty_list){
       cv_obj <- NULL
+      cv_obj_opt <- NULL # optimal object
       try({
         print(paste0("--- ",fml_obj$fml_string," ---"))
         cv_obj <- lrm_cv(df = df, 
@@ -187,9 +188,11 @@ do_lrm_cv <- function(df=df,
         }
         print(paste0("--- penalty --- ", penalty, " --- ",tune_by," --- ", current_score))
         if(is.null(base_score)){
+          cv_obj_opt <- cv_obj
           base_score <- current_score
         } else {
           if (current_score > base_score) {
+            cv_obj_opt <- cv_obj
             base_score <- current_score
             same_pen_step_count  <- same_pen_step_count + 1 # count how many successfull tuning has been done using the same pen_step
             if (same_pen_step_count >= samepen_patience) {
@@ -201,7 +204,6 @@ do_lrm_cv <- function(df=df,
           }
         }
       }
-      penalty <- penalty + pen_step # update penalty
       
       score_trace <- res_score_df[,c("logloss","AUROC","AUPRC","accuracy","f1score")]
       score_trace$penalty <- penalty
@@ -211,14 +213,16 @@ do_lrm_cv <- function(df=df,
       score_trace$current_score <- current_score
       score_trace_all <- bind_rows(score_trace_all, score_trace)
       
+      penalty <- penalty + pen_step # update penalty
+      
     }
   }
   
   
   
   # finalize the optimized model
-  fml <- cv_obj$model_info$formula
-  cluster_col <- cv_obj$model_info$cluster_col
+  fml <- cv_obj_opt$model_info$formula
+  cluster_col <- cv_obj_opt$model_info$cluster_col
   penalty <- 0
   if(nrow(score_trace_all)>0){
     penalty <- score_trace_all$penalty[which(score_trace_all$current_score==max(score_trace_all$current_score))] #cv_obj$model_info$penalty
@@ -245,7 +249,7 @@ do_lrm_cv <- function(df=df,
   return(list("df_final" = df,
               "dict_final" = dict_mdl,
               "fml_obj"=fml_obj,
-              "cv_obj"=cv_obj,
+              "cv_obj"=cv_obj_opt,
               "mdl_obj"=mdl_final,
               "score_trace_df"=score_trace_all
   ))

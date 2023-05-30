@@ -18,7 +18,8 @@ uni_tag_nums <- function(data,
                          cluster_col, 
                          num_adjust_col=NULL, 
                          method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
-                         nknots=NULL,
+                         nknots=NULL, # for logit_rcs
+                         nbin=15, # for empirical mean
                          y_map_func=c("fold_risk", "probability", "log_odds")[1],
                          y_map_max=3,
                          new_dd=NULL  # new datadist to be predicted on if given
@@ -96,7 +97,7 @@ uni_tag_nums <- function(data,
         df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col, new_x=new_x)
         df_result$y_prob <- logit2prob(df_result$y_logodds)
       }else if(method=="mean"){
-        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col)
+        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col, nbin = nbin)
       }
     }, error=function(e){
       print(e)
@@ -306,16 +307,16 @@ uni_tag_num_loess <- function(df_mdl, num_col, tag_col, new_x=NULL){
   return(df_result)
 }
 
-uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=10){
+uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=15){
   
   # find deciles of event group
   df_mdl$tag_col <- as.numeric(as.character(df_mdl[[tag_col]])) # force tag col to be 01
   df_mdl$tag_col[which(df_mdl$tag_col==min(df_mdl$tag_col,na.rm=TRUE))] <- 0
   df_mdl$tag_col[which(df_mdl$tag_col==max(df_mdl$tag_col,na.rm=TRUE))] <- 1
   df_mdl$num_col <- as.numeric(df_mdl[[num_col]])
-  if(n_distinct(df_mdl$num_col[which(df_mdl$tag_col==1)])<nbin){
-    stop(paste0("less than ",nbin," unique values in the event group!"))
-  }
+  # if(n_distinct(df_mdl$num_col[which(df_mdl$tag_col==1)])<nbin){
+  #   stop(paste0("less than ",nbin," unique values in the event group!"))
+  # }
   breaks <- as.numeric(quantile(df_mdl[which(df_mdl$tag_col==1),num_col],seq(0,1,length.out=nbin),na.rm=TRUE))
   df_mdl$x_pctl <- NA
   for(i in 1:(length(breaks)-1) ){
@@ -329,11 +330,25 @@ uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=10){
   }
   df_result <- df_mdl %>% filter(!is.na(x_pctl)) %>% group_by(x_pctl) %>% summarise(x_raw=mean(num_col,na.rm=TRUE),
                                                                                     y_prob=mean(tag_col,na.rm=TRUE)) %>% as.data.frame()
+  # interpolate x values that not available
+  df_result <- merge(data.frame(x_pctl=c(1:(length(breaks)-1))), df_result,all.x = TRUE)
+  df_result <- df_result %>% mutate(
+    y_prob = zoo::na.locf(zoo::na.locf(zoo::na.approx(y_prob, na.rm = FALSE),na.rm=FALSE),na.rm=FALSE, fromLast=TRUE),
+    x_raw = zoo::na.locf(zoo::na.locf(zoo::na.approx(x_raw, na.rm = FALSE),na.rm=FALSE),na.rm=FALSE, fromLast=TRUE) ) %>%
+    as.data.frame()
+  
   df_result$x_name <- num_col
   df_result$y_logodds <- prob2logit(df_result$y_prob)
+  df_result$c_score <- NA
+  # make empirical prediction
+  df_pred <- df_mdl %>% filter(!is.na(x_pctl)) %>% group_by(x_pctl) %>% mutate(y_true = tag_col, y_prob = mean(tag_col,na.rm=TRUE) ) %>% as.data.frame()
+  tryCatch({
+    df_result$c_score <- mdl_test(y_true=df_pred$y_true, y_prob=df_pred$y_prob)$res_df$AUROC
+  },error=function(e){print(e)})
+  
   # reformat object to return
   if(!is.null(df_result)){
-    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", "y_logodds")
+    keep_cols <- c("x_name", "x_raw", "x_pctl", "y_prob", "y_logodds", "c_score")
     df_result <- df_result[,keep_cols]
   }
   
@@ -363,6 +378,7 @@ uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=10){
   # # expand it to be 100 bins
   # inter <- approx(df_result$x_pctl, df_result$y_prob, method="constant", n=100)
   # df_result <- data.frame(x_pctl=round(inter$x,2),y_prob=inter$y)
+  
   
   return(df_result)
   

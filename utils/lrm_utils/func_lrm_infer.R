@@ -45,7 +45,13 @@ lrm_infer <-  function(
   eff_plot_1d_list <- list()
   i=0
   tryCatch({
-    eff_plot <- ggplot(rms::Predict(mdl_obj, fun=ymap), anova=anova(mdl_obj), pval=TRUE, size.anova=2, sepdiscrete='list')
+    eff_plot <- NULL
+    try({
+      eff_plot <- ggplot(rms::Predict(mdl_obj, fun=ymap), anova=anova(mdl_obj), pval=TRUE, size.anova=2, sepdiscrete='list')
+    },TRUE)
+    if(is.null(eff_plot)){
+      eff_plot <- ggplot(rms::Predict(mdl_obj, fun=ymap), pval=TRUE, size.anova=2, sepdiscrete='list')
+    }
     if(!is.null(eff_plot$continuous)) eff_plot$continuous <- eff_plot$continuous + ylab(y_map_func)
     if(!is.null(eff_plot$discrete)) eff_plot$discrete <- eff_plot$discrete + ylab(y_map_func)
     if(!is.null(eff_plot$continuous)){
@@ -157,7 +163,8 @@ ggplot_rms_diy <- function(
     pdf_all <- bind_rows(pdf_all, pdf_x)
   }
   
-  # add anova info 
+  # add anova info (anova might fail in rms package)
+  
   anova_df <- as.data.frame(anova(mdl_obj,indnl=FALSE))[mdl_obj$Design$name,]
   colnames(anova_df) <- c("chi_square", "dof","p_value")
   anova_df$xname <- rownames(anova_df)

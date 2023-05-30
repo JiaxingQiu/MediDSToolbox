@@ -14,6 +14,8 @@ front_multi_regression_timely <- function(
   trim_by_label=NULL,
   trim_vec = c(-Inf, Inf), # trim vec controls the beginning and the end of models
   time_unit = 1,
+  trim_ctrl = TRUE,
+  trim_first = TRUE,
   pctcut_num_labels = c(),
   pctcut_num_vec = c(0.1, 99.9),
   pctcut_num_coerce=TRUE,
@@ -24,7 +26,6 @@ front_multi_regression_timely <- function(
   aggregate_per=c("row", "cluster_trim_by_unit", "cluster")[1],
   aggregate_conditioned_on_labels = c(),
   # --- local ---
-  trim_ctrl = TRUE,
   r2=0.9,
   rcs5_low="100%",
   rcs4_low="100%",
@@ -93,6 +94,7 @@ front_multi_regression_timely <- function(
                                           trim_vec=as.numeric(trim_vec), 
                                           time_unit=time_unit,
                                           trim_ctrl = trim_ctrl,
+                                          trim_first = trim_first,
                                           pctcut_num_labels = pctcut_num_labels,
                                           pctcut_num_vec = pctcut_num_vec,
                                           pctcut_num_coerce = pctcut_num_coerce,

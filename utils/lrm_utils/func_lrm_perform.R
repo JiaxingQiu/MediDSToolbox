@@ -69,7 +69,6 @@ lrm_perform <- function(
   
   # ------------- calibration plot -------------
   df_hat$y_cali_groups <- cut(est_pctl( df_hat$y_pred ), 10)
-  df_hat$y_true01 <- ifelse(as.numeric(as.character(df[,y_col]))==1, 1, 0)
   base_mean_obs <- mean( df_hat$y_true01, na.rm=TRUE )
   df_cali <- df_hat %>% 
     group_by(y_cali_groups) %>%  

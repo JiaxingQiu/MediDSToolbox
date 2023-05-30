@@ -23,6 +23,7 @@ front_uni_heatmap_group <- function(
   num_adjust_label=NULL, 
   method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
   nknots=NULL,# number of knots to use in logit_rcs if provided
+  nbin=15,# number of bins to use in mean
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=Inf,
   #label_y_order = c(), # order of the levels of y
@@ -30,12 +31,19 @@ front_uni_heatmap_group <- function(
   group_levels=c(),# order of levels of group
   layout_ncol = 3,
   heat_limits = NULL,
+  show_signif=FALSE,
   sort_c=TRUE, # order the plot from top to bottom by c-stat, otherwise by maximum of y_hat
   round_c=2,# decimal places to keep for c-stat
   sample_per_cluster = NULL
 ){
   if(!method=="logit_rcs"){
     nknots <- NULL
+  }
+  if(method=="mean"){
+    if(!(nbin>1&nbin<100) ){
+      nbin <- 10
+    }
+    nbin <- round(nbin)
   }
   
   library(RColorBrewer)
@@ -74,12 +82,14 @@ front_uni_heatmap_group <- function(
                                    num_adjust_label=num_adjust_label,
                                    method=method,
                                    nknots=nknots,
+                                   nbin = nbin,
                                    layout_ncol = layout_ncol,
                                    heat_limits = heat_limits,
                                    y_map_func=y_map_func,
                                    y_map_max=y_map_max,
                                    round_c=round_c,
                                    sort_c=sort_c,
+                                   show_signif=show_signif,
                                    sample_per_cluster=sample_per_cluster)
   # find objects to return
   plot_obj <- heatmap_obj_all$plot_obj
@@ -142,11 +152,13 @@ front_uni_heatmap_group <- function(
                                          num_adjust_label=num_adjust_label, 
                                          method=method, 
                                          nknots=nknots,
+                                         nbin = nbin,
                                          layout_ncol = layout_ncol,
                                          heat_limits = heat_limits,
                                          y_map_func=y_map_func,
                                          y_map_max=y_map_max,
                                          round_c=round_c,
+                                         show_signif=show_signif,
                                          sample_per_cluster=sample_per_cluster)
         plot_df <- heatmap_obj$df_result_all_sort
         if(!is.null(plot_df)){
@@ -226,7 +238,7 @@ front_uni_heatmap_group <- function(
                                                labels = x_label_map$x_raw[c(2,6)] ) )
       
       
-      if("y_logodds_signif"%in%colnames(subdf)){
+      if("y_logodds_signif"%in%colnames(subdf) & show_signif ){
         plot_list[[x]] <-  plot_list[[x]] +
           geom_point(aes(y=ifelse(y_logodds_signif%in%c(1),NA,group_lorder) ))
       }

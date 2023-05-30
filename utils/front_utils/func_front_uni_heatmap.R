@@ -23,10 +23,12 @@ front_uni_heatmap <- function(
   num_adjust_label=NULL, 
   method=c("logit_rcs", "loess", "mean", "bootstrap")[1], 
   nknots=NULL,
+  nbin=15,
   y_map_func=c("fold_risk", "probability", "log_odds")[1],
   y_map_max=Inf,
   layout_ncol = 5,
   heat_limits = NULL,
+  show_signif=FALSE,
   sort_c=TRUE, # order the plot from top to bottom by c-stat, otherwise by maximum of y_hat
   round_c=2,# decimal places to keep for c-stat
   sample_per_cluster = NULL
@@ -34,6 +36,12 @@ front_uni_heatmap <- function(
   
   if(!method=="logit_rcs"){
     nknots <- NULL
+  }
+  if(method=="mean"){
+    if(!(nbin>1&nbin<100) ){
+      nbin <- 10
+    }
+    nbin <- round(nbin)
   }
   
   library(RColorBrewer)
@@ -144,6 +152,7 @@ front_uni_heatmap <- function(
                                   num_adjust_col, 
                                   method=method, 
                                   nknots=nknots,
+                                  nbin=nbin,
                                   y_map_func=y_map_func, 
                                   y_map_max=y_map_max,
                                   new_dd=new_dd)
@@ -207,7 +216,7 @@ front_uni_heatmap <- function(
                        limits=df_order$x_name, 
                        labels=stringr::str_wrap(gsub("_"," ",df_order$x_name), width=20))
     # indicate significancy
-    if("y_logodds_signif"%in%colnames(df_result_all_sort)){
+    if("f"%in%colnames(df_result_all_sort) & show_signif ){
       plot_obj <-  plot_obj +
         geom_point(aes(y=ifelse(y_logodds_signif%in%c(1),NA,x_name) ))
     }
