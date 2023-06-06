@@ -59,42 +59,44 @@ front_uni_heatmap_group <- function(
   #### make the plot ####
   print("-- overall non-grouped uni-heat --")
   heatmap_obj_all <- front_uni_heatmap(data=data,
-                                   dict_data=dict_data,
-                                   num_labels=num_labels,
-                                   y_label=y_label,
-                                   cluster_label=cluster_label,
-                                   # --- engineer ---
-                                   trim_by_label=trim_by_label,
-                                   trim_vec = trim_vec,
-                                   time_unit=time_unit,
-                                   pctcut_num_labels=pctcut_num_labels,
-                                   pctcut_num_vec=pctcut_num_vec,
-                                   pctcut_num_coerce=pctcut_num_coerce,
-                                   filter_tag_labels=filter_tag_labels,
-                                   imputation=imputation,
-                                   impute_per_cluster=impute_per_cluster,
-                                   winsorizing=winsorizing,
-                                   aggregate_per=aggregate_per,
-                                   aggregate_conditioned_on_labels = aggregate_conditioned_on_labels,
-                                   # --- local ---
-                                   new_dd = new_dd,
-                                   trim_ctrl=trim_ctrl,
-                                   num_adjust_label=num_adjust_label,
-                                   method=method,
-                                   nknots=nknots,
-                                   nbin = nbin,
-                                   layout_ncol = layout_ncol,
-                                   heat_limits = heat_limits,
-                                   y_map_func=y_map_func,
-                                   y_map_max=y_map_max,
-                                   round_c=round_c,
-                                   sort_c=sort_c,
-                                   show_signif=show_signif,
-                                   sample_per_cluster=sample_per_cluster)
+                                       dict_data=dict_data,
+                                       num_labels=num_labels,
+                                       y_label=y_label,
+                                       cluster_label=cluster_label,
+                                       # --- engineer ---
+                                       trim_by_label=trim_by_label,
+                                       trim_vec = trim_vec,
+                                       time_unit=time_unit,
+                                       pctcut_num_labels=pctcut_num_labels,
+                                       pctcut_num_vec=pctcut_num_vec,
+                                       pctcut_num_coerce=pctcut_num_coerce,
+                                       filter_tag_labels=filter_tag_labels,
+                                       imputation=imputation,
+                                       impute_per_cluster=impute_per_cluster,
+                                       winsorizing=winsorizing,
+                                       aggregate_per=aggregate_per,
+                                       aggregate_conditioned_on_labels = aggregate_conditioned_on_labels,
+                                       # --- local ---
+                                       new_dd = new_dd,
+                                       trim_ctrl=trim_ctrl,
+                                       num_adjust_label=num_adjust_label,
+                                       method=method,
+                                       nknots=nknots,
+                                       nbin = nbin,
+                                       layout_ncol = layout_ncol,
+                                       heat_limits = heat_limits,
+                                       y_map_func=y_map_func,
+                                       y_map_max=y_map_max,
+                                       round_c=round_c,
+                                       sort_c=sort_c,
+                                       show_signif=show_signif,
+                                       sample_per_cluster=sample_per_cluster)
   # find objects to return
   plot_obj <- heatmap_obj_all$plot_obj
   plot_list <- heatmap_obj_all$plot_list
   plot_df <- heatmap_obj_all$df_result_all_sort
+  
+  
   
   # find the column name in data for the group by label
   group_col <- dict_data$varname[which(dict_data$label==group_label)]
@@ -106,10 +108,10 @@ front_uni_heatmap_group <- function(
     }else{
       group_levels <- group_levels[which(group_levels%in%unique(as.character( data[,group_col] )))]
     }
-    # create new data dist for all groups to make prediction on the same data scale of x
-    df_all <- heatmap_obj_all$df_result_all_sort[,c("x_name", "x_raw")]
     
     if(is.null(new_dd)){
+      # create new data dist for all groups to make prediction on the same data scale of x
+      df_all <- heatmap_obj_all$df_result_all_sort[,c("x_name", "x_raw")]
       for(x in unique(df_all$x_name)){
         new_dd_x <- data.frame(x = df_all$x_raw[which(df_all$x_name==x)])
         colnames(new_dd_x) <- x

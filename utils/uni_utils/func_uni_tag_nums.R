@@ -97,7 +97,7 @@ uni_tag_nums <- function(data,
         df_result <- uni_tag_num_rcs(df_mdl, num_col, tag_col, cluster_col, dof, num_adjust_col, new_x=new_x)
         df_result$y_prob <- logit2prob(df_result$y_logodds)
       }else if(method=="mean"){
-        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col, nbin = nbin)
+        df_result <- uni_tag_num_mean(df_mdl, num_col, tag_col, nbin = nbin, new_x=new_x)
       }
     }, error=function(e){
       print(e)
@@ -307,7 +307,8 @@ uni_tag_num_loess <- function(df_mdl, num_col, tag_col, new_x=NULL){
   return(df_result)
 }
 
-uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=15){
+#The empirical relative risk is calculated in 15 bins of devided distribution of a variable from the event group.
+uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=15, new_x = NULL){ # new_x will replace breaks by quantile nbin
   
   # find deciles of event group
   df_mdl$tag_col <- as.numeric(as.character(df_mdl[[tag_col]])) # force tag col to be 01
@@ -317,7 +318,8 @@ uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=15){
   # if(n_distinct(df_mdl$num_col[which(df_mdl$tag_col==1)])<nbin){
   #   stop(paste0("less than ",nbin," unique values in the event group!"))
   # }
-  breaks <- as.numeric(quantile(df_mdl[which(df_mdl$tag_col==1),num_col],seq(0,1,length.out=nbin),na.rm=TRUE))
+  breaks <- as.numeric(quantile(df_mdl[which(df_mdl$tag_col==1),num_col],seq(0,1,length.out=nbin+1),na.rm=TRUE))# break by event group quantiles
+  if(!is.null(new_x)){ breaks <- new_x }
   df_mdl$x_pctl <- NA
   for(i in 1:(length(breaks)-1) ){
     if(i==1){
@@ -333,9 +335,13 @@ uni_tag_num_mean <- function(df_mdl, num_col, tag_col, nbin=15){
   # interpolate x values that not available
   df_result <- merge(data.frame(x_pctl=c(1:(length(breaks)-1))), df_result,all.x = TRUE)
   df_result <- df_result %>% mutate(
-    y_prob = zoo::na.locf(zoo::na.locf(zoo::na.approx(y_prob, na.rm = FALSE),na.rm=FALSE),na.rm=FALSE, fromLast=TRUE),
-    x_raw = zoo::na.locf(zoo::na.locf(zoo::na.approx(x_raw, na.rm = FALSE),na.rm=FALSE),na.rm=FALSE, fromLast=TRUE) ) %>%
+    y_prob = zoo::na.approx(y_prob, na.rm = FALSE),
+    x_raw = zoo::na.approx(x_raw, na.rm = FALSE) ) %>%
     as.data.frame()
+  # df_result <- df_result %>% mutate(
+  #   y_prob = zoo::na.locf(zoo::na.locf(zoo::na.approx(y_prob, na.rm = FALSE),na.rm=FALSE),na.rm=FALSE, fromLast=TRUE),
+  #   x_raw = zoo::na.locf(zoo::na.locf(zoo::na.approx(x_raw, na.rm = FALSE),na.rm=FALSE),na.rm=FALSE, fromLast=TRUE) ) %>%
+  #   as.data.frame()
   
   df_result$x_name <- num_col
   df_result$y_logodds <- prob2logit(df_result$y_prob)
