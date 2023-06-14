@@ -113,15 +113,16 @@ viz_death_star <- function(
   # data$init_time <-  data$relative_time - data$offset # causing troubles 
   
   
-  plot_obj <- ggplot(data, aes(x=floor(relative_time/time_unit), y=new_idx)) +
+  plot_obj <- ggplot(data, aes(x=relative_time/time_unit, y=new_idx)) + # floor(relative_time/time_unit) wrong
     geom_tile(aes(fill=measure_final)) + 
     scale_fill_gradientn(colours = topo.colors(30),labels=scaleFUN, na.value =NA) +
-    xlab(paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
-                " by ",
-                ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),
-                ifelse(time_unit>1, paste0(" / ",time_unit),"") ))+
-    ylab('subject / cluster index')+
-    labs(fill=y_label) +
+    
+    labs(x = paste0(ifelse(dict_data[which(dict_data$varname==align_col),"label"]=="", align_col,dict_data[which(dict_data$varname==align_col),"label"]), 
+                    " by ",
+                    ifelse(dict_data[which(dict_data$varname==align_col),"unit"]=="", align_col,dict_data[which(dict_data$varname==align_col),"unit"]),
+                    ifelse(time_unit>1, paste0(" / ",time_unit),"") ),
+         y = 'subject / cluster index',
+         fill=y_label) +
     theme(legend.position = "top" ) 
   
   
