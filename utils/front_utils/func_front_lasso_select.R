@@ -27,7 +27,7 @@ front_lasso_select <- function(
   imputeby_zero = c(),
   imputeby_mean = c(), 
   impute_per_cluster=FALSE,
-  standardize_df = NULL, # can be c(NULL, "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
+  standardize_df = "None", # can be c("None", "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
   # --- local ---
   lambda=c("auto","min","1se")[1],
   lambda_value = NULL,
@@ -72,7 +72,7 @@ front_lasso_select <- function(
   
   # ---- create standardize_df from input data ----
   # standardize_df can be can be c("None", "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
-  if( is.null(standardize_df) ){ # standardize_df is NULL
+  if( standardize_df=="None" ){ # standardize_df is NULL
     print("--- Not standardize ---")
     standardize_df <- NULL
   }
