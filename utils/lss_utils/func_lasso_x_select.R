@@ -21,7 +21,8 @@ lasso_x_select <- function(
               "BIC"
               )[1],
   lambda_seq=NULL,
-  foldid_col=NULL # data.frame(cluster = c(), fold = c())
+  foldid_col=NULL, # data.frame(cluster = c(), fold = c())
+  ridge_byside = FALSE
 ){
   
   # ---- Description ----
@@ -243,6 +244,13 @@ lasso_x_select <- function(
   stopifnot(!is.null(foldid_vector))
 
   # ---- cv lasso / ridge regression ----
+  lasso_cv <- NULL
+  ridge_cv <- NULL
+  lasso_trace <- NULL
+  ridge_trace <- NULL
+  lasso_optimal <- NULL
+  ridge_optimal <- NULL
+  
   lasso_cv <- glmnet::cv.glmnet(x=x, 
                                 y=y,
                                 family=family, 
@@ -254,7 +262,9 @@ lasso_x_select <- function(
                                 lambda = lambda_seq,
                                 standardize = FALSE,
                                 type.measure = tune_by )
-  ridge_cv <- glmnet::cv.glmnet(x=x, 
+  
+  if(ridge_byside){
+    ridge_cv <- glmnet::cv.glmnet(x=x, 
                                 y=y,
                                 family=family, 
                                 nfolds = 10, 
@@ -265,23 +275,25 @@ lasso_x_select <- function(
                                 lambda = lambda_seq,
                                 standardize = FALSE,
                                 type.measure = tune_by )
+  }
+  
   
   # ----- show panalization trace -----
   lasso_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE)
-  ridge_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 0, standardize = FALSE)
+  if(ridge_byside){ridge_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 0, standardize = FALSE)}
   
   #  ----- train optimal lambda models ----
   opt_lambda_lasso <- lasso_cv$lambda.1se
-  opt_lambda_ridge <- ridge_cv$lambda.1se
+  if(ridge_byside){opt_lambda_ridge <- ridge_cv$lambda.1se}
   if(lambda=="min") {
     opt_lambda_lasso <- lasso_cv$lambda.min
-    opt_lambda_ridge <- ridge_cv$lambda.min
+    if(ridge_byside){opt_lambda_ridge <- ridge_cv$lambda.min}
   }
   if(!is.null(lambda_value)){
     opt_lambda_lasso <- lambda_value
   }
   lasso_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE, lambda = opt_lambda_lasso)
-  ridge_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE, lambda = opt_lambda_ridge)
+  if(ridge_byside){ridge_optimal <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE, lambda = opt_lambda_ridge)}
   
   lasso_optimal$x <- x
   lasso_optimal$y <- y
