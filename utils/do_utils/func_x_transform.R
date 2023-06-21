@@ -26,8 +26,10 @@ est_pctl <- function(num_vec){
 
 
 # estimate a pseudo normal distribution of a random variable by rankit 
-rankit <- function(x){
-  xx <- qnorm((rank(x)-0.5)/sum(!is.na(x)),mean=mean(x,na.rm=TRUE),sd=sd(x,na.rm = TRUE))
+rankit <- function(x, m=NULL, s=NULL){
+  if(is.null(m)) m <- mean(x,na.rm=TRUE)
+  if(is.null(s)) s <- sd(x,na.rm = TRUE)
+  xx <- qnorm((rank(x)-0.5)/sum(!is.na(x)),mean=m,sd=s)
   return(xx)
 }
 
