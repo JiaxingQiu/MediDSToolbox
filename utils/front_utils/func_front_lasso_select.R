@@ -72,7 +72,7 @@ front_lasso_select <- function(
   
   # ---- create standardize_df from input data ----
   # standardize_df can be can be c("None", "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
-  if( standardize_df=="None" ){ # standardize_df is NULL
+  if( is.null(standardize_df) ){ # standardize_df is NULL
     print("--- Not standardize ---")
     standardize_df <- NULL
   }
