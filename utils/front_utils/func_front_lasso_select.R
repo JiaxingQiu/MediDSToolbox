@@ -27,7 +27,7 @@ front_lasso_select <- function(
   imputeby_zero = c(),
   imputeby_mean = c(), 
   impute_per_cluster=FALSE,
-  standardize_df = "None", # can be c(NULL, "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
+  standardize_df = NULL, # can be c(NULL, "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
   # --- local ---
   lambda=c("auto","min","1se")[1],
   lambda_value = NULL,
@@ -535,7 +535,6 @@ front_lasso_select <- function(
                                     x_cols_fct = x_cols_fct,
                                     x_cols_tag = x_cols_tag,
                                     family = family,
-                                    standardize = standardize,
                                     dict_data = dict_data,
                                     lambda = lambda,
                                     lambda_value = lambda_value,

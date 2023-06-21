@@ -11,7 +11,6 @@ lasso_x_select <- function(
   x_cols_fct,
   x_cols_tag,
   family = c("binomial", "multinomial", "gaussian")[1],
-  standardize = TRUE,
   dict_data=NULL, # dictionary table is optional
   lambda=c("auto","1se","min")[1],
   lambda_value = NULL, # external specified lasso lambda value 
