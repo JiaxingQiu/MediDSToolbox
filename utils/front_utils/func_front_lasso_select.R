@@ -514,6 +514,7 @@ front_lasso_select <- function(
     print("using external fold indicator instead!")
   }
   colnames(fold_idx_df_ex)[which(colnames(fold_idx_df_ex)=="cluster_col")] <- cluster_col
+  fold_idx_df_ex <- dplyr::distinct(fold_idx_df_ex) # keep unique cluster - fold mapping
   data_in <- merge(data_in[,setdiff(colnames(data_in),"fold")], fold_idx_df_ex, all.x=TRUE)
   
   
