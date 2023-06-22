@@ -1,5 +1,6 @@
 library(glmnet)
 library(vip)
+library(tictoc)
 
 lasso_x_select <- function(
   data, 
@@ -211,7 +212,7 @@ lasso_x_select <- function(
       yt <- ifelse(y>0,1,0)
       lambda_max <- max(abs(colSums(x*as.numeric(yt),na.rm=TRUE)), na.rm = TRUE)/dim(x)[1]
       epsilon <- .00001
-      K <- 300
+      K <- 50
       lambda_seq <- round(exp(seq(log(lambda_max), log(lambda_max*epsilon),length.out = K)), digits = 10)
       print("Lambda sequence by Friedman, Hastie & Tibshirani (2010) strategy")
     },error=function(e){
@@ -250,14 +251,14 @@ lasso_x_select <- function(
   ridge_trace <- NULL
   lasso_optimal <- NULL
   ridge_optimal <- NULL
-  
+  tic("training cv.glmnet in lasso_x_select")
   lasso_cv <- glmnet::cv.glmnet(x=x, 
                                 y=y,
                                 family=family, 
-                                nfolds = 10, 
+                                #nfolds = 10, 
                                 foldid = foldid_vector,
                                 keep = TRUE,
-                                nlambda= 100, 
+                                #nlambda= 100, 
                                 alpha = 1, 
                                 lambda = lambda_seq,
                                 standardize = FALSE,
@@ -267,17 +268,21 @@ lasso_x_select <- function(
     ridge_cv <- glmnet::cv.glmnet(x=x, 
                                 y=y,
                                 family=family, 
-                                nfolds = 10, 
+                                #nfolds = 10, 
                                 foldid = foldid_vector,
                                 keep = TRUE,
-                                nlambda= 100, 
+                                #nlambda= 100, 
                                 alpha = 0, 
                                 lambda = lambda_seq,
                                 standardize = FALSE,
                                 type.measure = tune_by )
+  }else{
+    print("skip ridge")
   }
+  toc()
   
   
+  tic("finding optinal model")
   # ----- show panalization trace -----
   lasso_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 1, standardize = FALSE)
   if(ridge_byside){ridge_trace <- glmnet::glmnet(x=x, y=y, family=family, alpha = 0, standardize = FALSE)}
@@ -299,7 +304,9 @@ lasso_x_select <- function(
   lasso_optimal$y <- y
   lasso_optimal$group_info <- x_col_df_all
   lasso_optimal$opt_lambda <- opt_lambda_lasso
+  toc()
   
+  tic("permuting 10 fold feature imputation")
   # ------ manually 10 fold cross validation scores ---------
   valid_yhat_df_all <- data.frame()
   valid_yhat_df_permu_all <- data.frame()
@@ -378,6 +385,9 @@ lasso_x_select <- function(
     s$data <- paste0("permutate ",permu_x)
     score_final_cv_permu <- bind_rows(score_final_cv_permu, s)
   }
+  toc()
+  
+  
   
   x_select_mdls <- list( cv_mdls = list(lasso_cv = lasso_cv, ridge_cv = ridge_cv),
                          trace_mdls = list(lasso_trace = lasso_trace, ridge_trace = ridge_trace),
