@@ -302,7 +302,7 @@ front_uni_heatmap_group <- function(
   # try create signiture of illness plot 
   tryCatch({
     
-    plot_signat <- uni_signature_illness(plot_df=plot_df_sort)
+    plot_signat <- uni_signature_illness(plot_df=plot_df_sort, layout_ncol=layout_ncol)
     plot_signat$plot_obj <- plot_signat$plot_obj + labs(x=NULL,y=gsub("_"," ",y_map_func))
     plot_obj_signat = plot_signat$plot_obj
     plot_df_signat = plot_signat$plot_df
@@ -320,7 +320,7 @@ front_uni_heatmap_group <- function(
 
 
 
-uni_signature_illness <- function(plot_df){
+uni_signature_illness <- function(plot_df, layout_ncol){
   
 
   if(!"x_label" %in%colnames(plot_df) ){
@@ -340,7 +340,7 @@ uni_signature_illness <- function(plot_df){
     geom_line(color="white")+
     geom_line(aes(y=y_hat_red), color="red") +
     geom_hline(data = plot_df_base, mapping = aes(yintercept=y_hat_baseline), linetype="solid") + 
-    facet_wrap(~x_label, scales = "free", ncol=4) + #"free_x"
+    facet_wrap(~x_label, scales = "free", ncol=layout_ncol) + #"free_x"
     geom_ribbon(aes(ymin=y_hat_lower, ymax=y_hat_upper), alpha=0.2) +
     coord_cartesian(ylim=c(min(plot_df$y_hat_red,na.rm=TRUE)-0.1,max(plot_df$y_hat_red,na.rm=TRUE)+0.1))
   
