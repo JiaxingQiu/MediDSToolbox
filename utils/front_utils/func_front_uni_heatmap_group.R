@@ -267,7 +267,7 @@ front_uni_heatmap_group <- function(
     if(sort_c&("c_score" %in% colnames(plot_df))){
       df_order <- plot_df %>% group_by(x_name) %>% summarise(max_c=max(c_score)) %>% arrange(-max_c) %>% as.data.frame()
       plot_df_sort <- dplyr::left_join(df_order,plot_df)
-      plot_df_sort$x_label <- paste0(stringr::str_wrap( gsub("_"," ",plot_df_sort$x_name), width = 15 ), "\nC = ",round(plot_df_sort$max_c,round_c))
+      plot_df_sort$x_label <- paste0(stringr::str_wrap( gsub("_"," ",plot_df_sort$x_name), width = 15 ), "\nAUC = ",format(round(plot_df_sort$max_c,round_c), nsmall = round_c))
     }else{
       df_order <- plot_df %>% group_by(x_name) %>% summarise(max_y=max(y_hat)) %>% arrange(-max_y) %>% as.data.frame()
       plot_df_sort <- dplyr::left_join(df_order,plot_df)
@@ -282,7 +282,7 @@ front_uni_heatmap_group <- function(
       # final order
       df_order <- merge(df_order1[,c("x_name","group_level")], df_order2, all.x=TRUE) 
       plot_df_sort <- dplyr::left_join(df_order,plot_df)
-      plot_df_sort$x_label <- paste0(stringr::str_wrap( gsub("_"," ",plot_df_sort$x_name), width = 15 ), "\nC = ",round(plot_df_sort$max_c,round_c))
+      plot_df_sort$x_label <- paste0(stringr::str_wrap( gsub("_"," ",plot_df_sort$x_name), width = 15 ), "\nAUC = ",format(round(plot_df_sort$max_c,round_c), nsmall = round_c))
       plot_df_sort$x_label <- paste0(plot_df_sort$x_label, "\nGroup: ", plot_df_sort$group_level)
     }else{
       # sort by score
