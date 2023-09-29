@@ -90,7 +90,7 @@ get.dict <- function(data, attr_list=c() ){
     dict_df$type <- ""
     for(varname in colnames(data)){
       # automated assign fct and tag01 to certain variables
-      if(dplyr::n_distinct(as.character(data[complete.cases(data[,varname]),varname]) )<5){
+      if(dplyr::n_distinct(as.character(data[complete.cases(data[,varname]),varname]) )<10){
         dict_df$type[which(dict_df$varname == varname)] <- "fct"
         if(all(unique(as.numeric(as.character(data[complete.cases(data[,varname]),varname]))) %in% c(0,1) )){
           dict_df$unit[which(dict_df$varname == varname)] <- "tag01"
