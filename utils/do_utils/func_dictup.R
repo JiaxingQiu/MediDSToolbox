@@ -1,3 +1,4 @@
+library(Hmisc)
 dict_json2df <- function(dict) {
   # return a datafrqme format dictionary with key as rowname dict elememts as colname
   dict_df <- data.frame()

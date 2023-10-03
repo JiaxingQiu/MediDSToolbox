@@ -12,6 +12,7 @@ do_summ_tbl <- function(data,
                      sort_label = TRUE
                      
 ){
+  library(Hmisc)
   
   print(data)
   # ---- remove duplicates if any ----
