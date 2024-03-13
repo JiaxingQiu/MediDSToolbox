@@ -72,11 +72,12 @@ front_lasso_select <- function(
   
   # ---- create standardize_df from input data ----
   # standardize_df can be can be c("None", "Standard(msd)", "Robust(IQR)", "Percentile", a data.frame(varname=c(), center=c(), scale=c())) 
-  if( standardize_df=="None" ){ # standardize_df is NULL
+  
+  if( paste0(as.character(standardize_df),collapse = "")=="None" ){ # standardize_df is NULL
     print("--- Not standardize ---")
     standardize_df <- NULL
   }
-  else if(standardize_df=="Standard(msd)"){
+  else if(paste0(as.character(standardize_df),collapse = "")=="Standard(msd)"){
     print("--- Make standardize_df of Standard(msd) from internal engineered dataset ---")
     standardize_df <- NULL
     print("---- 1. engineer internal data without standardization----")
@@ -168,7 +169,7 @@ front_lasso_select <- function(
       print(e)
     })
   }
-  else if(standardize_df=="Robust(IQR)"){
+  else if(paste0(as.character(standardize_df),collapse = "")=="Robust(IQR)"){
     print("--- Make standardize_df of Robust(IQR) from internal engineered dataset ---")
     standardize_df <- NULL
     print("---- 1. engineer internal data without standardization----")
@@ -260,7 +261,7 @@ front_lasso_select <- function(
       print(e)
     })
   }
-  else if(standardize_df=="Percentile"){
+  else if(paste0(as.character(standardize_df),collapse = "")=="Percentile"){
     print("--- Convert engineered data to percentile ---")
     standardize_df <- NULL
     tryCatch({
