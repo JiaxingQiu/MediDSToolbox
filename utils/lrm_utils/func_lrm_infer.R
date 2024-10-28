@@ -247,7 +247,7 @@ get_model_stats = function(x, precision=60) {
   #model stats
   stats = c()
   stats$R2.adj = stringr::str_match(cap, "R2 adj\\s+ (\\d\\.\\d+)") %>% na.omit() %>% .[, 2] %>% as.numeric()
-  
+  if(length(stats$R2.adj)==0) stats$R2.adj = stringr::str_match(cap, "R2 adj(\\d\\.\\d+)") %>% na.omit() %>% .[, 2] %>% as.numeric()
   #coef stats lines
   coef_lines = cap[which(stringr::str_detect(cap, "Coef\\s+S\\.E\\.")):(length(cap) - 1)]
   
