@@ -12,6 +12,8 @@
 
 vcov.robust.xy <- function(x,y,b,c){
   
+  # initiate objects to return
+  vcov <- NULL
   
   # setup, error checking
   # check dim
@@ -39,17 +41,17 @@ vcov.robust.xy <- function(x,y,b,c){
   # calculate the gradient g [1*p]
   g <- t(y-p) %*% x
   
-  # calculate hessian matrix J [p*p]
-  J <- t(x * as.numeric(p*(1-p))) %*% x
+  # calculate information matrix J [p*p]
+  J <- t(x * as.numeric(p*(1-p))) %*% x 
   # J <- t(x) %*% diag(as.numeric(p*(1-p))) %*% x # very slow
   
   # Deviance = -2 * log likelihood
-  deviance <- -2 * sum(log(p)*y + log(1-p)*(1-y),na.rm = T)
+  deviance <- -2 * sum(log(p)*y + log(1-p)*(1-y))
   
   # -------------------- unclustered ------------------------
   # the derivative of log likelihood per component gi [n*p]
   gi <- x
-  for(i in 1:dim(x)[2]) gi[,i] <- (y-p)*x[,i]
+  for(i in 1:dim(x)[2]) gi[,i] <- (y - p)*x[,i]
   
   # calculate fisher information matrix K [p*p]
   K <- t(gi)%*%gi
@@ -58,14 +60,10 @@ vcov.robust.xy <- function(x,y,b,c){
   HScov <- solve(J)%*%K%*%solve(J)
   
   # approximation of the number of parameters (effective d.f. of the model (counting intercept terms))
-  dof <- length(diag(K%*%solve(J))) # sum(diag(K%*%solve(J)))
+  dof <- sum(diag(K%*%solve(J)))
   
   # AIC
   aic <- deviance + 2*dof
-  
-  # NIC(AIC)
-  nic <- deviance + 2*sum(diag(K%*%solve(J)))
-  
   
   # ---------------------- Clustered ------------------------
   # the derivative of log likelihood per cluster cgi [n*p]
@@ -92,8 +90,8 @@ vcov.robust.xy <- function(x,y,b,c){
   # estimated number of parameters
   cdof <- sum(diag(cK%*%solve(J)))
   
-  # NIC
-  nicc <- deviance + 2*cdof
+  # AIC
+  nic <- deviance + 2*cdof
   
   # calculate NIC
   return(list(deviance = deviance,
@@ -105,7 +103,6 @@ vcov.robust.xy <- function(x,y,b,c){
               cHScov = cHScov,
               cdof = cdof,
               aic = aic,
-              nic = nic,
-              nicc = nicc))
+              nic = nic))
   
 }

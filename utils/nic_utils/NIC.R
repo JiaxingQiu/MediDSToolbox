@@ -1,17 +1,20 @@
-NIC <- function(mdl){
-  # input of rms model object
-  x <- as.matrix(mdl$x)
-  y <- mdl$y
-  b <- coef(mdl)
-  c <- mdl$c
-  
-  x <- cbind(Intercept = rep(1,nrow(x)), x)
-  x <- x[,intersect(colnames(x), names(b))]
-  b <- b[intersect(colnames(x), names(b))]
-  
-  nic_obj <- vcov.robust.xy(x,y,b,c)
-  nic <- nic_obj$nic
-  aic <- nic_obj$aic
-  return(list("nic"=nic,
-              "aic"=aic))
+NIC <- function(mdl, family=c("binomial","gaussian")[1]){
+  tryCatch({
+    b <- coef(mdl)[!is.na(coef(mdl))]
+    x <- as.matrix(model.matrix(mdl))[,names(b)]
+    y <- mdl$y
+    c <- mdl$c
+    if(family == "binomial") res <- vcov.robust.xy(x, y, b, c)
+    if(family == "gaussian") res <- vcov.robust.xy_lm(x, y, b, c)
+    
+    return(list("dev"=res$deviance,
+                "aic"=res$aic,
+                "nic" = res$nic,
+                "nicc"=res$nicc,
+                "robcov" = res$cHScov,
+                "cov" = res$HScov ))
+    
+  },error=function(e){
+    print(e)
+  })
 }

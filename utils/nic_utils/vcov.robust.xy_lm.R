@@ -1,17 +1,6 @@
-#' Clustered statistics from x, y, coefficient and cluster matrices
-#' 
-#' @param x matrix of predictors, of dimension \eqn{n \times p}{n*p}; each row
-#' is an observation vector.
-#' @param y response vector of length n. This argument should be quantitative for
-#' regression (least squares), and a two-level factor for classification
-#' (logistic model, huberized SVM, squared SVM).
-#' @param b estimated coefficient of length p.
-#' @param c cluster ids vector of length n.
-#' @returns vcov a numeric variance covariance matrix
+# robust covariance matrix for linear model
 
-
-vcov.robust.xy <- function(x,y,b,c){
-  
+vcov.robust.xy_lm <- function(x,y,b,c){
   
   # setup, error checking
   # check dim
@@ -22,7 +11,6 @@ vcov.robust.xy <- function(x,y,b,c){
   if(length(y) != nobs) stop("x and y have different number of rows")
   y <- matrix(y, nrow = nobs)
   if(dim(y)[1]!=nobs|dim(y)[2]!=1) stop("y must be a n*1 matrix")
-  if(!all(as.numeric(y)%in%c(0,1))) stop("y can only take value 0 or 1")# check value
   
   if(length(c) != nobs) stop("x and c have different number of rows")
   c <- matrix(c, nrow = nobs)
@@ -33,29 +21,29 @@ vcov.robust.xy <- function(x,y,b,c){
   if(dim(b)[1]!=nvar|dim(b)[2]!=1) stop("b must be a p*1 matrix")
   
   
-  # predicted probability p [n*1]
-  p <- exp(x%*%b)/(1+exp(x%*%b))
+  # predicted response
+  p <- x%*%b
   
-  # calculate the gradient g [1*p]
-  g <- t(y-p) %*% x
+  # sigma estimation
+  s <- sqrt(1/nobs * sum( (y-p)^2 )) # check with sigma(mdl)
   
-  # calculate hessian matrix J [p*p]
-  J <- t(x * as.numeric(p*(1-p))) %*% x
-  # J <- t(x) %*% diag(as.numeric(p*(1-p))) %*% x # very slow
+  # calculate Hessian matrix J [p*p] (- Hessian matrix)
+  J <- (1/s^2) * t(x) %*% x
   
-  # Deviance = -2 * log likelihood
-  deviance <- -2 * sum(log(p)*y + log(1-p)*(1-y),na.rm = T)
-  
+  # MLE Deviance = -2 * log likelihood
+  deviance <- nobs*log(2*pi*s^2) + 1/s^2*sum( (y-p)^2 )  # check with AIC(mdl)
+
   # -------------------- unclustered ------------------------
-  # the derivative of log likelihood per component gi [n*p]
+  # the gradient of log likelihood per observation per variable i
   gi <- x
-  for(i in 1:dim(x)[2]) gi[,i] <- (y-p)*x[,i]
+  for(i in 1:dim(x)[2]) gi[,i] <- 1/s^2 * (y - p)*x[,i]
   
   # calculate fisher information matrix K [p*p]
   K <- t(gi)%*%gi
   
   # Huber Sandwich Estimator matrix without clustering
-  HScov <- solve(J)%*%K%*%solve(J)
+  HScov <- solve(J)%*%K%*%solve(J) # check with sandwich::vcovHC(mdl, type = "HC")
+  # vcov(mdl) check with sandwich::vcovHC(mdl, type = "const")
   
   # approximation of the number of parameters (effective d.f. of the model (counting intercept terms))
   dof <- length(diag(K%*%solve(J))) # sum(diag(K%*%solve(J)))
@@ -65,7 +53,6 @@ vcov.robust.xy <- function(x,y,b,c){
   
   # NIC(AIC)
   nic <- deviance + 2*sum(diag(K%*%solve(J)))
-  
   
   # ---------------------- Clustered ------------------------
   # the derivative of log likelihood per cluster cgi [n*p]
@@ -87,7 +74,7 @@ vcov.robust.xy <- function(x,y,b,c){
   cK <- t(cgi)%*%cgi
   
   # Huber Sandwich Estimator matrix with clustering
-  cHScov <- solve(J)%*%cK%*%solve(J)
+  cHScov <- solve(J)%*%cK%*%solve(J)  # check with sandwich::vcovCL(mdl, cluster = mdl$c)
   
   # estimated number of parameters
   cdof <- sum(diag(cK%*%solve(J)))
